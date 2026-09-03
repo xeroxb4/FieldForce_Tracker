@@ -2,9 +2,13 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import OMRLayout from './pages/omr/OMRLayout';
+import Dashboard from './pages/omr/Dashboard';
 import LogShop from './pages/omr/LogShop';
 import DayWrapUp from './pages/omr/DayWrapUp';
 import OMRReports from './pages/omr/OMRReports';
+import Outlets from './pages/omr/Outlets';
+import Beats from './pages/omr/Beats';
+import Owings from './pages/omr/Owings';
 import MerchLayout from './pages/merchandiser/MerchLayout';
 import MerchVisit from './pages/merchandiser/MerchVisit';
 import MerchHistory from './pages/merchandiser/MerchHistory';
@@ -35,9 +39,13 @@ export default function App() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="log-shop" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="beats" element={<Beats />} />
         <Route path="log-shop" element={<LogShop />} />
         <Route path="wrap-up" element={<DayWrapUp />} />
+        <Route path="owings" element={<Owings />} />
+        <Route path="outlets" element={<Outlets />} />
         <Route path="reports" element={<OMRReports />} />
       </Route>
 
@@ -68,7 +76,6 @@ export default function App() {
         <Route path="reports" element={<AdminReports />} />
       </Route>
 
-      {/* Default redirect based on role */}
       <Route
         path="/"
         element={

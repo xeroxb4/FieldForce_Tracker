@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../services/api';
 
 const OUTCOMES = ['Order Placed', 'No Order', 'Shop Closed', 'Not Interested', 'Follow Up', 'Other'];
 
 export default function LogShop() {
+  const location = useLocation();
+  const prefillShop = location.state?.shopName || '';
+
   const [form, setForm] = useState({
-    shopName: '',
+    shopName: prefillShop,
     contactName: '',
     contactPhone: '',
     outcome: 'No Order',
