@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import api, { isOnline } from '../../services/api';
+import { cacheBeat, getCachedBeat } from '../../services/offline';
 
 export default function Beats() {
   const [beat, setBeat] = useState(null);
@@ -8,14 +9,39 @@ export default function Beats() {
   const [error, setError] = useState('');
   const [startingId, setStartingId] = useState(null);
   const [gpsMsg, setGpsMsg] = useState('');
+  const [fromCache, setFromCache] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api
-      .get('/beats/today')
-      .then((res) => setBeat(res.data))
-      .catch((err) => setError(err.response?.data?.message || 'Failed to load beat'))
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        if (isOnline()) {
+          const { data } = await api.get('/beats/today');
+          setBeat(data);
+          cacheBeat(data);
+          setFromCache(false);
+        } else {
+          const cached = getCachedBeat();
+          if (cached) {
+            setBeat(cached);
+            setFromCache(true);
+          } else {
+            setError('Offline and no cached beat. Connect once to load today\'s outlets.');
+          }
+        }
+      } catch {
+        const cached = getCachedBeat();
+        if (cached) {
+          setBeat(cached);
+          setFromCache(true);
+        } else {
+          setError('Failed to load beat');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const startOutletVisit = (outlet) => {
@@ -30,30 +56,49 @@ export default function Beats() {
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        try {
-          const { data } = await api.post('/omr/visits/start', {
-            outletId: outlet._id,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-          });
+        const agentLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
 
-          // Location OK → go to Log Shop with outlet context
+        // Online: verify distance with server
+        if (isOnline()) {
+          try {
+            const { data } = await api.post('/omr/visits/start', {
+              outletId: outlet._id,
+              ...agentLocation,
+            });
+            navigate('/omr/log-shop', {
+              state: {
+                outletId: data.outlet._id,
+                shopName: data.outlet.name,
+                contactName: data.outlet.contactName,
+                contactPhone: data.outlet.contactPhone,
+                outletLocation: data.outlet.location,
+                agentLocation: data.agentLocation,
+                distanceMeters: data.distanceMeters,
+                fromBeat: true,
+              },
+            });
+          } catch (err) {
+            setGpsMsg(err.response?.data?.message || 'Could not start visit');
+            setStartingId(null);
+          }
+        } else {
+          // Offline: allow start with local GPS only (server will re-check on sync if needed)
           navigate('/omr/log-shop', {
             state: {
-              outletId: data.outlet._id,
-              shopName: data.outlet.name,
-              contactName: data.outlet.contactName,
-              contactPhone: data.outlet.contactPhone,
-              outletLocation: data.outlet.location,
-              agentLocation: data.agentLocation,
-              distanceMeters: data.distanceMeters,
+              outletId: outlet._id,
+              shopName: outlet.name,
+              contactName: outlet.contactName,
+              contactPhone: outlet.contactPhone,
+              outletLocation: outlet.location,
+              agentLocation,
               fromBeat: true,
+              offlineStart: true,
             },
           });
-        } catch (err) {
-          setGpsMsg(err.response?.data?.message || 'Could not start visit');
-          setStartingId(null);
         }
       },
       () => {
@@ -77,7 +122,14 @@ export default function Beats() {
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-slate-800 mb-1">Today's Beat</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg font-bold text-slate-800">Today's Beat</h2>
+        {!isOnline() && (
+          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+            Offline{fromCache ? ' · cached' : ''}
+          </span>
+        )}
+      </div>
       <p className="text-sm text-slate-500 mb-4">
         {beat.dayName} · {beat.date}
         {beat.isWorkingDay && beat.total > 0 && (

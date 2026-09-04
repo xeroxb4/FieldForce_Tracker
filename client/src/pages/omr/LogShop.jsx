@@ -1,49 +1,107 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import api, { isOnline } from '../../services/api';
+import {
+  cacheProducts,
+  getCachedProducts,
+  enqueue,
+  syncQueue,
+  queueCount,
+} from '../../services/offline';
 
-const OUTCOMES = ['Order Placed', 'No Order', 'Shop Closed', 'Not Interested', 'Follow Up', 'Other'];
+const OUTCOMES = ['Order Placed', 'No Order', 'Shop Closed', 'Follow Up', 'Other'];
+const NO_ORDER_REASONS = [
+  'Out of cash',
+  'Owner not available',
+  'I have a supplier',
+  'High price',
+  'Shop closed',
+  'Not interested',
+  'Stock still available',
+  'Other',
+];
 const CATEGORIES = ['Lotion', 'Roll-on', 'Spray'];
 
 export default function LogShop() {
   const location = useLocation();
   const navigate = useNavigate();
   const ctx = location.state || {};
+  const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
 
   const [form, setForm] = useState({
     shopName: ctx.shopName || '',
     contactName: ctx.contactName || '',
     contactPhone: ctx.contactPhone || '',
-    outcome: 'No Order',
+    outcome: 'Order Placed',
+    noOrderReason: '',
+    paymentType: 'cash',
+    creditDurationWeeks: '1',
     notes: '',
   });
+
   const [products, setProducts] = useState({});
-  const [activeCat, setActiveCat] = useState('Lotion');
-  const [cart, setCart] = useState([]); // { skuId, productName, category, size, unit, quantity, unitPrice, lineTotal }
+  // Product picker state
+  const [pickCategory, setPickCategory] = useState('');
+  const [pickProductId, setPickProductId] = useState('');
+  const [pickUnit, setPickUnit] = useState('pc');
+  const [pickQty, setPickQty] = useState('1');
+
+  const [cart, setCart] = useState([]);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
+  const [offlinePending, setOfflinePending] = useState(queueCount());
 
   useEffect(() => {
-    api
-      .get('/omr/products')
-      .then((res) => setProducts(res.data))
-      .catch(() => {});
+    const load = async () => {
+      try {
+        if (isOnline()) {
+          const { data } = await api.get('/omr/products');
+          setProducts(data);
+          cacheProducts(data);
+        } else {
+          const cached = getCachedProducts();
+          if (cached) setProducts(cached);
+        }
+      } catch {
+        const cached = getCachedProducts();
+        if (cached) setProducts(cached);
+      }
+    };
+    load();
+    // Try sync any queued items
+    if (isOnline()) {
+      syncQueue(api).then(() => setOfflinePending(queueCount()));
+    }
   }, []);
 
-  const addToCart = (sku, unit) => {
-    const price =
-      unit === 'pack' ? sku.pricePack : unit === 'carton' ? sku.priceCarton : sku.pricePc;
+  const productList = pickCategory ? products[pickCategory] || [] : [];
+  const selectedProduct = productList.find((p) => p._id === pickProductId);
+
+  const unitPrice = (sku, unit) => {
+    if (!sku) return 0;
+    if (unit === 'pack') return sku.pricePack || 0;
+    if (unit === 'carton') return sku.priceCarton || 0;
+    return sku.pricePc || 0;
+  };
+
+  const addProductLine = () => {
+    if (!selectedProduct || !pickQty || Number(pickQty) < 1) {
+      setStatus({ type: 'error', msg: 'Select product, unit and quantity' });
+      return;
+    }
+    const price = unitPrice(selectedProduct, pickUnit);
+    const qty = Number(pickQty);
     setCart((prev) => {
-      const existing = prev.find((i) => i.skuId === sku._id && i.unit === unit);
+      const existing = prev.find(
+        (i) => i.skuId === selectedProduct._id && i.unit === pickUnit
+      );
       if (existing) {
         return prev.map((i) =>
-          i.skuId === sku._id && i.unit === unit
+          i.skuId === selectedProduct._id && i.unit === pickUnit
             ? {
                 ...i,
-                quantity: i.quantity + 1,
-                lineTotal: (i.quantity + 1) * i.unitPrice,
+                quantity: i.quantity + qty,
+                lineTotal: (i.quantity + qty) * i.unitPrice,
               }
             : i
         );
@@ -51,33 +109,48 @@ export default function LogShop() {
       return [
         ...prev,
         {
-          skuId: sku._id,
-          productName: sku.name,
-          category: sku.category,
-          size: sku.size,
-          unit,
-          quantity: 1,
+          skuId: selectedProduct._id,
+          productName: selectedProduct.name,
+          category: selectedProduct.category,
+          size: selectedProduct.size,
+          unit: pickUnit,
+          quantity: qty,
           unitPrice: price,
-          lineTotal: price,
+          lineTotal: qty * price,
         },
       ];
     });
+    // Reset picker for next product
+    setPickProductId('');
+    setPickUnit('pc');
+    setPickQty('1');
+    setStatus(null);
   };
 
-  const updateQty = (skuId, unit, qty) => {
-    const q = Math.max(0, Number(qty) || 0);
-    setCart((prev) =>
-      prev
-        .map((i) =>
-          i.skuId === skuId && i.unit === unit
-            ? { ...i, quantity: q, lineTotal: q * i.unitPrice }
-            : i
-        )
-        .filter((i) => i.quantity > 0)
-    );
-  };
+  const removeLine = (idx) => setCart((prev) => prev.filter((_, i) => i !== idx));
 
   const cartTotal = cart.reduce((s, i) => s + i.lineTotal, 0);
+
+  const buildPayload = (gpsLoc) => ({
+    shopName: form.shopName,
+    outletId: ctx.outletId,
+    contactName: form.contactName,
+    contactPhone: form.contactPhone,
+    outcome: form.outcome,
+    noOrderReason: form.outcome === 'No Order' ? form.noOrderReason : '',
+    lineItems: form.outcome === 'Order Placed' ? cart : [],
+    amount: form.outcome === 'Order Placed' ? cartTotal : 0,
+    paymentType: form.outcome === 'Order Placed' ? form.paymentType : '',
+    creditDurationWeeks:
+      form.outcome === 'Order Placed' && form.paymentType === 'credit'
+        ? Number(form.creditDurationWeeks)
+        : null,
+    notes: form.notes,
+    date: new Date().toISOString().slice(0, 10),
+    location: gpsLoc,
+    outletLocation: ctx.outletLocation,
+    distanceMeters: ctx.distanceMeters,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,47 +158,63 @@ export default function LogShop() {
       setStatus({ type: 'error', msg: 'Shop name is required' });
       return;
     }
+    if (form.outcome === 'No Order' && !form.noOrderReason) {
+      setStatus({ type: 'error', msg: 'Select a reason for No Order' });
+      return;
+    }
+    if (form.outcome === 'Order Placed' && cart.length === 0) {
+      setStatus({ type: 'error', msg: 'Add at least one product for an order' });
+      return;
+    }
+    if (form.outcome === 'Order Placed' && form.paymentType === 'credit') {
+      if (!['1', '2'].includes(String(form.creditDurationWeeks))) {
+        setStatus({ type: 'error', msg: 'Select credit duration (1 or 2 weeks)' });
+        return;
+      }
+    }
 
     setLoading(true);
     setStatus(null);
 
-    const submit = async (gpsLoc) => {
+    const finishOk = (msg) => {
+      setStatus({ type: 'success', msg });
+      setCart([]);
+      setOfflinePending(queueCount());
+      if (fromBeat) setTimeout(() => navigate('/omr/beats'), 1200);
+      setLoading(false);
+    };
+
+    const send = async (gpsLoc) => {
+      const payload = buildPayload(gpsLoc);
+
+      // Offline → queue
+      if (!isOnline()) {
+        enqueue({ type: 'visit', payload: { ...payload, syncedFromOffline: true } });
+        finishOk('Saved offline. Will sync when network is back.');
+        return;
+      }
+
       try {
-        await api.post('/omr/visits', {
-          shopName: form.shopName,
-          outletId: ctx.outletId,
-          contactName: form.contactName,
-          contactPhone: form.contactPhone,
-          outcome: form.outcome,
-          lineItems: cart,
-          amount: cartTotal,
-          notes: form.notes,
-          date: new Date().toISOString().slice(0, 10),
-          location: gpsLoc,
-          outletLocation: ctx.outletLocation,
-          distanceMeters: ctx.distanceMeters,
-        });
-        setStatus({ type: 'success', msg: 'Shop visit logged successfully!' });
-        setCart([]);
-        if (fromBeat) {
-          setTimeout(() => navigate('/omr/beats'), 1200);
-        } else {
-          setForm({
-            shopName: '',
-            contactName: '',
-            contactPhone: '',
-            outcome: 'No Order',
-            notes: '',
-          });
-        }
+        await api.post('/omr/visits', payload);
+        // Also flush any older queue
+        await syncQueue(api);
+        finishOk(
+          form.paymentType === 'credit'
+            ? 'Visit saved. Credit added to Owings.'
+            : 'Shop visit logged successfully!'
+        );
       } catch (err) {
-        setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to log visit' });
-      } finally {
-        setLoading(false);
+        // Network error mid-request → queue
+        if (!err.response) {
+          enqueue({ type: 'visit', payload: { ...payload, syncedFromOffline: true } });
+          finishOk('Network issue — saved offline. Will sync when online.');
+        } else {
+          setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to log visit' });
+          setLoading(false);
+        }
       }
     };
 
-    // Outlet visits always need fresh GPS
     if (fromBeat || ctx.outletId) {
       if (!navigator.geolocation) {
         setStatus({ type: 'error', msg: 'GPS required. Turn on location.' });
@@ -134,44 +223,54 @@ export default function LogShop() {
       }
       navigator.geolocation.getCurrentPosition(
         (pos) =>
-          submit({
+          send({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
           }),
         () => {
-          setStatus({ type: 'error', msg: 'Turn on GPS to complete this outlet visit.' });
-          setLoading(false);
+          // Allow offline save even if GPS fails, with warning stored in notes
+          if (!isOnline()) {
+            send(ctx.agentLocation || undefined);
+          } else {
+            setStatus({ type: 'error', msg: 'Turn on GPS to complete this outlet visit.' });
+            setLoading(false);
+          }
         },
         { enableHighAccuracy: true, timeout: 15000 }
       );
     } else {
-      submit(ctx.agentLocation || undefined);
+      send(ctx.agentLocation || undefined);
     }
   };
 
-  const list = products[activeCat] || [];
-
   return (
     <div>
-      <h2 className="text-lg font-bold text-slate-800 mb-1">
-        {fromBeat ? 'Service Outlet' : 'Log Shop'}
-      </h2>
-      <p className="text-sm text-slate-500 mb-4">
-        {fromBeat
-          ? `${form.shopName} · Location verified`
-          : 'Record a visit (prefer starting from Today\'s Beat)'}
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-lg font-bold text-slate-800">
+          {fromBeat ? 'Service Outlet' : 'Log Shop'}
+        </h2>
+        {!isOnline() && (
+          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+            Offline
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-slate-500 mb-3">
+        {fromBeat ? `${form.shopName} · GPS verified` : 'Complete the visit details'}
+        {offlinePending > 0 && (
+          <span className="text-amber-600"> · {offlinePending} pending sync</span>
+        )}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Shop Name *</label>
           <input
-            name="shopName"
             value={form.shopName}
             onChange={(e) => setForm({ ...form, shopName: e.target.value })}
             disabled={fromBeat}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy disabled:bg-slate-50"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50"
             required
           />
         </div>
@@ -195,11 +294,12 @@ export default function LogShop() {
           </div>
         </div>
 
+        {/* Outcome */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Outcome</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Outcome *</label>
           <select
             value={form.outcome}
-            onChange={(e) => setForm({ ...form, outcome: e.target.value })}
+            onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
             className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white"
           >
             {OUTCOMES.map((o) => (
@@ -210,73 +310,127 @@ export default function LogShop() {
           </select>
         </div>
 
-        {/* Products */}
+        {/* No Order reason */}
+        {form.outcome === 'No Order' && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Reason for No Order *
+            </label>
+            <select
+              value={form.noOrderReason}
+              onChange={(e) => setForm({ ...form, noOrderReason: e.target.value })}
+              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white"
+              required
+            >
+              <option value="">Select reason...</option>
+              {NO_ORDER_REASONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Order: product picker */}
         {form.outcome === 'Order Placed' && (
-          <div className="border border-slate-200 rounded-xl p-3 bg-white">
-            <div className="text-sm font-medium text-slate-700 mb-2">Add products (PC / Pack / Carton)</div>
-            <div className="flex gap-1 overflow-x-auto pb-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setActiveCat(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
-                    activeCat === cat ? 'bg-navy text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <div className="text-sm font-medium text-slate-700">Add products</div>
+
+            {/* 1. Category */}
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Category</label>
+              <select
+                value={pickCategory}
+                onChange={(e) => {
+                  setPickCategory(e.target.value);
+                  setPickProductId('');
+                  setPickUnit('pc');
+                }}
+                className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+              >
+                <option value="">Select category...</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 2. Product */}
+            {pickCategory && (
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Product</label>
+                <select
+                  value={pickProductId}
+                  onChange={(e) => setPickProductId(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
                 >
-                  {cat}
-                </button>
-              ))}
-            </div>
+                  <option value="">Select product...</option>
+                  {productList.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} ({p.size})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {list.map((sku) => (
-                <div key={sku._id} className="border border-slate-100 rounded-lg p-2">
-                  <div className="text-xs font-medium text-slate-800">{sku.name}</div>
-                  <div className="text-[10px] text-slate-400 mb-1">{sku.size}</div>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => addToCart(sku, 'pc')}
-                      className="flex-1 text-[10px] bg-slate-100 rounded px-1 py-1"
-                    >
-                      + PC (GHS {sku.pricePc})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(sku, 'pack')}
-                      className="flex-1 text-[10px] bg-slate-100 rounded px-1 py-1"
-                    >
-                      + Pack (GHS {sku.pricePack})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(sku, 'carton')}
-                      className="flex-1 text-[10px] bg-slate-100 rounded px-1 py-1"
-                    >
-                      + Carton (GHS {sku.priceCarton})
-                    </button>
-                  </div>
+            {/* 3. Unit + Qty */}
+            {selectedProduct && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Unit</label>
+                  <select
+                    value={pickUnit}
+                    onChange={(e) => setPickUnit(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                  >
+                    <option value="pc">PC (GHS {selectedProduct.pricePc})</option>
+                    <option value="pack">Pack (GHS {selectedProduct.pricePack})</option>
+                    <option value="carton">Carton (GHS {selectedProduct.priceCarton})</option>
+                  </select>
                 </div>
-              ))}
-            </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={pickQty}
+                    onChange={(e) => setPickQty(e.target.value)}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
+            {selectedProduct && (
+              <button
+                type="button"
+                onClick={addProductLine}
+                className="w-full bg-slate-100 text-slate-800 text-sm font-medium py-2.5 rounded-xl border border-slate-200"
+              >
+                + Add to order
+              </button>
+            )}
+
+            {/* Cart */}
             {cart.length > 0 && (
-              <div className="mt-3 border-t border-slate-100 pt-2 space-y-1">
-                <div className="text-xs font-medium text-slate-600">Order</div>
-                {cart.map((i) => (
-                  <div key={`${i.skuId}-${i.unit}`} className="flex items-center gap-2 text-xs">
+              <div className="border-t border-slate-100 pt-2 space-y-1">
+                {cart.map((i, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs">
                     <span className="flex-1 truncate">
-                      {i.productName} ({i.unit})
+                      {i.productName} · {i.quantity} {i.unit}
                     </span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={i.quantity}
-                      onChange={(e) => updateQty(i.skuId, i.unit, e.target.value)}
-                      className="w-14 border rounded px-1 py-0.5"
-                    />
-                    <span className="w-16 text-right">GHS {i.lineTotal.toFixed(2)}</span>
+                    <span className="font-medium">GHS {i.lineTotal.toFixed(2)}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeLine(idx)}
+                      className="text-red-500 px-1"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ))}
                 <div className="text-sm font-bold text-navy text-right pt-1">
@@ -284,6 +438,53 @@ export default function LogShop() {
                 </div>
               </div>
             )}
+
+            {/* Payment */}
+            <div className="border-t border-slate-100 pt-3 space-y-2">
+              <label className="block text-xs text-slate-500">Payment</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, paymentType: 'cash' })}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${
+                    form.paymentType === 'cash'
+                      ? 'bg-navy text-white border-navy'
+                      : 'bg-white text-slate-600 border-slate-200'
+                  }`}
+                >
+                  Cash
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, paymentType: 'credit' })}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${
+                    form.paymentType === 'credit'
+                      ? 'bg-navy text-white border-navy'
+                      : 'bg-white text-slate-600 border-slate-200'
+                  }`}
+                >
+                  Credit
+                </button>
+              </div>
+              {form.paymentType === 'credit' && (
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Credit duration</label>
+                  <select
+                    value={form.creditDurationWeeks}
+                    onChange={(e) =>
+                      setForm({ ...form, creditDurationWeeks: e.target.value })
+                    }
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                  >
+                    <option value="1">1 week</option>
+                    <option value="2">2 weeks</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Will appear under Owings with due-date countdown
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -314,7 +515,7 @@ export default function LogShop() {
           disabled={loading}
           className="w-full bg-navy text-white font-semibold py-3.5 rounded-xl disabled:opacity-60"
         >
-          {loading ? 'Saving...' : 'Complete Visit'}
+          {loading ? 'Saving...' : isOnline() ? 'Complete Visit' : 'Save Offline'}
         </button>
       </form>
     </div>

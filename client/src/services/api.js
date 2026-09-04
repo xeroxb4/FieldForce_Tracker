@@ -1,10 +1,10 @@
 import axios from 'axios';
+import { syncQueue, isOnline } from './offline';
 
 const api = axios.create({
   baseURL: '/api',
 });
 
-// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -13,7 +13,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -26,4 +25,16 @@ api.interceptors.response.use(
   }
 );
 
+// Try sync whenever we regain connectivity
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    syncQueue(api).then((r) => {
+      if (r.synced > 0) {
+        console.log(`Synced ${r.synced} offline item(s)`);
+      }
+    });
+  });
+}
+
+export { isOnline };
 export default api;

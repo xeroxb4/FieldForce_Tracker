@@ -2,6 +2,7 @@ import Visit from '../models/Visit.js';
 import WrapUp from '../models/WrapUp.js';
 import Outlet from '../models/Outlet.js';
 import NiveaSKU from '../models/NiveaSKU.js';
+import Credit from '../models/Credit.js';
 
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -16,8 +17,17 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
 
 const MAX_DISTANCE_M = 200;
 
-// @desc    Start visit at outlet — GPS must be near outlet
-// @route   POST /api/omr/visits/start
+const NO_ORDER_REASONS = [
+  'Out of cash',
+  'Owner not available',
+  'I have a supplier',
+  'High price',
+  'Shop closed',
+  'Not interested',
+  'Stock still available',
+  'Other',
+];
+
 export const startVisit = async (req, res) => {
   try {
     const { outletId, lat, lng, accuracy } = req.body;
@@ -78,8 +88,6 @@ export const startVisit = async (req, res) => {
   }
 };
 
-// @desc    Get products for OMR selling
-// @route   GET /api/omr/products
 export const getProducts = async (req, res) => {
   try {
     const skus = await NiveaSKU.find({ isActive: true }).sort({ category: 1, name: 1 });
@@ -94,8 +102,16 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// @desc    Log a new shop visit
-// @route   POST /api/omr/visits
+export const getNoOrderReasons = async (_req, res) => {
+  res.json(NO_ORDER_REASONS);
+};
+
+function addWeeks(dateStr, weeks) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toISOString().slice(0, 10);
+}
+
 export const createVisit = async (req, res) => {
   try {
     const {
@@ -104,21 +120,35 @@ export const createVisit = async (req, res) => {
       contactName,
       contactPhone,
       outcome,
+      noOrderReason,
       products,
       lineItems,
       amount,
+      paymentType,
+      creditDurationWeeks,
       notes,
       date,
       location,
       outletLocation,
       distanceMeters: distM,
+      syncedFromOffline,
     } = req.body;
 
     if (!shopName) {
       return res.status(400).json({ message: 'Shop name is required' });
     }
 
-    // Outlet-linked visits require GPS near the outlet
+    if (outcome === 'No Order' && !noOrderReason) {
+      return res.status(400).json({ message: 'Please select a reason for No Order' });
+    }
+
+    if (outcome === 'Order Placed' && paymentType === 'credit') {
+      const weeks = Number(creditDurationWeeks);
+      if (weeks !== 1 && weeks !== 2) {
+        return res.status(400).json({ message: 'Credit duration must be 1 or 2 weeks' });
+      }
+    }
+
     if (outletId) {
       if (!location?.lat || !location?.lng) {
         return res.status(400).json({
@@ -162,9 +192,30 @@ export const createVisit = async (req, res) => {
         lineTotal: Number(li.lineTotal) || 0,
       }));
       totalAmount = items.reduce((s, i) => s + i.lineTotal, 0);
-      productsStr = items
-        .map((i) => `${i.productName} (${i.quantity} ${i.unit})`)
-        .join(', ');
+      productsStr = items.map((i) => `${i.productName} (${i.quantity} ${i.unit})`).join(', ');
+    }
+
+    let creditId = undefined;
+
+    // Create credit/owing if payment is credit
+    if (outcome === 'Order Placed' && paymentType === 'credit' && totalAmount > 0) {
+      const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
+      const dueDate = addWeeks(visitDate, weeks);
+      const credit = await Credit.create({
+        userId: req.user._id,
+        repName: req.user.fullName,
+        outletId: outletId || undefined,
+        customerName: contactName || shopName,
+        shopName,
+        amount: totalAmount,
+        amountPaid: 0,
+        balance: totalAmount,
+        dueDate,
+        saleDate: visitDate,
+        status: 'pending',
+        notes: notes || `Credit sale – ${weeks} week(s)`,
+      });
+      creditId = credit._id;
     }
 
     const visit = await Visit.create({
@@ -178,13 +229,21 @@ export const createVisit = async (req, res) => {
       territory: req.user.territory,
       distributor: req.user.distributor,
       outcome: outcome || 'No Order',
+      noOrderReason: outcome === 'No Order' ? noOrderReason || '' : '',
       products: productsStr,
       lineItems: items,
       amount: totalAmount,
+      paymentType: outcome === 'Order Placed' ? paymentType || 'cash' : '',
+      creditDurationWeeks:
+        outcome === 'Order Placed' && paymentType === 'credit'
+          ? Number(creditDurationWeeks)
+          : null,
+      creditId,
       notes: notes || '',
       location: location || undefined,
       outletLocation: outletLocation || undefined,
       distanceMeters: distM != null ? Number(distM) : undefined,
+      syncedFromOffline: !!syncedFromOffline,
     });
 
     res.status(201).json(visit);

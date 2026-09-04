@@ -26,40 +26,14 @@ const visitSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    repName: {
-      type: String,
-      required: true,
-    },
-    date: {
-      type: String,
-      required: true,
-      index: true,
-    },
-    shopName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    outletId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Outlet',
-    },
-    contactName: {
-      type: String,
-      default: '',
-    },
-    contactPhone: {
-      type: String,
-      default: '',
-    },
-    territory: {
-      type: String,
-      default: '',
-    },
-    distributor: {
-      type: String,
-      default: '',
-    },
+    repName: { type: String, required: true },
+    date: { type: String, required: true, index: true },
+    shopName: { type: String, required: true, trim: true },
+    outletId: { type: mongoose.Schema.Types.ObjectId, ref: 'Outlet' },
+    contactName: { type: String, default: '' },
+    contactPhone: { type: String, default: '' },
+    territory: { type: String, default: '' },
+    distributor: { type: String, default: '' },
     outcome: {
       type: String,
       enum: [
@@ -72,20 +46,29 @@ const visitSchema = new mongoose.Schema(
       ],
       default: 'No Order',
     },
-    products: {
+    // Reason when outcome is No Order
+    noOrderReason: {
       type: String,
       default: '',
     },
+    products: { type: String, default: '' },
     lineItems: [lineItemSchema],
-    amount: {
-      type: Number,
-      default: 0,
-    },
-    notes: {
+    amount: { type: Number, default: 0 },
+    // Payment
+    paymentType: {
       type: String,
+      enum: ['cash', 'credit', ''],
       default: '',
     },
-    // GPS at time of visit (must be near outlet)
+    creditDurationWeeks: {
+      type: Number, // 1 or 2
+      default: null,
+    },
+    creditId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Credit',
+    },
+    notes: { type: String, default: '' },
     location: {
       lat: Number,
       lng: Number,
@@ -95,9 +78,8 @@ const visitSchema = new mongoose.Schema(
       lat: Number,
       lng: Number,
     },
-    distanceMeters: {
-      type: Number, // distance from outlet when visit started
-    },
+    distanceMeters: { type: Number },
+    syncedFromOffline: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
