@@ -14,6 +14,9 @@ import MerchVisit from './pages/merchandiser/MerchVisit';
 import MerchHistory from './pages/merchandiser/MerchHistory';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminReports from './pages/admin/AdminReports';
+import AdminOutlets from './pages/admin/AdminOutlets';
+import AdminTargets from './pages/admin/AdminTargets';
+import AdminUsers from './pages/admin/AdminUsers';
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -30,7 +33,6 @@ export default function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
 
-      {/* OMR Routes */}
       <Route
         path="/omr"
         element={
@@ -49,7 +51,6 @@ export default function App() {
         <Route path="reports" element={<OMRReports />} />
       </Route>
 
-      {/* Merchandiser Routes */}
       <Route
         path="/merch"
         element={
@@ -63,7 +64,6 @@ export default function App() {
         <Route path="history" element={<MerchHistory />} />
       </Route>
 
-      {/* Admin Routes */}
       <Route
         path="/admin"
         element={
@@ -74,6 +74,9 @@ export default function App() {
       >
         <Route index element={<Navigate to="reports" replace />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="outlets" element={<AdminOutlets />} />
+        <Route path="targets" element={<AdminTargets />} />
+        <Route path="users" element={<AdminUsers />} />
       </Route>
 
       <Route
