@@ -63,12 +63,14 @@ export const getTodayBeat = async (req, res) => {
 
     const beatOutlets = outlets.map((o) => ({
       _id: o._id,
-      name: o.name,
+      name: o.displayName || o.name,
       contactName: o.contactName,
       contactPhone: o.contactPhone,
       address: o.address,
       location: o.location,
-      visited: visitedNames.has(o.name.toLowerCase()),
+      avcEnrolled: o.avcEnrolled,
+      avcTier: o.avcTier,
+      visited: visitedNames.has(o.name.toLowerCase()) || visitedNames.has((o.displayName || '').toLowerCase()),
     }));
 
     res.json({
@@ -114,11 +116,13 @@ export const getBeat = async (req, res) => {
       dayNumber: dayNum,
       outlets: outlets.map((o) => ({
         _id: o._id,
-        name: o.name,
+        name: o.displayName || o.name,
         contactName: o.contactName,
         contactPhone: o.contactPhone,
         address: o.address,
         location: o.location,
+        avcEnrolled: o.avcEnrolled,
+        avcTier: o.avcTier,
         visited: visitedNames.has(o.name.toLowerCase()),
       })),
     });

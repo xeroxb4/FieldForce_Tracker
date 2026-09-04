@@ -5,6 +5,7 @@ import {
   createSKU,
   createMerchVisit,
   getMerchVisits,
+  getSosCategories,
 } from '../controllers/merchandiserController.js';
 
 const router = express.Router();
@@ -12,11 +13,9 @@ const router = express.Router();
 router.use(protect);
 router.use(restrictTo('merchandiser', 'admin'));
 
-// SKUs
 router.get('/skus', getSKUs);
 router.post('/skus', createSKU);
-
-// Visits
+router.get('/sos-categories', getSosCategories);
 router.post('/visits', createMerchVisit);
 router.get('/visits', getMerchVisits);
 

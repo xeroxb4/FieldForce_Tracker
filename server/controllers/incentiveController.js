@@ -1,29 +1,28 @@
 import Visit from '../models/Visit.js';
 import Outlet from '../models/Outlet.js';
 
-// Top 10 priority products (match by name contains, case-insensitive)
+// Top 10 priority products (updated list)
 export const TOP10_PRODUCTS = [
   'Nivea Nourishing Cocoa',
   'Nivea Perfect and Radiant',
   'Nivea Rich Nourishing',
+  'Nivea Radiant and Beauty (Even Glow)',
+  'Nivea Firming Q10',
   'Nivea Dry Impact Roll',
   'Nivea Dry Comfort Roll',
-  'Nivea Fresh Active Roll',
-  'Nivea Fresh Energy Roll',
-  'Nivea Invisible Black and White Men Roll',
-  'Nivea Invisible Black and White Women Roll',
-  'Nivea Fresh Pearl and Beauty Roll',
+  'Nivea Black and White Men Roll',
+  'Nivea Black and White Women Roll',
+  'Nivea Pearl and Beauty Roll',
 ];
 
-// Also accept shorter aliases from seed names
 const TOP10_ALIASES = [
   ['nourishing cocoa'],
   ['perfect and radiant'],
   ['rich nourishing'],
+  ['even glow', 'radiant and beauty (even'],
+  ['firming q10', 'q10'],
   ['dry impact'],
   ['dry comfort'],
-  ['fresh active'],
-  ['fresh energy'],
   ['black and white men'],
   ['black and white women'],
   ['pearl and beauty'],
@@ -43,11 +42,6 @@ function getTodayDayNumber() {
   return d === 0 ? 7 : d;
 }
 
-/**
- * Incentive KPIs for logged-in OMR
- * Query: ?date=YYYY-MM-DD (optional, default today)
- *        also returns MTD block for current month
- */
 export const getIncentiveBreakdown = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().slice(0, 10);
@@ -58,7 +52,6 @@ export const getIncentiveBreakdown = async (req, res) => {
       return n === 0 ? 7 : n;
     })();
 
-    // Beat outlets for that weekday
     const beatOutlets = await Outlet.find({
       assignedTo: req.user._id,
       status: 'approved',
@@ -68,19 +61,16 @@ export const getIncentiveBreakdown = async (req, res) => {
     const beatTotal = beatOutlets.length;
     const beatNames = new Set(beatOutlets.map((o) => o.name.toLowerCase()));
 
-    // Visits for the day
     const dayVisits = await Visit.find({
       userId: req.user._id,
       date,
     });
 
-    // Coverage: unique beat outlets visited / beat total
     const visitedBeatNames = new Set(
       dayVisits
         .filter((v) => beatNames.has(v.shopName.toLowerCase()))
         .map((v) => v.shopName.toLowerCase())
     );
-    // Also count by outletId
     const visitedOutletIds = new Set(
       dayVisits.filter((v) => v.outletId).map((v) => v.outletId.toString())
     );
@@ -95,7 +85,6 @@ export const getIncentiveBreakdown = async (req, res) => {
     }
     const coveragePct = beatTotal > 0 ? Math.round((covered / beatTotal) * 1000) / 10 : 0;
 
-    // Productive call = Order Placed with at least 1 line item OR amount > 0
     const isProductive = (v) =>
       v.outcome === 'Order Placed' &&
       ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
@@ -104,22 +93,16 @@ export const getIncentiveBreakdown = async (req, res) => {
     const productiveCalls = productiveVisits.length;
     const totalCalls = dayVisits.length;
 
-    // Hit rate = productive / visits (calls made)
     const hitRatePct =
       totalCalls > 0 ? Math.round((productiveCalls / totalCalls) * 1000) / 10 : 0;
-
-    // Productivity % = productive / beat outlets (or visits) — use productive/visits as productivity
     const productivityPct =
       totalCalls > 0 ? Math.round((productiveCalls / totalCalls) * 1000) / 10 : 0;
 
-    // LPPC = total product lines sold / productive calls
-    // A "line" = unique SKU line on an order (each lineItem counts)
     let totalLines = 0;
     for (const v of productiveVisits) {
       if (Array.isArray(v.lineItems) && v.lineItems.length > 0) {
         totalLines += v.lineItems.length;
       } else if (v.products) {
-        // fallback: count comma-separated
         totalLines += v.products.split(',').filter(Boolean).length || 1;
       } else {
         totalLines += 1;
@@ -128,7 +111,6 @@ export const getIncentiveBreakdown = async (req, res) => {
     const lppc =
       productiveCalls > 0 ? Math.round((totalLines / productiveCalls) * 100) / 100 : 0;
 
-    // Top 10 penetration — which of top 10 appeared in at least one sale today
     const hitTop10 = new Array(10).fill(false);
     for (const v of productiveVisits) {
       const items = v.lineItems || [];
@@ -145,7 +127,6 @@ export const getIncentiveBreakdown = async (req, res) => {
     const top10HitCount = hitTop10.filter(Boolean).length;
     const top10Pct = Math.round((top10HitCount / 10) * 1000) / 10;
 
-    // ——— MTD (month to date) ———
     const mtdStart = `${month}-01`;
     const mtdVisits = await Visit.find({
       userId: req.user._id,

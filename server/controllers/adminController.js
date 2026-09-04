@@ -61,8 +61,16 @@ export const updateUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { fullName, territory, distributor, region, isActive, password } = req.body;
+    const { fullName, username, territory, distributor, region, isActive, password } = req.body;
     if (fullName) user.fullName = fullName;
+    if (username) {
+      const next = username.toLowerCase().trim();
+      if (next !== user.username) {
+        const exists = await User.findOne({ username: next });
+        if (exists) return res.status(400).json({ message: 'Username already taken' });
+        user.username = next;
+      }
+    }
     if (territory !== undefined) user.territory = territory;
     if (distributor !== undefined) user.distributor = distributor;
     if (region !== undefined) user.region = region;
@@ -147,6 +155,8 @@ export const adminCreateOutlet = async (req, res) => {
       distributor,
       notes,
       autoApprove,
+      avcEnrolled,
+      avcTier,
     } = req.body;
 
     if (!name?.trim()) {
@@ -160,6 +170,9 @@ export const adminCreateOutlet = async (req, res) => {
     }
 
     const approve = autoApprove !== false && assignedTo && assignedDays?.length;
+
+    const tier = avcEnrolled && ['Gold', 'Silver', 'Bronze'].includes(avcTier) ? avcTier : '';
+    const avcTargets = { Gold: 12500, Silver: 10000, Bronze: 5000 };
 
     const outlet = await Outlet.create({
       userId: assignedTo || req.user._id,
@@ -177,6 +190,9 @@ export const adminCreateOutlet = async (req, res) => {
       approvedBy: approve ? req.user.fullName : '',
       approvedAt: approve ? new Date() : undefined,
       notes: notes || '',
+      avcEnrolled: !!avcEnrolled && !!tier,
+      avcTier: tier,
+      avcTarget: tier ? avcTargets[tier] : 0,
     });
 
     res.status(201).json({

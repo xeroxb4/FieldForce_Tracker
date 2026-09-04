@@ -1,13 +1,24 @@
-import Outlet from '../models/Outlet.js';
+import Outlet, { AVC_TARGETS } from '../models/Outlet.js';
 
-// Day helpers: 1=Mon ... 6=Sat, 0=Sun
 const getTodayDayNumber = () => {
-  const d = new Date().getDay(); // 0=Sun ... 6=Sat
-  return d === 0 ? 7 : d; // convert to 1=Mon ... 7=Sun
+  const d = new Date().getDay();
+  return d === 0 ? 7 : d;
 };
 
-// @desc    OMR creates outlet (goes to pending)
-// @route   POST /api/outlets
+function applyAvc(body) {
+  const avcEnrolled = !!body.avcEnrolled;
+  let avcTier = body.avcTier || '';
+  if (avcEnrolled && !['Gold', 'Silver', 'Bronze'].includes(avcTier)) {
+    return { error: 'AVC tier must be Gold, Silver, or Bronze' };
+  }
+  if (!avcEnrolled) avcTier = '';
+  return {
+    avcEnrolled,
+    avcTier,
+    avcTarget: avcEnrolled ? AVC_TARGETS[avcTier] || 0 : 0,
+  };
+}
+
 export const createOutlet = async (req, res) => {
   try {
     const { name, contactName, contactPhone, address, lat, lng, notes } = req.body;
@@ -15,7 +26,6 @@ export const createOutlet = async (req, res) => {
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Outlet name is required' });
     }
-
     if (lat === undefined || lng === undefined || lat === null || lng === null) {
       return res.status(400).json({
         message: 'GPS location is required when creating an outlet. Please turn on location.',
@@ -23,22 +33,25 @@ export const createOutlet = async (req, res) => {
       });
     }
 
+    const avc = applyAvc(req.body);
+    if (avc.error) return res.status(400).json({ message: avc.error });
+
     const outlet = await Outlet.create({
       userId: req.user._id,
       createdBy: req.user.fullName,
-      assignedTo: req.user._id, // creator is the intended OMR
+      assignedTo: req.user._id,
       name: name.trim(),
       contactName: contactName || '',
       contactPhone: contactPhone || '',
       address: address || '',
       territory: req.user.territory || '',
       distributor: req.user.distributor || '',
-      location: {
-        lat: Number(lat),
-        lng: Number(lng),
-      },
+      location: { lat: Number(lat), lng: Number(lng) },
       status: 'pending',
       notes: notes || '',
+      avcEnrolled: avc.avcEnrolled,
+      avcTier: avc.avcTier,
+      avcTarget: avc.avcTarget,
     });
 
     res.status(201).json({
@@ -51,8 +64,6 @@ export const createOutlet = async (req, res) => {
   }
 };
 
-// @desc    Get my outlets (OMR sees own; filter by status optional)
-// @route   GET /api/outlets
 export const getOutlets = async (req, res) => {
   try {
     const { status, today } = req.query;
@@ -60,16 +71,12 @@ export const getOutlets = async (req, res) => {
       $or: [{ userId: req.user._id }, { assignedTo: req.user._id }],
       isActive: true,
     };
-
     if (status) filter.status = status;
-
-    // If today=true, only approved outlets assigned to today's weekday
     if (today === 'true') {
       const dayNum = getTodayDayNumber();
       filter.status = 'approved';
       filter.assignedDays = dayNum;
     }
-
     const outlets = await Outlet.find(filter).sort({ name: 1 });
     res.json(outlets);
   } catch (error) {
@@ -77,8 +84,6 @@ export const getOutlets = async (req, res) => {
   }
 };
 
-// @desc    Admin: list pending outlets
-// @route   GET /api/outlets/pending
 export const getPendingOutlets = async (req, res) => {
   try {
     const outlets = await Outlet.find({ status: 'pending', isActive: true }).sort({
@@ -90,23 +95,16 @@ export const getPendingOutlets = async (req, res) => {
   }
 };
 
-// @desc    Admin: approve outlet + assign days of week
-// @route   PATCH /api/outlets/:id/approve
 export const approveOutlet = async (req, res) => {
   try {
     const { assignedDays, assignedTo } = req.body;
-    // assignedDays: array of numbers 1-5 (Mon-Fri) or 1-6 for merch
-
     if (!assignedDays || !Array.isArray(assignedDays) || assignedDays.length === 0) {
       return res.status(400).json({
         message: 'Assign at least one day of the week (1=Mon ... 5=Fri, 6=Sat)',
       });
     }
-
     const outlet = await Outlet.findById(req.params.id);
-    if (!outlet) {
-      return res.status(404).json({ message: 'Outlet not found' });
-    }
+    if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
 
     outlet.status = 'approved';
     outlet.assignedDays = assignedDays.map(Number);
@@ -122,41 +120,29 @@ export const approveOutlet = async (req, res) => {
   }
 };
 
-// @desc    Admin: reject outlet
-// @route   PATCH /api/outlets/:id/reject
 export const rejectOutlet = async (req, res) => {
   try {
     const outlet = await Outlet.findById(req.params.id);
-    if (!outlet) {
-      return res.status(404).json({ message: 'Outlet not found' });
-    }
-
+    if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
     outlet.status = 'rejected';
     outlet.approvedBy = req.user.fullName;
     outlet.approvedAt = new Date();
     await outlet.save();
-
     res.json({ message: 'Outlet rejected', outlet });
   } catch (error) {
     res.status(500).json({ message: 'Failed to reject outlet' });
   }
 };
 
-// @desc    Update outlet (owner)
-// @route   PUT /api/outlets/:id
 export const updateOutlet = async (req, res) => {
   try {
     const outlet = await Outlet.findOne({
       _id: req.params.id,
       userId: req.user._id,
     });
-
-    if (!outlet) {
-      return res.status(404).json({ message: 'Outlet not found' });
-    }
+    if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
 
     const { name, contactName, contactPhone, address, lat, lng, notes, isActive } = req.body;
-
     if (name) outlet.name = name.trim();
     if (contactName !== undefined) outlet.contactName = contactName;
     if (contactPhone !== undefined) outlet.contactPhone = contactPhone;
@@ -166,8 +152,13 @@ export const updateOutlet = async (req, res) => {
     if (lat !== undefined && lng !== undefined) {
       outlet.location = { lat: Number(lat), lng: Number(lng) };
     }
-
-    // If already approved and details change significantly, could re-pending — keep simple for now
+    if (req.body.avcEnrolled !== undefined) {
+      const avc = applyAvc(req.body);
+      if (avc.error) return res.status(400).json({ message: avc.error });
+      outlet.avcEnrolled = avc.avcEnrolled;
+      outlet.avcTier = avc.avcTier;
+      outlet.avcTarget = avc.avcTarget;
+    }
     await outlet.save();
     res.json(outlet);
   } catch (error) {

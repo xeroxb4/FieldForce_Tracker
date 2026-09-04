@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 
+const AVC_TARGETS = {
+  Gold: 12500,
+  Silver: 10000,
+  Bronze: 5000,
+};
+
 const outletSchema = new mongoose.Schema(
   {
     userId: {
@@ -16,6 +22,11 @@ const outletSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    // Display name includes AVC tier when enrolled
+    displayName: {
+      type: String,
+      default: '',
     },
     contactName: {
       type: String,
@@ -41,22 +52,33 @@ const outletSchema = new mongoose.Schema(
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },
     },
-    // pending → approved / rejected
+    // AVC Program
+    avcEnrolled: {
+      type: Boolean,
+      default: false,
+    },
+    avcTier: {
+      type: String,
+      enum: ['', 'Gold', 'Silver', 'Bronze'],
+      default: '',
+    },
+    avcTarget: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
       index: true,
     },
-    // Day of week assigned by admin: 1=Mon ... 5=Fri (6=Sat for merch)
-    // Can be multiple days
     assignedDays: {
-      type: [Number], // e.g. [1, 3, 5] = Mon, Wed, Fri
+      type: [Number],
       default: [],
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // which OMR this outlet is assigned to
+      ref: 'User',
       index: true,
     },
     approvedBy: {
@@ -81,4 +103,18 @@ const outletSchema = new mongoose.Schema(
 outletSchema.index({ userId: 1, status: 1 });
 outletSchema.index({ assignedTo: 1, status: 1 });
 
+// Auto-build displayName
+outletSchema.pre('save', function (next) {
+  if (this.avcEnrolled && this.avcTier) {
+    this.displayName = `${this.name} - AVC (${this.avcTier})`;
+    this.avcTarget = AVC_TARGETS[this.avcTier] || 0;
+  } else {
+    this.displayName = this.name;
+    this.avcTier = '';
+    this.avcTarget = 0;
+  }
+  next();
+});
+
 export default mongoose.model('Outlet', outletSchema);
+export { AVC_TARGETS };
