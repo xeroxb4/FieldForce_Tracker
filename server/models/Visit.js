@@ -1,5 +1,23 @@
 import mongoose from 'mongoose';
 
+const lineItemSchema = new mongoose.Schema(
+  {
+    skuId: { type: mongoose.Schema.Types.ObjectId, ref: 'NiveaSKU' },
+    productName: String,
+    category: String,
+    size: String,
+    unit: {
+      type: String,
+      enum: ['pc', 'pack', 'carton'],
+      default: 'pc',
+    },
+    quantity: { type: Number, default: 0 },
+    unitPrice: { type: Number, default: 0 },
+    lineTotal: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const visitSchema = new mongoose.Schema(
   {
     userId: {
@@ -13,7 +31,7 @@ const visitSchema = new mongoose.Schema(
       required: true,
     },
     date: {
-      type: String, // YYYY-MM-DD format for easy querying
+      type: String,
       required: true,
       index: true,
     },
@@ -21,6 +39,10 @@ const visitSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    outletId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Outlet',
     },
     contactName: {
       type: String,
@@ -54,6 +76,7 @@ const visitSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    lineItems: [lineItemSchema],
     amount: {
       type: Number,
       default: 0,
@@ -62,15 +85,23 @@ const visitSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // GPS at time of visit (must be near outlet)
     location: {
       lat: Number,
       lng: Number,
+      accuracy: Number,
+    },
+    outletLocation: {
+      lat: Number,
+      lng: Number,
+    },
+    distanceMeters: {
+      type: Number, // distance from outlet when visit started
     },
   },
   { timestamps: true }
 );
 
-// Compound index for fast "today's visits by rep"
 visitSchema.index({ userId: 1, date: 1 });
 
 export default mongoose.model('Visit', visitSchema);

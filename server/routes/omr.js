@@ -1,6 +1,8 @@
 import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import {
+  startVisit,
+  getProducts,
   createVisit,
   getTodayVisits,
   getVisits,
@@ -13,12 +15,11 @@ const router = express.Router();
 router.use(protect);
 router.use(restrictTo('omr', 'admin'));
 
-// Visits
+router.post('/visits/start', startVisit);
+router.get('/products', getProducts);
 router.post('/visits', createVisit);
 router.get('/visits/today', getTodayVisits);
 router.get('/visits', getVisits);
-
-// Wrap-ups
 router.post('/wrapups', createWrapUp);
 router.get('/wrapups', getWrapUps);
 

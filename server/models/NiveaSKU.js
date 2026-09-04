@@ -23,6 +23,28 @@ const niveaSKUSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // Pricing in GHS
+    pricePc: {
+      type: Number,
+      default: 0,
+    },
+    pricePack: {
+      type: Number,
+      default: 0,
+    },
+    priceCarton: {
+      type: Number,
+      default: 0,
+    },
+    // Units per pack / carton
+    unitsPerPack: {
+      type: Number,
+      default: 6,
+    },
+    unitsPerCarton: {
+      type: Number,
+      default: 12,
+    },
     barcode: {
       type: String,
       default: '',
