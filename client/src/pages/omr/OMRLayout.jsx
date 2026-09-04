@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function OMRLayout() {
   const { user, logout } = useAuth();
+  const { dark } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -10,7 +12,6 @@ export default function OMRLayout() {
     navigate('/login');
   };
 
-  // Log Shop is only reached via Beat → Start Visit (GPS check)
   const navItems = [
     { to: '/omr/dashboard', label: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1' },
     { to: '/omr/beats', label: 'Beat', icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7' },
@@ -20,14 +21,32 @@ export default function OMRLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pb-20">
-      <header className="bg-navy text-white px-4 py-3 shadow sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold">FieldForce Tracker</h1>
-            <p className="text-xs text-slate-300">{user?.fullName} · OMR</p>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <header
+        className={`px-4 py-3 sticky top-0 z-10 backdrop-blur border-b ${
+          dark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-100'
+        }`}
+      >
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <span className="text-white font-bold text-xs">FF</span>
+            </div>
+            <div>
+              <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                FieldForce
+              </h1>
+              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {user?.fullName}
+              </p>
+            </div>
           </div>
-          <button onClick={handleLogout} className="text-xs bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20">
+          <button
+            onClick={handleLogout}
+            className={`text-[10px] px-2.5 py-1 rounded-lg ${
+              dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
             Logout
           </button>
         </div>
@@ -37,7 +56,11 @@ export default function OMRLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg">
+      <nav
+        className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur ${
+          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+        }`}
+      >
         <div className="flex max-w-lg mx-auto">
           {navItems.map((item) => (
             <NavLink
@@ -45,7 +68,11 @@ export default function OMRLayout() {
               to={item.to}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center py-2 text-[10px] ${
-                  isActive ? 'text-navy font-semibold' : 'text-slate-400'
+                  isActive
+                    ? 'text-indigo-500 font-semibold'
+                    : dark
+                    ? 'text-slate-500'
+                    : 'text-slate-400'
                 }`
               }
             >

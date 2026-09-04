@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const { dark, toggle } = useTheme();
   const [target, setTarget] = useState(null);
   const [summary, setSummary] = useState(null);
   const [attendance, setAttendance] = useState(null);
+  const [beat, setBeat] = useState(null);
   const [loading, setLoading] = useState(true);
   const [gpsError, setGpsError] = useState('');
   const [checkingIn, setCheckingIn] = useState(false);
@@ -13,14 +18,16 @@ export default function Dashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [tRes, sRes, aRes] = await Promise.all([
+      const [tRes, sRes, aRes, bRes] = await Promise.all([
         api.get('/targets/me'),
         api.get('/credits/summary'),
         api.get('/attendance/today'),
+        api.get('/beats/today').catch(() => ({ data: null })),
       ]);
       setTarget(tRes.data);
       setSummary(sRes.data);
       setAttendance(aRes.data);
+      setBeat(bRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -35,13 +42,11 @@ export default function Dashboard() {
   const handleCheckIn = () => {
     setGpsError('');
     setCheckingIn(true);
-
     if (!navigator.geolocation) {
-      setGpsError('GPS is not supported on this device. Turn on location or you will be marked absent.');
+      setGpsError('GPS not supported. Turn on location or you will be marked absent.');
       setCheckingIn(false);
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
@@ -57,9 +62,9 @@ export default function Dashboard() {
           setCheckingIn(false);
         }
       },
-      (err) => {
+      () => {
         setGpsError(
-          'Location is switched off or denied. Please turn on GPS to record attendance, or you will be marked as absent from work.'
+          'Location is off. Turn on GPS to record attendance, or you will be marked absent.'
         );
         setCheckingIn(false);
       },
@@ -67,124 +72,233 @@ export default function Dashboard() {
     );
   };
 
+  const pct = target?.percentage || 0;
+  const total = beat?.total || 0;
+  const visited = beat?.visitedCount || 0;
+  const notVisited = Math.max(0, total - visited);
+  const coveragePct = total > 0 ? Math.round((visited / total) * 100) : 0;
+
+  const todayLabel = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading dashboard...</p>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  const pct = target?.percentage || 0;
-
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-bold text-slate-800">Dashboard</h2>
-
-      {/* Attendance */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
-        <div className="flex items-center justify-between">
+    <div className="space-y-4 pb-2">
+      {/* Header card */}
+      <div
+        className={`rounded-3xl p-5 text-white relative overflow-hidden ${
+          dark ? 'bg-gradient-to-br from-indigo-900 to-violet-900' : 'bg-gradient-to-br from-indigo-600 to-violet-600'
+        }`}
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="flex items-start justify-between relative">
           <div>
-            <div className="text-sm font-medium text-slate-700">Today's Attendance</div>
-            {attendance?.checkedIn ? (
-              <div className="text-xs text-green-600 mt-0.5">
-                ✓ Checked in
-                {attendance.attendance?.checkedInAt &&
-                  ` at ${new Date(attendance.attendance.checkedInAt).toLocaleTimeString()}`}
-              </div>
-            ) : (
-              <div className="text-xs text-amber-600 mt-0.5">Not checked in yet</div>
-            )}
+            <p className="text-indigo-100 text-xs font-medium">Hi,</p>
+            <h1 className="text-xl font-bold leading-tight">{user?.fullName}</h1>
+            <p className="text-indigo-200 text-xs mt-0.5">
+              OMR · {user?.territory || '—'} · {user?.distributor || '—'}
+            </p>
           </div>
-          {!attendance?.checkedIn && (
+          <button
+            type="button"
+            onClick={toggle}
+            className="text-xs bg-white/15 backdrop-blur px-2.5 py-1.5 rounded-full"
+          >
+            {dark ? '☀' : '☾'}
+          </button>
+        </div>
+        <div className="mt-4 flex items-center gap-2 text-xs text-indigo-100">
+          <span className="bg-white/15 px-2.5 py-1 rounded-lg">{todayLabel}</span>
+          {attendance?.checkedIn ? (
+            <span className="bg-emerald-500/30 text-emerald-100 px-2.5 py-1 rounded-lg">
+              ✓ Present
+            </span>
+          ) : (
             <button
+              type="button"
               onClick={handleCheckIn}
               disabled={checkingIn}
-              className="bg-navy text-white text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-60"
+              className="bg-amber-400 text-amber-950 font-semibold px-2.5 py-1 rounded-lg disabled:opacity-60"
             >
-              {checkingIn ? 'Getting GPS...' : 'Check In'}
+              {checkingIn ? 'GPS...' : 'Check in'}
             </button>
           )}
         </div>
         {gpsError && (
-          <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-            {gpsError}
-          </div>
+          <p className="mt-2 text-xs text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{gpsError}</p>
         )}
       </div>
 
-      {/* Monthly Target */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
+      {/* Target progress */}
+      <div className={`rounded-2xl p-4 border ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}>
         <div className="flex justify-between items-center mb-2">
-          <div className="text-sm font-medium text-slate-700">Monthly Target</div>
-          <div className="text-xs text-slate-400">{target?.month || '—'}</div>
+          <span className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+            Monthly Target
+          </span>
+          <span className="text-indigo-500 font-bold text-sm">{pct}%</span>
         </div>
         {target?.hasTarget ? (
           <>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-slate-500">
-                GHS {(target.achievedAmount || 0).toLocaleString()} /{' '}
-                {(target.targetAmount || 0).toLocaleString()}
-              </span>
-              <span className="font-bold text-navy">{pct}%</span>
-            </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-2.5 rounded-full overflow-hidden ${dark ? 'bg-slate-700' : 'bg-slate-100'}`}>
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
                 style={{ width: `${Math.min(100, pct)}%` }}
               />
             </div>
+            <div className={`flex justify-between mt-2 text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span>GHS {(target.achievedAmount || 0).toLocaleString()}</span>
+              <span>of {(target.targetAmount || 0).toLocaleString()}</span>
+            </div>
           </>
         ) : (
-          <p className="text-xs text-slate-400">No target set for this month yet</p>
+          <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+            No target set for this month
+          </p>
+        )}
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { to: '/omr/beats', label: 'Beat', icon: '🗺' },
+          { to: '/omr/outlets', label: 'Outlets', icon: '🏪' },
+          { to: '/omr/owings', label: 'Owings', icon: '💳' },
+          { to: '/omr/wrap-up', label: 'Wrap-Up', icon: '📋' },
+        ].map((a) => (
+          <Link
+            key={a.to}
+            to={a.to}
+            className={`flex flex-col items-center py-3 rounded-2xl border text-center ${
+              dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm'
+            }`}
+          >
+            <span className="text-lg mb-1">{a.icon}</span>
+            <span className={`text-[10px] font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              {a.label}
+            </span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Visit summary - circular style like reference */}
+      <div className={`rounded-2xl p-4 border ${dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+            Visit Summary
+          </h3>
+          <span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-400'}`}>
+            {beat?.dayName || todayLabel}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Circle */}
+          <div className="relative w-24 h-24 flex-shrink-0">
+            <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+              <circle
+                cx="18" cy="18" r="15.5"
+                fill="none"
+                stroke={dark ? '#334155' : '#e2e8f0'}
+                strokeWidth="3"
+              />
+              <circle
+                cx="18" cy="18" r="15.5"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="3"
+                strokeDasharray={`${coveragePct * 0.97} 100`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {total}
+              </span>
+              <span className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-400'}`}>
+                Outlets
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-emerald-50'}`}>
+              <div className="text-lg font-bold text-emerald-500">{visited}</div>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-emerald-700'}`}>
+                Visited
+              </div>
+            </div>
+            <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-red-50'}`}>
+              <div className="text-lg font-bold text-red-400">{notVisited}</div>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-red-600'}`}>
+                Not visited
+              </div>
+            </div>
+            <div className={`col-span-2 rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-indigo-50'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-indigo-600'}`}>
+                Beat coverage
+              </div>
+              <div className="text-sm font-bold text-indigo-500">{coveragePct}%</div>
+            </div>
+          </div>
+        </div>
+
+        {beat?.outlets?.length > 0 && (
+          <p className={`text-xs mt-3 truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Beat: {beat.outlets.map((o) => o.name).slice(0, 3).join(', ')}
+            {beat.outlets.length > 3 ? '…' : ''}
+          </p>
         )}
       </div>
 
       {/* Sales / Received / Owings */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
-          <div className="text-xs text-slate-500">Total Sales</div>
-          <div className="text-sm font-bold text-slate-800 mt-0.5">
-            {summary ? `GHS ${(summary.totalSales || 0).toLocaleString()}` : '—'}
+        {[
+          {
+            label: 'Sales',
+            value: summary ? `₵${(summary.totalSales || 0).toLocaleString()}` : '—',
+            color: dark ? 'text-white' : 'text-slate-800',
+          },
+          {
+            label: 'Received',
+            value: summary ? `₵${(summary.received || 0).toLocaleString()}` : '—',
+            color: 'text-emerald-500',
+          },
+          {
+            label: 'Owings',
+            value: summary ? `₵${(summary.owings || 0).toLocaleString()}` : '—',
+            color: 'text-amber-500',
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className={`rounded-2xl p-3 text-center border ${
+              dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm'
+            }`}
+          >
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {s.label}
+            </div>
+            <div className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</div>
           </div>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
-          <div className="text-xs text-slate-500">Received</div>
-          <div className="text-sm font-bold text-emerald-600 mt-0.5">
-            {summary ? `GHS ${(summary.received || 0).toLocaleString()}` : '—'}
-          </div>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
-          <div className="text-xs text-slate-500">Owings</div>
-          <div className="text-sm font-bold text-amber-600 mt-0.5">
-            {summary ? `GHS ${(summary.owings || 0).toLocaleString()}` : '—'}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-2 gap-2">
-        <Link
-          to="/omr/owings"
-          className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center text-sm font-medium text-amber-800"
-        >
-          View Owings ({summary?.pendingCredits || 0})
-        </Link>
-        <Link
-          to="/omr/beats"
-          className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center text-sm font-medium text-blue-800"
-        >
-          Today's Beat
-        </Link>
-        <Link
-          to="/omr/outlets"
-          className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-sm font-medium text-slate-700"
-        >
-          My Outlets
-        </Link>
-        <Link
-          to="/omr/log-shop"
-          className="bg-navy text-white rounded-xl p-3 text-center text-sm font-medium"
-        >
-          Log Shop
-        </Link>
-      </div>
+      <Link
+        to="/omr/beats"
+        className="block w-full text-center bg-indigo-600 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20"
+      >
+        Start today's beat
+      </Link>
     </div>
   );
 }
