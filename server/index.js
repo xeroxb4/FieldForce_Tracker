@@ -11,18 +11,17 @@ import outletRoutes from './routes/outlets.js';
 import beatRoutes from './routes/beats.js';
 import creditRoutes from './routes/credits.js';
 import targetRoutes from './routes/targets.js';
+import incentiveRoutes from './routes/incentives.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5100;
 
-// Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/omr', omrRoutes);
 app.use('/api/merchandiser', merchRoutes);
@@ -32,13 +31,12 @@ app.use('/api/outlets', outletRoutes);
 app.use('/api/beats', beatRoutes);
 app.use('/api/credits', creditRoutes);
 app.use('/api/targets', targetRoutes);
+app.use('/api/incentives', incentiveRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FieldForce Tracker API is running' });
 });
 
-// Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
