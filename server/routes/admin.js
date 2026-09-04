@@ -18,23 +18,21 @@ import {
   approveOutlet,
   rejectOutlet,
 } from '../controllers/outletController.js';
+import { exportOmrXlsx, exportMerchXlsx } from '../controllers/exportController.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(restrictTo('admin'));
 
-// Users / OMRs
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
 
-// Reports
 router.get('/reports/visits', getVisitsReport);
 router.get('/reports/wrapups', getWrapUpsReport);
 router.get('/reports/merch', getMerchReport);
 
-// Outlets
 router.get('/outlets', adminListOutlets);
 router.post('/outlets', adminCreateOutlet);
 router.patch('/outlets/:id/assign', adminAssignOutlet);
@@ -42,8 +40,10 @@ router.get('/outlets/pending', getPendingOutlets);
 router.patch('/outlets/:id/approve', approveOutlet);
 router.patch('/outlets/:id/reject', rejectOutlet);
 
-// Targets
 router.get('/targets', listTargets);
 router.post('/targets', setTarget);
+
+router.get('/export/omr', exportOmrXlsx);
+router.get('/export/merch', exportMerchXlsx);
 
 export default router;

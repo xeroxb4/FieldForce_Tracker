@@ -17,6 +17,7 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminExport from './pages/admin/AdminExport';
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -33,14 +34,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
 
-      <Route
-        path="/omr"
-        element={
-          <PrivateRoute roles={['omr', 'admin']}>
-            <OMRLayout />
-          </PrivateRoute>
-        }
-      >
+      <Route path="/omr" element={<PrivateRoute roles={['omr', 'admin']}><OMRLayout /></PrivateRoute>}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="beats" element={<Beats />} />
@@ -51,29 +45,16 @@ export default function App() {
         <Route path="reports" element={<OMRReports />} />
       </Route>
 
-      <Route
-        path="/merch"
-        element={
-          <PrivateRoute roles={['merchandiser', 'admin']}>
-            <MerchLayout />
-          </PrivateRoute>
-        }
-      >
+      <Route path="/merch" element={<PrivateRoute roles={['merchandiser', 'admin']}><MerchLayout /></PrivateRoute>}>
         <Route index element={<Navigate to="visit" replace />} />
         <Route path="visit" element={<MerchVisit />} />
         <Route path="history" element={<MerchHistory />} />
       </Route>
 
-      <Route
-        path="/admin"
-        element={
-          <PrivateRoute roles={['admin']}>
-            <AdminLayout />
-          </PrivateRoute>
-        }
-      >
+      <Route path="/admin" element={<PrivateRoute roles={['admin']}><AdminLayout /></PrivateRoute>}>
         <Route index element={<Navigate to="reports" replace />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="export" element={<AdminExport />} />
         <Route path="outlets" element={<AdminOutlets />} />
         <Route path="targets" element={<AdminTargets />} />
         <Route path="users" element={<AdminUsers />} />
@@ -93,7 +74,6 @@ export default function App() {
           )
         }
       />
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

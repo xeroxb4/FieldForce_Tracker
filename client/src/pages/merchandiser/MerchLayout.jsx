@@ -1,8 +1,10 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function MerchLayout() {
   const { user, logout } = useAuth();
+  const { dark, toggle } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -11,21 +13,50 @@ export default function MerchLayout() {
   };
 
   const navItems = [
-    { to: '/merch/visit', label: 'New Visit', icon: 'M12 4v16m8-8H4' },
-    { to: '/merch/history', label: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { to: '/merch/visit', label: 'New Visit' },
+    { to: '/merch/history', label: 'History' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pb-20">
-      <header className="bg-navy text-white px-4 py-3 shadow sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold">FieldForce Tracker</h1>
-            <p className="text-xs text-slate-300">{user?.fullName} · Merchandiser</p>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <header
+        className={`px-4 py-3 sticky top-0 z-10 border-b backdrop-blur ${
+          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+        }`}
+      >
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <span className="text-white font-bold text-xs">FF</span>
+            </div>
+            <div>
+              <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                FieldForce
+              </h1>
+              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {user?.fullName} · Merchandiser
+              </p>
+            </div>
           </div>
-          <button onClick={handleLogout} className="text-xs bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20">
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggle}
+              className={`text-[10px] px-2 py-1 rounded-lg ${
+                dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {dark ? '☀' : '☾'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className={`text-[10px] px-2.5 py-1 rounded-lg ${
+                dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -33,21 +64,26 @@ export default function MerchLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg">
+      <nav
+        className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur ${
+          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+        }`}
+      >
         <div className="flex max-w-lg mx-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center py-2 text-xs ${
-                  isActive ? 'text-navy font-semibold' : 'text-slate-400'
+                `flex-1 flex flex-col items-center py-3 text-xs ${
+                  isActive
+                    ? 'text-indigo-500 font-semibold'
+                    : dark
+                    ? 'text-slate-500'
+                    : 'text-slate-400'
                 }`
               }
             >
-              <svg className="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={item.icon} />
-              </svg>
               {item.label}
             </NavLink>
           ))}
