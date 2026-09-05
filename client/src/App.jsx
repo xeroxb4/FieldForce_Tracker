@@ -15,6 +15,13 @@ import MerchBeats from './pages/merchandiser/MerchBeats';
 import MerchVisit from './pages/merchandiser/MerchVisit';
 import MerchHistory from './pages/merchandiser/MerchHistory';
 import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminSales from './pages/admin/AdminSales';
+import AdminDistributors from './pages/admin/AdminDistributors';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminPrograms from './pages/admin/AdminPrograms';
+import AdminPromotions from './pages/admin/AdminPromotions';
+import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
 import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
@@ -56,7 +63,14 @@ export default function App() {
       </Route>
 
       <Route path="/admin" element={<PrivateRoute roles={['admin']}><AdminLayout /></PrivateRoute>}>
-        <Route index element={<Navigate to="reports" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="sales" element={<AdminSales />} />
+        <Route path="distributors" element={<AdminDistributors />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="programs" element={<AdminPrograms />} />
+        <Route path="promotions" element={<AdminPromotions />} />
+        <Route path="settings" element={<AdminSettings />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="export" element={<AdminExport />} />
         <Route path="outlets" element={<AdminOutlets />} />

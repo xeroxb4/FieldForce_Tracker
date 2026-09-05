@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { isOnline } from '../../services/api';
+import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { cacheBeat, getCachedBeat } from '../../services/offline';
 
 const DAYS = [
   { n: 1, label: 'Mon' },
@@ -13,16 +12,6 @@ const DAYS = [
   { n: 6, label: 'Sat' },
 ];
 
-function dateForWeekday(dayNum) {
-  // Find date in current week (Mon-Sat) matching dayNum
-  const now = new Date();
-  const jsDay = now.getDay() || 7; // 1-7 Mon-Sun
-  const diff = dayNum - jsDay;
-  const d = new Date(now);
-  d.setDate(now.getDate() + diff);
-  return d.toISOString().slice(0, 10);
-}
-
 export default function MerchBeats() {
   const { dark } = useTheme();
   const navigate = useNavigate();
@@ -30,8 +19,10 @@ export default function MerchBeats() {
     const d = new Date().getDay();
     return d === 0 ? 7 : d;
   })();
-  const [selectedDay, setSelectedDay] = useState(todayNum === 7 ? 1 : Math.min(todayNum, 6));
-  const [beat, setBeat] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(
+    todayNum === 7 ? 1 : Math.min(todayNum, 6)
+  );
+  const [week, setWeek] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -39,126 +30,120 @@ export default function MerchBeats() {
     const load = async () => {
       setLoading(true);
       setError('');
-      const date = dateForWeekday(selectedDay);
       try {
-        if (isOnline()) {
-          const { data } =
-            selectedDay === todayNum
-              ? await api.get('/beats/today')
-              : await api.get(`/beats?date=${date}`);
-          setBeat(data);
-          if (selectedDay === todayNum) cacheBeat(data);
-        } else {
-          const cached = getCachedBeat();
-          if (cached && selectedDay === todayNum) setBeat(cached);
-          else setError('Offline — only today\'s cached beat is available');
+        const { data } = await api.get('/beats/week');
+        setWeek(data);
+        if (data?.today && data.today >= 1 && data.today <= 6) {
+          setSelectedDay(data.today);
         }
       } catch {
-        const cached = getCachedBeat();
-        if (cached && selectedDay === todayNum) setBeat(cached);
-        else setError('Failed to load beat');
+        setError('Failed to load beats. Ask admin to assign outlets to your days.');
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [selectedDay, todayNum]);
+  }, []);
 
   const startVisit = (outlet) => {
     navigate('/merch/visit', {
       state: {
-        shopName: outlet.name,
+        shopName: outlet.displayName || outlet.name,
         outletId: outlet._id,
         fromBeat: true,
       },
     });
   };
 
-  const card = dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm';
+  const outlets = week?.days?.[selectedDay]?.outlets || [];
+  const dayName = week?.days?.[selectedDay]?.dayName || '';
 
   return (
     <div>
-      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
-        Weekly Beat
+      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
+        Weekly Beats
       </h2>
-      <p className={`text-sm mb-3 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-        Mon–Sat outlet plan
+      <p className={`text-sm mb-4 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        Outlets by day (Mon–Sat). Tap a day, then open a store visit.
       </p>
 
-      {/* Day tabs like reference */}
-      <div
-        className={`flex gap-0.5 mb-4 p-1 rounded-xl overflow-x-auto ${
-          dark ? 'bg-slate-800' : 'bg-slate-100'
-        }`}
-      >
-        {DAYS.map((d) => (
-          <button
-            key={d.n}
-            type="button"
-            onClick={() => setSelectedDay(d.n)}
-            className={`flex-1 min-w-[2.5rem] py-2 rounded-lg text-xs font-semibold ${
-              selectedDay === d.n
-                ? 'bg-teal-600 text-white'
-                : dark
-                ? 'text-slate-400'
-                : 'text-slate-500'
-            }`}
-          >
-            {d.label}
-            {d.n === todayNum && <span className="block text-[8px] opacity-80">Today</span>}
-          </button>
-        ))}
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+        {DAYS.map((d) => {
+          const count = week?.days?.[d.n]?.outlets?.length || 0;
+          const active = selectedDay === d.n;
+          const isToday = week?.today === d.n;
+          return (
+            <button
+              key={d.n}
+              type="button"
+              onClick={() => setSelectedDay(d.n)}
+              className={`flex-1 min-w-[3.2rem] py-2 rounded-xl text-center transition ${
+                active
+                  ? 'bg-[#2596be] text-white shadow-md font-bold'
+                  : dark
+                  ? 'bg-slate-800 text-slate-300'
+                  : 'bg-white text-slate-700 border-2 border-[#2596be]/40 font-semibold'
+              }`}
+            >
+              <div className="text-[10px] uppercase">{d.label}</div>
+              <div className="text-sm font-bold">{count}</div>
+              {isToday && <div className="text-[9px] opacity-80">Today</div>}
+            </button>
+          );
+        })}
       </div>
 
-      {loading ? (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Loading...</p>
-      ) : error ? (
-        <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-          {error}
-        </div>
-      ) : !beat?.isWorkingDay && selectedDay === todayNum ? (
-        <div className={`rounded-xl p-4 text-sm ${dark ? 'bg-slate-800 text-slate-300' : 'bg-amber-50 text-amber-800'}`}>
-          {beat?.message || 'Not a working day'}
-        </div>
-      ) : !beat?.outlets?.length ? (
-        <div className={`rounded-xl p-4 text-sm ${dark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-          No outlets assigned for this day. Admin can assign outlets to your Mon–Sat beat.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {beat.outlets.map((o) => (
-            <div key={o._id} className={`rounded-2xl border p-3 ${card}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className={`font-semibold text-sm truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
-                    {o.name}
-                  </div>
-                  {o.address && (
-                    <div className={`text-xs truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {o.address}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1 mt-1 text-[10px] text-teal-600">
-                    <span>📍</span> Outlet
-                  </div>
-                </div>
-                {o.visited ? (
-                  <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full whitespace-nowrap">
-                    Done
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => startVisit(o)}
-                    className="text-xs font-semibold bg-teal-600 text-white px-3 py-1.5 rounded-full whitespace-nowrap"
-                  >
-                    Start Visit
-                  </button>
-                )}
-              </div>
+      {loading && (
+        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Loading…</p>
+      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      {!loading && !error && (
+        <>
+          <div className={`mb-3 text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+            {dayName} · {outlets.length} outlet{outlets.length !== 1 ? 's' : ''}
+          </div>
+          {outlets.length === 0 ? (
+            <div
+              className={`rounded-2xl border-2 p-6 text-center text-sm font-medium ${
+                dark
+                  ? 'border-slate-700 text-slate-400'
+                  : 'border-[#2596be]/40 text-slate-700 bg-white'
+              }`}
+            >
+              No outlets assigned for {dayName}.
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="space-y-2">
+              {outlets.map((o) => (
+                <button
+                  key={o._id}
+                  type="button"
+                  onClick={() => startVisit(o)}
+                  className={`w-full text-left rounded-2xl border-2 p-4 transition ${
+                    dark
+                      ? 'bg-slate-800 border-slate-700 hover:border-[#2596be]'
+                      : 'bg-white border-[#2596be]/50 shadow-sm hover:border-[#2596be] hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                        {o.displayName || o.name}
+                      </div>
+                      {(o.address || o.territory) && (
+                        <div className={`text-xs mt-0.5 font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                          {o.address || o.territory}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold text-[#2596be] shrink-0">Visit →</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

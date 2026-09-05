@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function DayWrapUp() {
   const { user } = useAuth();
+  const { dark } = useTheme();
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState({
@@ -18,6 +20,13 @@ export default function DayWrapUp() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [autoLoading, setAutoLoading] = useState(false);
+
+  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border-2 font-medium outline-none focus:ring-2 focus:ring-[#2596be] ${
+    dark
+      ? 'bg-slate-900 border-slate-600 text-white placeholder:text-slate-500'
+      : 'bg-white border-[#2596be]/50 text-slate-900 placeholder:text-slate-400'
+  }`;
+  const labelCls = `block text-sm font-bold mb-1 ${dark ? 'text-slate-200' : 'text-slate-800'}`;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -49,7 +58,7 @@ export default function DayWrapUp() {
     } catch (err) {
       setStatus({
         type: 'error',
-        msg: err.response?.data?.message || 'Could not pull today\'s visits',
+        msg: err.response?.data?.message || "Could not pull today's visits",
       });
     } finally {
       setAutoLoading(false);
@@ -85,148 +94,127 @@ export default function DayWrapUp() {
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-slate-800 mb-1">Day Wrap-Up</h2>
-      <p className="text-sm text-slate-500 mb-4">End-of-day summary</p>
+      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
+        Day Wrap-Up
+      </h2>
+      <p className={`text-sm mb-4 font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        End-of-day summary · {user?.fullName}
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+          <label className={labelCls}>Date</label>
           <input
             type="date"
             name="date"
             value={form.date}
             onChange={handleChange}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+            className={inputCls}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAutoFill}
+          disabled={autoLoading}
+          className="w-full py-2.5 rounded-xl border-2 border-[#2596be] text-[#2596be] font-bold text-sm hover:bg-[#2596be]/10 disabled:opacity-60"
+        >
+          {autoLoading ? 'Pulling visits…' : 'Auto-fill from today’s visits'}
+        </button>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Shops planned</label>
+            <input
+              type="number"
+              name="shopsPlanned"
+              value={form.shopsPlanned}
+              onChange={handleChange}
+              className={inputCls}
+              min="0"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Shops visited</label>
+            <input
+              type="number"
+              name="shopsVisited"
+              value={form.shopsVisited}
+              onChange={handleChange}
+              className={inputCls}
+              min="0"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>Shop names (one per line)</label>
+          <textarea
+            name="shopNames"
+            value={form.shopNames}
+            onChange={handleChange}
+            rows={4}
+            className={inputCls}
+            placeholder="Outlet names visited…"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Territory</label>
+            <label className={labelCls}>Orders count</label>
             <input
-              value={user?.territory || ''}
-              disabled
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 text-slate-500"
+              type="number"
+              name="ordersCount"
+              value={form.ordersCount}
+              onChange={handleChange}
+              className={inputCls}
+              min="0"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Distributor</label>
+            <label className={labelCls}>Total amount (GHS)</label>
             <input
-              value={user?.distributor || ''}
-              disabled
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 text-slate-500"
+              type="number"
+              name="totalAmount"
+              value={form.totalAmount}
+              onChange={handleChange}
+              className={inputCls}
+              min="0"
+              step="0.01"
             />
           </div>
         </div>
 
-        {/* Auto-fill button */}
-        <button
-          type="button"
-          onClick={handleAutoFill}
-          disabled={autoLoading}
-          className="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium py-3 rounded-xl hover:bg-emerald-100 transition disabled:opacity-60"
-        >
-          {autoLoading ? 'Pulling today\'s visits…' : 'Auto-fill from today\'s shop visits'}
-        </button>
+        <div>
+          <label className={labelCls}>Notes</label>
+          <textarea
+            name="notes"
+            value={form.notes}
+            onChange={handleChange}
+            rows={3}
+            className={inputCls}
+            placeholder="Challenges, competitor activity, next actions…"
+          />
+        </div>
 
         {status && (
           <div
-            className={`text-sm px-4 py-3 rounded-xl border ${
+            className={`text-sm px-4 py-3 rounded-xl border-2 font-medium ${
               status.type === 'success'
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-green-50 text-green-700 border-green-300'
+                : 'bg-red-50 text-red-700 border-red-300'
             }`}
           >
             {status.msg}
           </div>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Shops Planned</label>
-          <input
-            name="shopsPlanned"
-            type="number"
-            value={form.shopsPlanned}
-            onChange={handleChange}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-            placeholder="0"
-            min="0"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Shops Visited *</label>
-          <input
-            name="shopsVisited"
-            type="number"
-            value={form.shopsVisited}
-            onChange={handleChange}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-            placeholder="0"
-            min="0"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Shop Names <span className="text-slate-400 font-normal">(one per line)</span>
-          </label>
-          <textarea
-            name="shopNames"
-            value={form.shopNames}
-            onChange={handleChange}
-            rows={4}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-            placeholder="List every shop by name"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Orders</label>
-            <input
-              name="ordersCount"
-              type="number"
-              value={form.ordersCount}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-              placeholder="0"
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Total Amount</label>
-            <input
-              name="totalAmount"
-              type="number"
-              value={form.totalAmount}
-              onChange={handleChange}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-              placeholder="0"
-              min="0"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-          <textarea
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
-            rows={2}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-            placeholder="Optional"
-          />
-        </div>
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-navy text-white font-semibold py-3.5 rounded-xl hover:bg-slate-800 transition disabled:opacity-60"
+          className="w-full bg-[#2596be] text-white font-bold py-3.5 rounded-xl disabled:opacity-60 shadow-md"
         >
-          {loading ? 'Submitting...' : 'Submit Day Wrap-Up'}
+          {loading ? 'Submitting…' : 'Submit wrap-up'}
         </button>
       </form>
     </div>

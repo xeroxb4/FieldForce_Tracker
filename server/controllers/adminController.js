@@ -356,3 +356,97 @@ export const removeOutlet = async (req, res) => {
     res.status(500).json({ message: 'Failed to remove outlet' });
   }
 };
+
+
+export const getDashboardStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay() || 7;
+    startOfWeek.setDate(startOfWeek.getDate() - (day - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const dayStr = startOfDay.toISOString().slice(0, 10);
+    const weekStr = startOfWeek.toISOString().slice(0, 10);
+    const monthStr = startOfMonth.toISOString().slice(0, 10);
+
+    const sumAmount = async (fromDate) => {
+      const rows = await Visit.aggregate([
+        { $match: { date: { $gte: fromDate }, outcome: 'Order Placed' } },
+        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      ]);
+      return rows[0] || { total: 0, count: 0 };
+    };
+
+    const [today, week, month, omrCount, merchCount, outletCount, avcCount] = await Promise.all([
+      sumAmount(dayStr),
+      sumAmount(weekStr),
+      sumAmount(monthStr),
+      User.countDocuments({ role: 'omr', isActive: true }),
+      User.countDocuments({ role: 'merchandiser', isActive: true }),
+      Outlet.countDocuments({ isActive: true, status: 'approved' }),
+      Outlet.countDocuments({ isActive: true, avcEnrolled: true }),
+    ]);
+
+    // Per-OMR sales today
+    const perOmrToday = await Visit.aggregate([
+      { $match: { date: dayStr, outcome: 'Order Placed' } },
+      { $group: { _id: '$userId', total: { $sum: '$amount' }, orders: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+      { $limit: 20 },
+    ]);
+    const userIds = perOmrToday.map((r) => r._id).filter(Boolean);
+    const users = await User.find({ _id: { $in: userIds } }).select('fullName distributor territory');
+    const umap = Object.fromEntries(users.map((u) => [String(u._id), u]));
+    const omrSalesToday = perOmrToday.map((r) => ({
+      omr: umap[String(r._id)]?.fullName || 'Unknown',
+      distributor: umap[String(r._id)]?.distributor || '',
+      territory: umap[String(r._id)]?.territory || '',
+      total: r.total,
+      orders: r.orders,
+    }));
+
+    // Sales by distributor (month)
+    const byDist = await Visit.aggregate([
+      { $match: { date: { $gte: monthStr }, outcome: 'Order Placed' } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'u',
+        },
+      },
+      { $unwind: { path: '$u', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: '$u.distributor',
+          total: { $sum: '$amount' },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { total: -1 } },
+    ]);
+
+    res.json({
+      sales: {
+        today: { amount: today.total || 0, orders: today.count || 0 },
+        week: { amount: week.total || 0, orders: week.count || 0 },
+        month: { amount: month.total || 0, orders: month.count || 0 },
+      },
+      counts: { omrs: omrCount, merchandisers: merchCount, outlets: outletCount, avc: avcCount },
+      omrSalesToday,
+      distributorMonth: byDist.map((d) => ({
+        name: d._id || 'Unassigned',
+        total: d.total,
+        orders: d.orders,
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to load dashboard stats' });
+  }
+};

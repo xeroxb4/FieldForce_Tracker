@@ -13,6 +13,7 @@ import {
   listTargets,
   updateOutletFull,
   removeOutlet,
+  getDashboardStats,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -27,6 +28,7 @@ const router = express.Router();
 router.use(protect);
 router.use(restrictTo('admin'));
 
+router.get('/dashboard', getDashboardStats);
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
