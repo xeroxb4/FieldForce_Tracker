@@ -1,42 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
-import { cacheBeat, getCachedBeat } from '../../services/offline';
+import { useTheme } from '../../context/ThemeContext';
+
+const DAY_ORDER = [1, 2, 3, 4, 5]; // OMR Mon-Fri
 
 export default function Beats() {
-  const [beat, setBeat] = useState(null);
+  const { dark } = useTheme();
+  const [week, setWeek] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDay, setSelectedDay] = useState(null);
   const [startingId, setStartingId] = useState(null);
   const [gpsMsg, setGpsMsg] = useState('');
-  const [fromCache, setFromCache] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
       try {
-        if (isOnline()) {
-          const { data } = await api.get('/beats/today');
-          setBeat(data);
-          cacheBeat(data);
-          setFromCache(false);
-        } else {
-          const cached = getCachedBeat();
-          if (cached) {
-            setBeat(cached);
-            setFromCache(true);
-          } else {
-            setError('Offline and no cached beat. Connect once to load today\'s outlets.');
-          }
-        }
+        const { data } = await api.get('/beats/week');
+        setWeek(data);
+        setSelectedDay(data.today >= 1 && data.today <= 5 ? data.today : 1);
       } catch {
-        const cached = getCachedBeat();
-        if (cached) {
-          setBeat(cached);
-          setFromCache(true);
-        } else {
-          setError('Failed to load beat');
-        }
+        setError('Failed to load beats. Ask admin to assign outlets to your days.');
       } finally {
         setLoading(false);
       }
@@ -62,7 +48,6 @@ export default function Beats() {
           accuracy: pos.coords.accuracy,
         };
 
-        // Online: verify distance with server
         if (isOnline()) {
           try {
             const { data } = await api.post('/omr/visits/start', {
@@ -72,128 +57,147 @@ export default function Beats() {
             navigate('/omr/log-shop', {
               state: {
                 outletId: data.outlet._id,
-                shopName: data.outlet.name,
+                shopName: data.outlet.displayName || data.outlet.name,
                 contactName: data.outlet.contactName,
                 contactPhone: data.outlet.contactPhone,
                 outletLocation: data.outlet.location,
                 agentLocation: data.agentLocation,
                 distanceMeters: data.distanceMeters,
-                fromBeat: true,
               },
             });
           } catch (err) {
-            setGpsMsg(err.response?.data?.message || 'Could not start visit');
+            setGpsMsg(err.response?.data?.message || 'Could not start visit. Move closer to the outlet.');
             setStartingId(null);
           }
         } else {
-          // Offline: allow start with local GPS only (server will re-check on sync if needed)
           navigate('/omr/log-shop', {
             state: {
               outletId: outlet._id,
-              shopName: outlet.name,
+              shopName: outlet.displayName || outlet.name,
               contactName: outlet.contactName,
               contactPhone: outlet.contactPhone,
               outletLocation: outlet.location,
               agentLocation,
-              fromBeat: true,
-              offlineStart: true,
+              offline: true,
             },
           });
         }
       },
       () => {
-        setGpsMsg(
-          'Location is off or denied. Turn on GPS and stand at the outlet to start the visit.'
-        );
+        setGpsMsg('Location is off. Turn on GPS to start a visit.');
         setStartingId(null);
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
   };
 
-  if (loading) return <p className="text-sm text-slate-500">Loading today's beat...</p>;
-  if (error)
-    return (
-      <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-        {error}
-      </div>
-    );
-  if (!beat) return null;
+  if (loading) {
+    return <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Loading beats…</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-red-500">{error}</p>;
+  }
+
+  const dayData = week?.days?.[selectedDay];
+  const outlets = dayData?.outlets || [];
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-bold text-slate-800">Today's Beat</h2>
-        {!isOnline() && (
-          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
-            Offline{fromCache ? ' · cached' : ''}
-          </span>
-        )}
-      </div>
-      <p className="text-sm text-slate-500 mb-4">
-        {beat.dayName} · {beat.date}
-        {beat.isWorkingDay && beat.total > 0 && (
-          <span className="ml-2 text-navy font-medium">
-            {beat.visitedCount}/{beat.total} visited
-          </span>
-        )}
+      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
+        Daily Beats
+      </h2>
+      <p className={`text-sm mb-4 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        Outlets by day of the week (Mon–Fri). Tap a day, then start a visit.
       </p>
 
+      {/* Day tabs */}
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+        {DAY_ORDER.map((d) => {
+          const count = week?.days?.[d]?.outlets?.length || 0;
+          const isToday = week?.today === d;
+          const active = selectedDay === d;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setSelectedDay(d)}
+              className={`flex-1 min-w-[3.5rem] py-2 px-1 rounded-xl text-center transition ${
+                active
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : dark
+                  ? 'bg-slate-800 text-slate-300'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              <div className="text-[10px] font-semibold uppercase">
+                {week?.days?.[d]?.dayName?.slice(0, 3)}
+              </div>
+              <div className="text-sm font-bold">{count}</div>
+              {isToday && <div className="text-[9px] opacity-80">Today</div>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={`mb-3 text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+        {dayData?.dayName || ''} · {outlets.length} outlet{outlets.length !== 1 ? 's' : ''}
+      </div>
+
       {gpsMsg && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-3">
+        <div className="mb-3 text-sm px-3 py-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
           {gpsMsg}
         </div>
       )}
 
-      {!beat.isWorkingDay ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-          {beat.message || 'Not a working day'}
-        </div>
-      ) : beat.outlets.length === 0 ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-500">
-          No outlets assigned for {beat.dayName}. Create outlets and wait for admin to approve &amp;
-          assign days.
+      {outlets.length === 0 ? (
+        <div
+          className={`rounded-2xl border p-6 text-center text-sm ${
+            dark ? 'border-slate-700 text-slate-400' : 'border-slate-300 text-slate-600 bg-white/80'
+          }`}
+        >
+          No outlets assigned for {dayData?.dayName}.
+          <br />
+          Admin must assign beat days to your outlets.
         </div>
       ) : (
         <div className="space-y-2">
-          {beat.outlets.map((o) => (
+          {outlets.map((o) => (
             <button
               key={o._id}
               type="button"
-              disabled={o.visited || startingId === o._id}
               onClick={() => startOutletVisit(o)}
-              className={`w-full text-left bg-white border rounded-xl p-3 transition ${
-                o.visited
-                  ? 'border-green-200 bg-green-50/50 opacity-80'
-                  : 'border-slate-200 hover:border-navy active:bg-slate-50'
+              disabled={startingId === o._id}
+              className={`w-full text-left rounded-2xl border p-4 transition ${
+                dark
+                  ? 'bg-slate-800 border-slate-700 hover:border-indigo-500'
+                  : 'bg-white border-slate-200 hover:border-indigo-400'
               }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-medium text-sm text-slate-800">{o.name}</div>
-                  {o.contactName && (
-                    <div className="text-xs text-slate-500">{o.contactName}</div>
+                  <div className={`font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                    {o.displayName || o.name}
+                  </div>
+                  {(o.address || o.territory) && (
+                    <div className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {o.address || o.territory}
+                    </div>
                   )}
-                  {o.address && <div className="text-xs text-slate-400">{o.address}</div>}
+                  {o.avcEnrolled && (
+                    <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 font-medium">
+                      AVC {o.avcTier}
+                    </span>
+                  )}
                 </div>
-                {o.visited ? (
-                  <span className="text-xs font-medium text-green-600">✓ Visited</span>
-                ) : startingId === o._id ? (
-                  <span className="text-xs text-navy">Checking GPS...</span>
-                ) : (
-                  <span className="text-xs bg-navy text-white px-3 py-1.5 rounded-lg font-medium">
-                    Start Visit
-                  </span>
-                )}
+                <span className="text-xs font-semibold text-indigo-500 shrink-0">
+                  {startingId === o._id ? 'Starting…' : 'Start visit →'}
+                </span>
               </div>
             </button>
           ))}
         </div>
       )}
-
-      <p className="text-xs text-slate-400 mt-4 text-center">
-        Tap an outlet to start. GPS must confirm you are at the shop.
-      </p>
     </div>
   );
 }

@@ -272,3 +272,87 @@ export const listTargets = async (req, res) => {
     res.status(500).json({ message: 'Failed to list targets' });
   }
 };
+
+
+export const updateOutletFull = async (req, res) => {
+  try {
+    const outlet = await Outlet.findById(req.params.id);
+    if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
+
+    const {
+      name,
+      contactName,
+      contactPhone,
+      address,
+      notes,
+      assignedTo,
+      assignedDays,
+      avcEnrolled,
+      avcTier,
+      isActive,
+      lat,
+      lng,
+    } = req.body;
+
+    if (name) outlet.name = name.trim();
+    if (contactName !== undefined) outlet.contactName = contactName;
+    if (contactPhone !== undefined) outlet.contactPhone = contactPhone;
+    if (address !== undefined) outlet.address = address;
+    if (notes !== undefined) outlet.notes = notes;
+    if (isActive !== undefined) outlet.isActive = !!isActive;
+
+    if (assignedTo) {
+      outlet.assignedTo = assignedTo;
+      outlet.userId = assignedTo;
+    }
+    if (Array.isArray(assignedDays)) {
+      outlet.assignedDays = assignedDays.map(Number);
+    }
+
+    if (avcEnrolled !== undefined) {
+      if (!avcEnrolled) {
+        outlet.avcEnrolled = false;
+        outlet.avcTier = '';
+        outlet.avcTarget = 0;
+      } else {
+        const tier = ['Gold', 'Silver', 'Bronze'].includes(avcTier) ? avcTier : '';
+        if (!tier) return res.status(400).json({ message: 'AVC tier required when enrolled' });
+        const targets = { Gold: 12500, Silver: 10000, Bronze: 5000 };
+        outlet.avcEnrolled = true;
+        outlet.avcTier = tier;
+        outlet.avcTarget = targets[tier];
+      }
+    }
+
+    if (lat !== undefined && lng !== undefined) {
+      outlet.location = { lat: Number(lat), lng: Number(lng) };
+    }
+
+    // Ensure approved if assigned
+    if (outlet.assignedTo && outlet.assignedDays?.length) {
+      outlet.status = 'approved';
+    }
+
+    await outlet.save();
+    const populated = await Outlet.findById(outlet._id).populate(
+      'assignedTo',
+      'fullName username territory'
+    );
+    res.json(populated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update outlet' });
+  }
+};
+
+export const removeOutlet = async (req, res) => {
+  try {
+    const outlet = await Outlet.findById(req.params.id);
+    if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
+    outlet.isActive = false;
+    await outlet.save();
+    res.json({ message: 'Outlet removed (deactivated)', outlet });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to remove outlet' });
+  }
+};

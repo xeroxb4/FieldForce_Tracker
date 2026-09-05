@@ -21,10 +21,10 @@ export default function MerchLayout() {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'bg-[#e8edf5]'}`}>
       <header
         className={`px-4 py-3 sticky top-0 z-10 border-b backdrop-blur ${
-          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
@@ -67,7 +67,7 @@ export default function MerchLayout() {
 
       <nav
         className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur ${
-          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
         <div className="flex max-w-lg mx-auto">

@@ -11,6 +11,8 @@ import {
   adminListOutlets,
   adminAssignOutlet,
   listTargets,
+  updateOutletFull,
+  removeOutlet,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -35,6 +37,8 @@ router.get('/reports/merch', getMerchReport);
 
 router.get('/outlets', adminListOutlets);
 router.post('/outlets', adminCreateOutlet);
+router.put('/outlets/:id', updateOutletFull);
+router.delete('/outlets/:id', removeOutlet);
 router.patch('/outlets/:id/assign', adminAssignOutlet);
 router.get('/outlets/pending', getPendingOutlets);
 router.patch('/outlets/:id/approve', approveOutlet);

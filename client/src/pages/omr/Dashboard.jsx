@@ -195,13 +195,13 @@ export default function Dashboard() {
                 style={{ width: `${Math.min(100, pct)}%` }}
               />
             </div>
-            <div className={`flex justify-between mt-2 text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`flex justify-between mt-2 text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
               <span>GHS {(target.achievedAmount || 0).toLocaleString()}</span>
               <span>of {(target.targetAmount || 0).toLocaleString()}</span>
             </div>
           </>
         ) : (
-          <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             No target set for this month
           </p>
         )}
@@ -270,10 +270,10 @@ export default function Dashboard() {
               <div className={`text-xs font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
                 Productivity
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {day?.productiveCalls ?? 0} productive calls
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 LPPC {day?.lppc ?? 0}
               </div>
             </div>
@@ -292,10 +292,10 @@ export default function Dashboard() {
               <div className={`text-xs font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
                 Coverage
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {day?.outletsVisited ?? 0}/{day?.beatOutlets ?? 0} outlets
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Must be 100%
               </div>
             </div>
@@ -314,10 +314,10 @@ export default function Dashboard() {
               <div className={`text-xs font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
                 Hit Rate
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Productive ÷ visits
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {day?.productiveCalls ?? 0}/{day?.totalVisits ?? 0} calls
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function Dashboard() {
               <div className={`text-xs font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
                 Top 10
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Penetration {day?.top10Pct ?? 0}%
               </div>
               <button
@@ -363,7 +363,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <p className={`text-[10px] leading-relaxed ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+        <p className={`text-[10px] leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
           Productive call = outlet buys ≥1 piece of any SKU. Coverage = visit every beat outlet.
           LPPC = product lines ÷ productive calls.
         </p>
@@ -372,19 +372,19 @@ export default function Dashboard() {
         {mtd && (
           <div className={`mt-3 pt-3 border-t grid grid-cols-4 gap-1 text-center ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             <div>
-              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>MTD Hit</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Hit</div>
               <div className="text-xs font-bold text-violet-500">{mtd.hitRatePct}%</div>
             </div>
             <div>
-              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>MTD LPPC</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD LPPC</div>
               <div className="text-xs font-bold text-emerald-500">{mtd.lppc}</div>
             </div>
             <div>
-              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>MTD Prod</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Prod</div>
               <div className="text-xs font-bold text-indigo-500">{mtd.productiveCalls}</div>
             </div>
             <div>
-              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>MTD Top10</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Top10</div>
               <div className="text-xs font-bold text-amber-500">{mtd.top10HitCount}/10</div>
             </div>
           </div>
@@ -399,7 +399,7 @@ export default function Dashboard() {
           { label: 'Owings', value: summary ? `₵${(summary.owings || 0).toLocaleString()}` : '—', color: 'text-amber-500' },
         ].map((s) => (
           <div key={s.label} className={`rounded-2xl p-3 text-center border ${card}`}>
-            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{s.label}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{s.label}</div>
             <div className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</div>
           </div>
         ))}

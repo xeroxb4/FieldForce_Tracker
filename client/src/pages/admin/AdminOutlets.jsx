@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 const DAY_OPTIONS = [
   { value: 1, label: 'Mon' },
@@ -10,37 +11,30 @@ const DAY_OPTIONS = [
   { value: 6, label: 'Sat' },
 ];
 
+const DAY_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+
 export default function AdminOutlets() {
+  const { dark } = useTheme();
   const [outlets, setOutlets] = useState([]);
   const [omrs, setOmrs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [status, setStatus] = useState(null);
+  const [filterUser, setFilterUser] = useState('');
+  const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [assigningId, setAssigningId] = useState(null);
 
-  const [form, setForm] = useState({
-    name: '',
-    contactName: '',
-    contactPhone: '',
-    address: '',
-    lat: '',
-    lng: '',
-    assignedTo: '',
-    assignedDays: [],
-    notes: '',
-  });
-
-  const [assignForm, setAssignForm] = useState({
-    assignedTo: '',
-    assignedDays: [],
-  });
+  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border ${
+    dark
+      ? 'bg-slate-900 border-slate-600 text-white'
+      : 'bg-white border-slate-300 text-slate-900'
+  }`;
 
   const load = async () => {
     setLoading(true);
     try {
+      const q = filterUser ? `?assignedTo=${filterUser}` : '';
       const [oRes, uRes, mRes] = await Promise.all([
-        api.get('/admin/outlets'),
+        api.get(`/admin/outlets${q}`),
         api.get('/admin/users?role=omr'),
         api.get('/admin/users?role=merchandiser'),
       ]);
@@ -55,285 +49,293 @@ export default function AdminOutlets() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [filterUser]);
 
-  const toggleDay = (days, day) =>
-    days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort();
-
-  const useMyGps = () => {
-    if (!navigator.geolocation) {
-      setStatus({ type: 'error', msg: 'GPS not available' });
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((f) => ({
-          ...f,
-          lat: String(pos.coords.latitude),
-          lng: String(pos.coords.longitude),
-        }));
-      },
-      () => setStatus({ type: 'error', msg: 'Turn on GPS' }),
-      { enableHighAccuracy: true }
-    );
+  const openEdit = (o) => {
+    setEditing({
+      _id: o._id,
+      name: o.name || '',
+      contactName: o.contactName || '',
+      contactPhone: o.contactPhone || '',
+      address: o.address || '',
+      notes: o.notes || '',
+      assignedTo: o.assignedTo?._id || o.assignedTo || '',
+      assignedDays: o.assignedDays || [],
+      avcEnrolled: !!o.avcEnrolled,
+      avcTier: o.avcTier || 'Gold',
+      isActive: o.isActive !== false,
+    });
   };
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
+  const toggleDay = (day) => {
+    setEditing((e) => ({
+      ...e,
+      assignedDays: e.assignedDays.includes(day)
+        ? e.assignedDays.filter((d) => d !== day)
+        : [...e.assignedDays, day].sort(),
+    }));
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
     setSaving(true);
     setStatus(null);
     try {
-      await api.post('/admin/outlets', {
-        ...form,
-        lat: Number(form.lat),
-        lng: Number(form.lng),
-        assignedTo: form.assignedTo || undefined,
-        assignedDays: form.assignedDays,
-        autoApprove: !!(form.assignedTo && form.assignedDays.length),
+      await api.put(`/admin/outlets/${editing._id}`, {
+        name: editing.name,
+        contactName: editing.contactName,
+        contactPhone: editing.contactPhone,
+        address: editing.address,
+        notes: editing.notes,
+        assignedTo: editing.assignedTo || undefined,
+        assignedDays: editing.assignedDays,
+        avcEnrolled: editing.avcEnrolled,
+        avcTier: editing.avcEnrolled ? editing.avcTier : '',
+        isActive: editing.isActive,
       });
-      setStatus({ type: 'success', msg: 'Outlet created' });
-      setForm({
-        name: '',
-        contactName: '',
-        contactPhone: '',
-        address: '',
-        lat: '',
-        lng: '',
-        assignedTo: '',
-        assignedDays: [],
-        notes: '',
-      });
-      setShowForm(false);
+      setStatus({ type: 'success', msg: 'Outlet updated' });
+      setEditing(null);
       load();
     } catch (err) {
-      setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed' });
+      setStatus({ type: 'error', msg: err.response?.data?.message || 'Update failed' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAssign = async (outletId) => {
-    if (!assignForm.assignedTo || assignForm.assignedDays.length === 0) {
-      setStatus({ type: 'error', msg: 'Select OMR and at least one day' });
-      return;
-    }
+  const remove = async (id) => {
+    if (!confirm('Remove this outlet from the active list?')) return;
     try {
-      await api.patch(`/admin/outlets/${outletId}/assign`, assignForm);
-      setStatus({ type: 'success', msg: 'Outlet assigned to beat days' });
-      setAssigningId(null);
+      await api.delete(`/admin/outlets/${id}`);
+      setStatus({ type: 'success', msg: 'Outlet removed' });
       load();
-    } catch (err) {
-      setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed' });
+    } catch {
+      setStatus({ type: 'error', msg: 'Failed to remove' });
     }
-  };
-
-  const dayLabel = (days) => {
-    const map = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
-    return (days || []).map((d) => map[d]).join(', ') || '—';
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">Outlets & Beats</h2>
-          <p className="text-sm text-slate-500">Create outlets and assign to OMR weekdays</p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-navy text-white text-xs font-semibold px-3 py-2 rounded-lg"
-        >
-          {showForm ? 'Cancel' : '+ Create Outlet'}
-        </button>
-      </div>
+      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
+        Outlets & Beats
+      </h2>
+      <p className={`text-sm mb-4 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        Edit outlets, beat days, AVC status. Filter by OMR/Merchandiser.
+      </p>
 
       {status && (
         <div
-          className={`text-sm px-4 py-3 rounded-xl border mb-3 ${
-            status.type === 'success'
-              ? 'bg-green-50 text-green-700 border-green-200'
-              : 'bg-red-50 text-red-700 border-red-200'
+          className={`mb-3 text-sm px-3 py-2 rounded-xl ${
+            status.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
           }`}
         >
           {status.msg}
         </div>
       )}
 
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 mb-4">
-          <input
-            required
-            placeholder="Outlet name *"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full border rounded-xl px-4 py-3 text-sm"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              placeholder="Contact"
-              value={form.contactName}
-              onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-              className="w-full border rounded-xl px-4 py-3 text-sm"
-            />
-            <input
-              placeholder="Phone"
-              value={form.contactPhone}
-              onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-              className="w-full border rounded-xl px-4 py-3 text-sm"
-            />
-          </div>
-          <input
-            placeholder="Address"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-            className="w-full border rounded-xl px-4 py-3 text-sm"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              required
-              placeholder="Latitude *"
-              value={form.lat}
-              onChange={(e) => setForm({ ...form, lat: e.target.value })}
-              className="w-full border rounded-xl px-4 py-3 text-sm"
-            />
-            <input
-              required
-              placeholder="Longitude *"
-              value={form.lng}
-              onChange={(e) => setForm({ ...form, lng: e.target.value })}
-              className="w-full border rounded-xl px-4 py-3 text-sm"
-            />
-          </div>
-          <button type="button" onClick={useMyGps} className="text-xs text-navy font-medium">
-            Use my current GPS
-          </button>
-
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Assign to OMR</label>
-            <select
-              value={form.assignedTo}
-              onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
-              className="w-full border rounded-xl px-4 py-3 text-sm bg-white"
-            >
-              <option value="">Select OMR (optional now)</option>
-              {omrs.map((u) => (
-                <option key={u._id} value={u._id}>
-                  {u.fullName} · {u.territory || '—'} · {u.distributor || '—'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Beat days (Mon–Fri for OMR)</label>
-            <div className="flex flex-wrap gap-2">
-              {DAY_OPTIONS.map((d) => (
-                <button
-                  key={d.value}
-                  type="button"
-                  onClick={() =>
-                    setForm({ ...form, assignedDays: toggleDay(form.assignedDays, d.value) })
-                  }
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
-                    form.assignedDays.includes(d.value)
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-slate-600 border-slate-200'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-400">OMR: Mon–Fri · Merchandiser: Mon–Sat</p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-navy text-white font-semibold py-3 rounded-xl disabled:opacity-60"
-          >
-            {saving ? 'Saving...' : 'Create Outlet'}
-          </button>
-        </form>
-      )}
+      <div className="mb-4">
+        <label className={`text-xs font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+          Filter by rep
+        </label>
+        <select
+          value={filterUser}
+          onChange={(e) => setFilterUser(e.target.value)}
+          className={inputCls}
+        >
+          <option value="">All outlets</option>
+          {omrs.map((u) => (
+            <option key={u._id} value={u._id}>
+              {u.fullName} ({u.role})
+            </option>
+          ))}
+        </select>
+      </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400">Loading...</p>
+        <p className="text-sm text-slate-500">Loading…</p>
       ) : outlets.length === 0 ? (
-        <p className="text-sm text-slate-400">No outlets yet</p>
+        <p className="text-sm text-slate-500">No outlets found. Seed OMR/Merch data or create outlets.</p>
       ) : (
         <div className="space-y-2">
           {outlets.map((o) => (
-            <div key={o._id} className="bg-white border border-slate-200 rounded-xl p-3">
-              <div className="flex justify-between items-start">
+            <div
+              key={o._id}
+              className={`rounded-2xl border p-3 ${
+                dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+              }`}
+            >
+              <div className="flex justify-between gap-2">
                 <div>
-                  <div className="font-medium text-sm">{o.name}</div>
-                  <div className="text-xs text-slate-500">
-                    {o.assignedTo?.fullName || o.createdBy} · {o.status}
+                  <div className={`font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                    {o.displayName || o.name}
                   </div>
-                  <div className="text-xs text-slate-400">Days: {dayLabel(o.assignedDays)}</div>
+                  <div className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {o.assignedTo?.fullName || 'Unassigned'} · {o.status}
+                    {o.assignedDays?.length > 0 &&
+                      ` · ${o.assignedDays.map((d) => DAY_LABEL[d]).join(', ')}`}
+                  </div>
+                  {o.avcEnrolled && (
+                    <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">
+                      AVC {o.avcTier} (GHC {o.avcTarget?.toLocaleString()})
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAssigningId(assigningId === o._id ? null : o._id);
-                    setAssignForm({
-                      assignedTo: o.assignedTo?._id || o.assignedTo || '',
-                      assignedDays: o.assignedDays || [],
-                    });
-                  }}
-                  className="text-xs bg-slate-100 px-2 py-1 rounded-lg"
-                >
-                  Assign
-                </button>
-              </div>
-
-              {assigningId === o._id && (
-                <div className="mt-3 border-t border-slate-100 pt-3 space-y-2">
-                  <select
-                    value={assignForm.assignedTo}
-                    onChange={(e) => setAssignForm({ ...assignForm, assignedTo: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
-                  >
-                    <option value="">Select OMR</option>
-                    {omrs.map((u) => (
-                      <option key={u._id} value={u._id}>
-                        {u.fullName}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="flex flex-wrap gap-1">
-                    {DAY_OPTIONS.map((d) => (
-                      <button
-                        key={d.value}
-                        type="button"
-                        onClick={() =>
-                          setAssignForm({
-                            ...assignForm,
-                            assignedDays: toggleDay(assignForm.assignedDays, d.value),
-                          })
-                        }
-                        className={`px-2 py-1 rounded text-xs border ${
-                          assignForm.assignedDays.includes(d.value)
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white border-slate-200'
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-col gap-1 shrink-0">
                   <button
                     type="button"
-                    onClick={() => handleAssign(o._id)}
-                    className="w-full bg-navy text-white text-sm py-2 rounded-lg"
+                    onClick={() => openEdit(o)}
+                    className="text-xs px-2 py-1 rounded-lg bg-indigo-600 text-white"
                   >
-                    Save assignment
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(o._id)}
+                    className="text-xs px-2 py-1 rounded-lg bg-red-500/15 text-red-500"
+                  >
+                    Remove
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
+          <div
+            className={`w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl p-4 space-y-3 ${
+              dark ? 'bg-slate-900' : 'bg-white'
+            }`}
+          >
+            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Edit outlet</h3>
+
+            <div>
+              <label className="text-xs text-slate-500">Name</label>
+              <input
+                className={inputCls}
+                value={editing.name}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-500">Contact</label>
+                <input
+                  className={inputCls}
+                  value={editing.contactName}
+                  onChange={(e) => setEditing({ ...editing, contactName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500">Phone</label>
+                <input
+                  className={inputCls}
+                  value={editing.contactPhone}
+                  onChange={(e) => setEditing({ ...editing, contactPhone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">Address</label>
+              <input
+                className={inputCls}
+                value={editing.address}
+                onChange={(e) => setEditing({ ...editing, address: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">Assign to</label>
+              <select
+                className={inputCls}
+                value={editing.assignedTo}
+                onChange={(e) => setEditing({ ...editing, assignedTo: e.target.value })}
+              >
+                <option value="">—</option>
+                {omrs.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.fullName} ({u.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Beat days</label>
+              <div className="flex flex-wrap gap-1">
+                {DAY_OPTIONS.map((d) => (
+                  <button
+                    key={d.value}
+                    type="button"
+                    onClick={() => toggleDay(d.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                      editing.assignedDays.includes(d.value)
+                        ? 'bg-indigo-600 text-white'
+                        : dark
+                        ? 'bg-slate-800 text-slate-400'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`rounded-xl border p-3 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={editing.avcEnrolled}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      avcEnrolled: e.target.checked,
+                      avcTier: e.target.checked ? editing.avcTier || 'Gold' : '',
+                    })
+                  }
+                />
+                <span className={dark ? 'text-white' : 'text-slate-800'}>AVC program</span>
+              </label>
+              {editing.avcEnrolled ? (
+                <select
+                  className={`${inputCls} mt-2`}
+                  value={editing.avcTier}
+                  onChange={(e) => setEditing({ ...editing, avcTier: e.target.value })}
+                >
+                  <option value="Gold">Gold (GHC 12,500)</option>
+                  <option value="Silver">Silver (GHC 10,000)</option>
+                  <option value="Bronze">Bronze (GHC 5,000)</option>
+                </select>
+              ) : (
+                <p className="text-xs text-slate-500 mt-1">
+                  Off = regular customer (no AVC on name)
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className={`flex-1 py-2.5 rounded-xl text-sm ${
+                  dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={saveEdit}
+                className="flex-1 py-2.5 rounded-xl text-sm bg-indigo-600 text-white font-semibold disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -22,10 +22,10 @@ export default function OMRLayout() {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'bg-[#e8edf5]'}`}>
       <header
         className={`px-4 py-3 sticky top-0 z-10 backdrop-blur border-b ${
-          dark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-100'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white/95 border-slate-200 shadow-sm'
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
@@ -57,7 +57,7 @@ export default function OMRLayout() {
 
       <nav
         className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur ${
-          dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]'
         }`}
       >
         <div className="flex max-w-lg mx-auto">

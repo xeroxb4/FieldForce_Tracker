@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f1f5f9;
+  --bg: #e8edf5;
   --card: #ffffff;
   --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  --muted: #475569;
+  --border: #cbd5e1;
   --primary: #4f46e5;
   --primary-dark: #3730a3;
-  --accent: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --accent: #7c3aed;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
 }
 
 .dark {
-  --bg: #0f172a;
+  --bg: #0b1220;
   --card: #1e293b;
   --text: #f1f5f9;
   --muted: #94a3b8;
@@ -28,6 +28,10 @@
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
+}
+
+html, body, #root {
+  min-height: 100%;
 }
 
 body {
@@ -42,10 +46,26 @@ body {
   box-sizing: border-box;
 }
 
+/* Professional light cards */
 .app-bg { background-color: var(--bg); }
-.app-card { background-color: var(--card); border-color: var(--border); color: var(--text); }
+.app-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 12px rgb(15 23 42 / 0.04);
+}
 .app-text { color: var(--text); }
 .app-muted { color: var(--muted); }
 .app-border { border-color: var(--border); }
 .app-primary { background-color: var(--primary); }
 .app-primary-text { color: var(--primary); }
+
+/* Light mode: avoid pure-white wash */
+.light-page {
+  background: linear-gradient(180deg, #e8edf5 0%, #dde5f0 100%);
+}
+.light-card {
+  background: #ffffff;
+  border: 1px solid #c5d0e0;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.07);
+}

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+const DAY_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+
 const AVC_TIERS = [
   { id: 'Gold', target: 12500 },
   { id: 'Silver', target: 10000 },
