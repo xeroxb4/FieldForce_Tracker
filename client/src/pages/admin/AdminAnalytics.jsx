@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { LineChart, DonutChart } from '../../components/Charts';
 
 export default function AdminAnalytics() {
   const { dark } = useTheme();
@@ -11,138 +12,114 @@ export default function AdminAnalytics() {
   }, []);
 
   const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
-  const month = data?.sales?.month?.amount || 0;
-  const week = data?.sales?.week?.amount || 0;
   const today = data?.sales?.today?.amount || 0;
-  const maxBar = Math.max(month, week, today, 1);
+  const week = data?.sales?.week?.amount || 0;
+  const month = data?.sales?.month?.amount || 0;
+
+  // Approximate trend points for line chart (today / week avg / month avg scale)
+  const lineLabels = ['Today', 'Week', 'Month'];
+  const lineSeries = [
+    { name: 'Sales', values: [today, week / 7, month / 30] },
+    { name: 'Orders', values: [
+      (data?.sales?.today?.orders || 0) * 50,
+      ((data?.sales?.week?.orders || 0) / 7) * 50,
+      ((data?.sales?.month?.orders || 0) / 30) * 50,
+    ]},
+  ];
+
+  const distSlices = (data?.distributorMonth || []).map((d) => ({
+    label: d.name,
+    value: Math.round(d.total || 0),
+  }));
 
   const insights = [];
   if (today === 0) {
     insights.push({
       type: 'gap',
-      text: 'No sales recorded today. Check OMR attendance and beat coverage.',
-      action: 'Review attendance and push morning check-in.',
+      text: 'No sales recorded today.',
+      action: 'Check OMR attendance and remaining beat outlets.',
     });
   }
   if ((data?.counts?.avc || 0) === 0) {
     insights.push({
       type: 'gap',
-      text: 'No AVC outlets enrolled yet.',
-      action: 'Identify high-potential outlets and enrol Gold/Silver/Bronze.',
+      text: 'No AVC outlets enrolled.',
+      action: 'Enrol high-potential outlets under Programs → AVC.',
     });
   }
-  if ((data?.omrSalesToday || []).length > 0) {
+  if (data?.omrSalesToday?.[0]) {
     const top = data.omrSalesToday[0];
     insights.push({
       type: 'win',
-      text: `Top OMR today: ${top.omr} (${Number(top.total).toLocaleString()} GHS).`,
-      action: 'Share best practices from this route with lower performers.',
-    });
-  }
-  if (week > 0 && today < week / 6) {
-    insights.push({
-      type: 'gap',
-      text: 'Today is tracking below average daily run-rate for the week.',
-      action: 'Focus remaining beat outlets on top-10 SKUs and credit follow-ups.',
-    });
-  }
-  if (!insights.length) {
-    insights.push({
-      type: 'ok',
-      text: 'Metrics look stable. Keep monitoring coverage and hit rate.',
-      action: 'Export weekly report for leadership review.',
+      text: `Top OMR today: ${top.omr}`,
+      action: 'Share route tactics with underperforming OMRs.',
     });
   }
 
   const downloadCsv = () => {
     const rows = [['OMR', 'Distributor', 'Orders', 'Amount']];
-    (data?.omrSalesToday || []).forEach((r) => {
-      rows.push([r.omr, r.distributor, r.orders, r.total]);
-    });
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    (data?.omrSalesToday || []).forEach((r) => rows.push([r.omr, r.distributor, r.orders, r.total]));
+    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fieldforce-omr-sales-today.csv`;
+    a.download = 'fieldforce-omr-sales-today.csv';
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
             Data Analysis
           </h1>
           <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Charts, interpretations, actions & downloads
+            Line charts, mix charts, actions & downloads
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={downloadCsv}
-            className="text-xs font-bold px-3 py-2 rounded-xl border-2 border-[#2596be] text-[#2596be]"
-          >
-            CSV today
-          </button>
-          <a
-            href="/api/admin/export/omr"
-            className="text-xs font-bold px-3 py-2 rounded-xl bg-[#2596be] text-white"
-            onClick={async (e) => {
-              e.preventDefault();
-              try {
-                const res = await api.get('/admin/export/omr', { responseType: 'blob' });
-                const url = URL.createObjectURL(res.data);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'omr-export.xlsx';
-                a.click();
-              } catch {
-                alert('Export failed — check date range on Export page');
-              }
-            }}
-          >
-            Full XLSX
-          </a>
-        </div>
+        <button
+          type="button"
+          onClick={downloadCsv}
+          className="text-xs font-bold px-3 py-2 rounded-xl bg-[#2596be] text-white self-start"
+        >
+          Download CSV
+        </button>
       </div>
 
       <div className={`rounded-2xl border-2 p-4 ${card}`}>
-        <h3 className={`font-bold mb-4 ${dark ? 'text-white' : 'text-slate-900'}`}>Sales comparison</h3>
-        {[
-          ['Today', today, 'bg-rose-400'],
-          ['This week', week, 'bg-sky-500'],
-          ['This month', month, 'bg-teal-500'],
-        ].map(([label, val, color]) => (
-          <div key={label} className="mb-3">
-            <div className="flex justify-between text-xs font-bold mb-1">
-              <span className={dark ? 'text-slate-300' : 'text-slate-700'}>{label}</span>
-              <span className={dark ? 'text-white' : 'text-slate-900'}>
-                GHS {Number(val).toLocaleString()}
-              </span>
-            </div>
-            <div className={`h-3 rounded-full ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-              <div
-                className={`h-3 rounded-full ${color}`}
-                style={{ width: `${Math.max(4, (val / maxBar) * 100)}%` }}
-              />
-            </div>
-          </div>
-        ))}
+        <h3 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          Sales trend (line)
+        </h3>
+        <p className={`text-[11px] mb-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          Blue = sales level · Pink = order volume (scaled)
+        </p>
+        <LineChart series={lineSeries} labels={lineLabels} dark={dark} />
       </div>
 
       <div className={`rounded-2xl border-2 p-4 ${card}`}>
         <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Insights & recommended actions
+          Month mix by distributor
+        </h3>
+        {distSlices.length ? (
+          <DonutChart slices={distSlices} dark={dark} />
+        ) : (
+          <p className="text-sm text-slate-500">No distributor sales yet this month.</p>
+        )}
+      </div>
+
+      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+        <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          Insights & actions
         </h3>
         <div className="space-y-2">
-          {insights.map((ins, i) => (
+          {(insights.length
+            ? insights
+            : [{ type: 'ok', text: 'Metrics stable.', action: 'Export weekly report for review.' }]
+          ).map((ins, i) => (
             <div
               key={i}
-              className={`rounded-xl p-3 border ${
+              className={`rounded-xl p-3 border text-sm ${
                 ins.type === 'gap'
                   ? 'border-amber-300 bg-amber-50 text-amber-900'
                   : ins.type === 'win'
@@ -152,8 +129,8 @@ export default function AdminAnalytics() {
                   : 'border-slate-200 bg-slate-50 text-slate-800'
               }`}
             >
-              <div className="text-sm font-bold">{ins.text}</div>
-              <div className="text-xs mt-1 font-medium opacity-90">Action: {ins.action}</div>
+              <div className="font-bold">{ins.text}</div>
+              <div className="text-xs mt-1 font-medium">Action: {ins.action}</div>
             </div>
           ))}
         </div>

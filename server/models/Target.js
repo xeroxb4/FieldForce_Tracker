@@ -12,7 +12,6 @@ const targetSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // Format: "2026-09" (year-month)
     month: {
       type: String,
       required: true,
@@ -23,11 +22,15 @@ const targetSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    plannedOutlets: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     achievedAmount: {
       type: Number,
       default: 0,
     },
-    // Percentage 0–100
     percentage: {
       type: Number,
       default: 0,
@@ -40,7 +43,6 @@ const targetSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// One target per user per month
 targetSchema.index({ userId: 1, month: 1 }, { unique: true });
 
 export default mongoose.model('Target', targetSchema);
