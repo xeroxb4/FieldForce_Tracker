@@ -6,6 +6,8 @@ import {
   createMerchVisit,
   getMerchVisits,
   getSosCategories,
+  createStockReceipt,
+  getStockReceipts,
 } from '../controllers/merchandiserController.js';
 
 const router = express.Router();
@@ -18,5 +20,7 @@ router.post('/skus', createSKU);
 router.get('/sos-categories', getSosCategories);
 router.post('/visits', createMerchVisit);
 router.get('/visits', getMerchVisits);
+router.post('/stock-receipts', createStockReceipt);
+router.get('/stock-receipts', getStockReceipts);
 
 export default router;

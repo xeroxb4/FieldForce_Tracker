@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import UserAvatar from '../../components/UserAvatar';
 
 export default function MerchLayout() {
   const { user, logout } = useAuth();
@@ -13,7 +14,9 @@ export default function MerchLayout() {
   };
 
   const navItems = [
-    { to: '/merch/visit', label: 'New Visit' },
+    { to: '/merch/dashboard', label: 'Home' },
+    { to: '/merch/beats', label: 'Beat' },
+    { to: '/merch/visit', label: 'Visit' },
     { to: '/merch/history', label: 'History' },
   ];
 
@@ -25,10 +28,8 @@ export default function MerchLayout() {
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xs">FF</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <UserAvatar size={40} editable />
             <div>
               <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
                 FieldForce
@@ -77,7 +78,7 @@ export default function MerchLayout() {
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center py-3 text-xs ${
                   isActive
-                    ? 'text-indigo-500 font-semibold'
+                    ? 'text-teal-600 font-semibold'
                     : dark
                     ? 'text-slate-500'
                     : 'text-slate-400'

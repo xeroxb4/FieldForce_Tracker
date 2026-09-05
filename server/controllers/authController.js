@@ -1,13 +1,21 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
+const userPayload = (user) => ({
+  _id: user._id,
+  username: user.username,
+  fullName: user.fullName,
+  role: user.role,
+  territory: user.territory,
+  distributor: user.distributor,
+  region: user.region,
+  profilePicture: user.profilePicture || '',
+});
+
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -27,13 +35,7 @@ export const login = async (req, res) => {
     }
 
     res.json({
-      _id: user._id,
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role,
-      territory: user.territory,
-      distributor: user.distributor,
-      region: user.region,
+      ...userPayload(user),
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -42,8 +44,6 @@ export const login = async (req, res) => {
   }
 };
 
-// @desc    Register new user
-// @route   POST /api/auth/register
 export const register = async (req, res) => {
   try {
     const { username, password, fullName, role, territory, distributor, region } = req.body;
@@ -72,10 +72,7 @@ export const register = async (req, res) => {
     });
 
     res.status(201).json({
-      _id: user._id,
-      username: user.username,
-      fullName: user.fullName,
-      role: user.role,
+      ...userPayload(user),
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -84,8 +81,32 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
 export const getMe = async (req, res) => {
-  res.json(req.user);
+  res.json(userPayload(req.user));
+};
+
+// @desc    Update own profile picture
+// @route   PUT /api/auth/profile-picture
+export const updateProfilePicture = async (req, res) => {
+  try {
+    const { profilePicture } = req.body;
+    if (profilePicture === undefined) {
+      return res.status(400).json({ message: 'profilePicture is required' });
+    }
+    // Limit ~1.5MB base64 roughly
+    if (typeof profilePicture === 'string' && profilePicture.length > 2_000_000) {
+      return res.status(400).json({ message: 'Image too large. Please use a smaller photo.' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.profilePicture = profilePicture || '';
+    await user.save();
+
+    res.json(userPayload(user));
+  } catch (error) {
+    console.error('Profile picture error:', error);
+    res.status(500).json({ message: 'Failed to update profile picture' });
+  }
 };

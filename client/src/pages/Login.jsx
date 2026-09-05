@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import logo from '../assets/logo.png';
 
 const ROLES = [
   { id: 'omr', label: 'OMR', desc: 'Open Market Rep' },
@@ -41,13 +42,25 @@ export default function Login() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${dark ? 'bg-slate-900' : 'bg-gradient-to-br from-indigo-50 via-white to-violet-50'}`}>
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-5">
+    <div
+      className={`min-h-screen flex flex-col relative overflow-hidden ${
+        dark
+          ? 'bg-slate-900'
+          : 'bg-gradient-to-br from-indigo-200 via-sky-100 to-violet-200'
+      }`}
+    >
+      {/* Soft blobs for glass effect backdrop */}
+      {!dark && (
+        <>
+          <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 bg-indigo-400/40 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute top-1/3 -right-16 w-80 h-80 bg-violet-400/30 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute bottom-10 left-1/4 w-64 h-64 bg-sky-300/40 rounded-full blur-3xl" />
+        </>
+      )}
+
+      <div className="relative flex items-center justify-between px-5 pt-5">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
-            <span className="text-white font-bold text-sm">FF</span>
-          </div>
+          <img src={logo} alt="FieldForce" className="w-12 h-12 rounded-2xl object-contain" style={{ background: "transparent" }} />
           <span className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-800'}`}>
             FieldForce
           </span>
@@ -55,35 +68,36 @@ export default function Login() {
         <button
           type="button"
           onClick={toggle}
-          className={`text-xs px-3 py-1.5 rounded-full border font-medium ${
+          className={`text-xs px-3 py-1.5 rounded-full border font-medium backdrop-blur-md ${
             dark
-              ? 'border-slate-600 text-slate-300 bg-slate-800'
-              : 'border-slate-200 text-slate-600 bg-white'
+              ? 'border-slate-600 text-slate-300 bg-slate-800/80'
+              : 'border-white/50 text-slate-700 bg-white/40'
           }`}
         >
           {dark ? '☀ Light' : '☾ Dark'}
         </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-5">
+      <div className="relative flex-1 flex items-center justify-center p-5">
         <div
-          className={`w-full max-w-md rounded-3xl shadow-xl p-6 sm:p-8 ${
-            dark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'
+          className={`w-full max-w-md rounded-3xl p-6 sm:p-8 ${
+            dark
+              ? 'bg-slate-800 border border-slate-700 shadow-xl'
+              : 'bg-white/45 backdrop-blur-xl border border-white/60 shadow-2xl shadow-indigo-500/10'
           }`}
         >
           <div className="text-center mb-6">
             <h1 className={`text-2xl font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
               Welcome back
             </h1>
-            <p className={`text-sm mt-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-sm mt-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
               Sign in to continue your field day
             </p>
           </div>
 
-          {/* Role switch */}
           <div
             className={`grid grid-cols-3 gap-1 p-1 rounded-2xl mb-6 ${
-              dark ? 'bg-slate-900' : 'bg-slate-100'
+              dark ? 'bg-slate-900/80' : 'bg-white/50 border border-white/40'
             }`}
           >
             {ROLES.map((r) => (
@@ -96,20 +110,24 @@ export default function Login() {
                     ? 'bg-indigo-600 text-white shadow-md'
                     : dark
                     ? 'text-slate-400'
-                    : 'text-slate-500'
+                    : 'text-slate-600'
                 }`}
               >
                 {r.label}
               </button>
             ))}
           </div>
-          <p className={`text-xs text-center mb-5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs text-center mb-5 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
             {ROLES.find((r) => r.id === role)?.desc}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className={`block text-xs font-medium mb-1.5 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              <label
+                className={`block text-xs font-medium mb-1.5 ${
+                  dark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Username
               </label>
               <input
@@ -119,7 +137,7 @@ export default function Login() {
                 className={`w-full rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${
                   dark
                     ? 'bg-slate-900 border border-slate-600 text-white'
-                    : 'bg-slate-50 border border-slate-200 text-slate-900'
+                    : 'bg-white/70 border border-white/80 text-slate-900 placeholder:text-slate-400'
                 }`}
                 placeholder="Enter username"
                 required
@@ -127,7 +145,11 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className={`block text-xs font-medium mb-1.5 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              <label
+                className={`block text-xs font-medium mb-1.5 ${
+                  dark ? 'text-slate-300' : 'text-slate-700'
+                }`}
+              >
                 Password
               </label>
               <input
@@ -137,7 +159,7 @@ export default function Login() {
                 className={`w-full rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${
                   dark
                     ? 'bg-slate-900 border border-slate-600 text-white'
-                    : 'bg-slate-50 border border-slate-200 text-slate-900'
+                    : 'bg-white/70 border border-white/80 text-slate-900 placeholder:text-slate-400'
                 }`}
                 placeholder="Enter password"
                 required
@@ -146,7 +168,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <div className="bg-red-500/10 text-red-500 text-sm px-4 py-3 rounded-xl border border-red-500/20">
+              <div className="bg-red-500/10 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-500/20">
                 {error}
               </div>
             )}
@@ -160,7 +182,7 @@ export default function Login() {
             </button>
           </form>
 
-          <p className={`text-xs text-center mt-6 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs text-center mt-6 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
             FieldForce Tracker · Nivea field sales
           </p>
         </div>

@@ -241,8 +241,8 @@ export const adminAssignOutlet = async (req, res) => {
     if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
 
     const omr = await User.findById(assignedTo);
-    if (!omr || omr.role !== 'omr') {
-      return res.status(400).json({ message: 'assignedTo must be an OMR user' });
+    if (!omr || !['omr', 'merchandiser'].includes(omr.role)) {
+      return res.status(400).json({ message: 'assignedTo must be an OMR or Merchandiser' });
     }
 
     outlet.assignedTo = assignedTo;

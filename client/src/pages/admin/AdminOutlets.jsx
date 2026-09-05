@@ -39,12 +39,13 @@ export default function AdminOutlets() {
   const load = async () => {
     setLoading(true);
     try {
-      const [oRes, uRes] = await Promise.all([
+      const [oRes, uRes, mRes] = await Promise.all([
         api.get('/admin/outlets'),
         api.get('/admin/users?role=omr'),
+        api.get('/admin/users?role=merchandiser'),
       ]);
       setOutlets(oRes.data);
-      setOmrs(uRes.data);
+      setOmrs([...uRes.data, ...mRes.data]);
     } catch {
       setStatus({ type: 'error', msg: 'Failed to load' });
     } finally {
@@ -226,7 +227,7 @@ export default function AdminOutlets() {
           <div>
             <label className="block text-xs text-slate-500 mb-1">Beat days (Mon–Fri for OMR)</label>
             <div className="flex flex-wrap gap-2">
-              {DAY_OPTIONS.filter((d) => d.value <= 5).map((d) => (
+              {DAY_OPTIONS.map((d) => (
                 <button
                   key={d.value}
                   type="button"
@@ -235,7 +236,7 @@ export default function AdminOutlets() {
                   }
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
                     form.assignedDays.includes(d.value)
-                      ? 'bg-navy text-white border-navy'
+                      ? 'bg-indigo-600 text-white border-indigo-600'
                       : 'bg-white text-slate-600 border-slate-200'
                   }`}
                 >
@@ -243,6 +244,7 @@ export default function AdminOutlets() {
                 </button>
               ))}
             </div>
+            <p className="text-[10px] text-slate-400">OMR: Mon–Fri · Merchandiser: Mon–Sat</p>
           </div>
 
           <button
@@ -301,7 +303,7 @@ export default function AdminOutlets() {
                     ))}
                   </select>
                   <div className="flex flex-wrap gap-1">
-                    {DAY_OPTIONS.filter((d) => d.value <= 5).map((d) => (
+                    {DAY_OPTIONS.map((d) => (
                       <button
                         key={d.value}
                         type="button"
@@ -313,7 +315,7 @@ export default function AdminOutlets() {
                         }
                         className={`px-2 py-1 rounded text-xs border ${
                           assignForm.assignedDays.includes(d.value)
-                            ? 'bg-navy text-white border-navy'
+                            ? 'bg-indigo-600 text-white border-indigo-600'
                             : 'bg-white border-slate-200'
                         }`}
                       >

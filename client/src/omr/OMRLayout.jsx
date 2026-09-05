@@ -1,7 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import UserAvatar from '../../components/UserAvatar';
 
 export default function OMRLayout() {
   const { user, logout } = useAuth();
@@ -29,8 +28,8 @@ export default function OMRLayout() {
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <div className="flex items-center gap-2.5">
-            <UserAvatar size={40} editable />
+          <div className="flex items-center gap-2">
+            <img src="/favicon.jpeg" alt="FieldForce" className="w-8 h-8 rounded-lg object-cover" />
             <div>
               <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
                 FieldForce

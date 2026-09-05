@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -34,13 +35,24 @@ function calcRow(row) {
 
 export default function MerchVisit() {
   const { dark } = useTheme();
+  const location = useLocation();
   const fileRef = useRef(null);
-  const [shopName, setShopName] = useState('');
+
+  useEffect(() => {
+    api.get('/merchandiser/skus').then((r) => setSkuGroups(r.data || {})).catch(() => {});
+  }, []);
+  const [shopName, setShopName] = useState(location.state?.shopName || '');
   const [visitType, setVisitType] = useState('Merchandising Visit');
   const [tab, setTab] = useState('sos'); // sos | photos | notes
   const [sosRows, setSosRows] = useState(emptySos);
   const [photos, setPhotos] = useState([]);
   const [notes, setNotes] = useState('');
+  const [stockLines, setStockLines] = useState([]);
+  const [skuGroups, setSkuGroups] = useState({});
+  const [stockCat, setStockCat] = useState('Lotion');
+  const [stockProduct, setStockProduct] = useState('');
+  const [stockUnit, setStockUnit] = useState('PC');
+  const [stockQty, setStockQty] = useState('');
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -112,21 +124,37 @@ export default function MerchVisit() {
           niveaFacings: Number(r.niveaFacings) || 0,
         }));
 
+      const today = new Date().toISOString().slice(0, 10);
       await api.post('/merchandiser/visits', {
         shopName,
         visitType,
-        date: new Date().toISOString().slice(0, 10),
+        date: today,
         sosRows: payloadRows,
         photos,
         overallNotes: notes,
         status: 'completed',
         startedAt: new Date().toISOString(),
       });
-      setStatus({ type: 'success', msg: 'Visit saved with Share of Shelf data' });
+      if (stockLines.length > 0) {
+        await api.post('/merchandiser/stock-receipts', {
+          outletName: shopName,
+          date: today,
+          lines: stockLines,
+          notes: notes || '',
+        });
+      }
+      setStatus({
+        type: 'success',
+        msg:
+          stockLines.length > 0
+            ? 'Visit + new stock receipt saved'
+            : 'Visit saved with Share of Shelf data',
+      });
       setShopName('');
       setSosRows(emptySos());
       setPhotos([]);
       setNotes('');
+      setStockLines([]);
     } catch (err) {
       setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to save' });
     } finally {
@@ -176,6 +204,7 @@ export default function MerchVisit() {
         >
           {[
             { id: 'sos', label: 'Share of Shelf' },
+            { id: 'stock', label: 'New stock' },
             { id: 'photos', label: 'Photos' },
             { id: 'notes', label: 'Notes' },
           ].map((t) => (
@@ -199,7 +228,7 @@ export default function MerchVisit() {
         {tab === 'sos' && (
           <div className="space-y-3">
             <p className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              SOS % = NIVEA facings ÷ total category facings × 100. Expected share = 100 ÷ brands.
+              SOS % = NIVEA facings ÷ total category facings × 100. Expected share = 100 ÷ competing brands. Count Nivea + rivals on that shelf (e.g. Nivea, Dove, Rexona = 3).
               Shelf advantage = SOS ÷ expected share.
             </p>
             {sosRows.map((row, idx) => {
@@ -211,7 +240,7 @@ export default function MerchVisit() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     <div>
-                      <label className={labelCls}># Brands</label>
+                      <label className={labelCls}># Competing brands</label>
                       <input
                         type="number"
                         min="0"
@@ -272,7 +301,106 @@ export default function MerchVisit() {
           </div>
         )}
 
-        {tab === 'photos' && (
+        
+        {tab === 'stock' && (
+          <div className="space-y-3">
+            <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Log new stock received at this outlet — product variant and quantity (PC / Pack / Carton).
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={labelCls}>Category</label>
+                <select
+                  value={stockCat}
+                  onChange={(e) => {
+                    setStockCat(e.target.value);
+                    setStockProduct('');
+                  }}
+                  className={inputCls}
+                >
+                  {['Lotion', 'Roll-on', 'Spray', 'Shower Gel', 'Other'].map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Unit</label>
+                <select value={stockUnit} onChange={(e) => setStockUnit(e.target.value)} className={inputCls}>
+                  <option value="PC">PC</option>
+                  <option value="Pack">Pack</option>
+                  <option value="Carton">Carton</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Product / variant</label>
+              <select
+                value={stockProduct}
+                onChange={(e) => setStockProduct(e.target.value)}
+                className={inputCls}
+              >
+                <option value="">Select product</option>
+                {(skuGroups[stockCat] || []).map((s) => (
+                  <option key={s._id || s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Quantity received</label>
+              <input
+                type="number"
+                min="1"
+                value={stockQty}
+                onChange={(e) => setStockQty(e.target.value)}
+                className={inputCls}
+                placeholder="e.g. 6"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!stockProduct || !stockQty) return;
+                setStockLines((lines) => [
+                  ...lines,
+                  {
+                    productName: stockProduct,
+                    category: stockCat,
+                    unit: stockUnit,
+                    quantity: Number(stockQty),
+                  },
+                ]);
+                setStockProduct('');
+                setStockQty('');
+              }}
+              className="w-full py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold"
+            >
+              + Add product line
+            </button>
+            {stockLines.length > 0 && (
+              <div className={`${cardCls} space-y-2`}>
+                {stockLines.map((l, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <div>
+                      <div className={dark ? 'text-white' : 'text-slate-800'}>{l.productName}</div>
+                      <div className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {l.quantity} × {l.unit} · {l.category}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-red-500 text-xs"
+                      onClick={() => setStockLines((rows) => rows.filter((_, j) => j !== i))}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+{tab === 'photos' && (
           <div className="space-y-3">
             <input
               ref={fileRef}

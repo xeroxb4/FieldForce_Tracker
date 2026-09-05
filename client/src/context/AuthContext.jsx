@@ -12,6 +12,15 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (stored && token) {
       setUser(JSON.parse(stored));
+      // Refresh profile (incl. picture) from server
+      api
+        .get('/auth/me')
+        .then((res) => {
+          const next = { ...JSON.parse(stored), ...res.data, token };
+          localStorage.setItem('user', JSON.stringify(next));
+          setUser(next);
+        })
+        .catch(() => {});
     }
     setLoading(false);
   }, []);
@@ -30,8 +39,16 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateProfilePicture = async (profilePicture) => {
+    const { data } = await api.put('/auth/profile-picture', { profilePicture });
+    const next = { ...user, ...data };
+    localStorage.setItem('user', JSON.stringify(next));
+    setUser(next);
+    return next;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateProfilePicture }}>
       {children}
     </AuthContext.Provider>
   );

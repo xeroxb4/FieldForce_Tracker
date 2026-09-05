@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    profilePicture: {
+      type: String,
+      default: '', // base64 data URL or remote URL
+    },
+    avatar: {
+      type: String,
+      default: '',
+    },
     isActive: {
       type: Boolean,
       default: true,

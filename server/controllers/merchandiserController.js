@@ -1,5 +1,6 @@
 import NiveaSKU from '../models/NiveaSKU.js';
 import MerchVisit, { SOS_CATEGORIES } from '../models/MerchVisit.js';
+import StockReceipt from '../models/StockReceipt.js';
 
 function calcSos(row) {
   const brands = Number(row.numberOfBrands) || 0;
@@ -102,7 +103,7 @@ export const createMerchVisit = async (req, res) => {
       startedAt: startedAt ? new Date(startedAt) : new Date(),
       skuEntries: skuEntries || [],
       sosRows: calculatedSos,
-      photos: (photos || []).slice(0, 10), // safety limit
+      photos: (photos || []).slice(0, 10),
       overallNotes: overallNotes || '',
       location: location || undefined,
     });
@@ -123,5 +124,57 @@ export const getMerchVisits = async (req, res) => {
     res.json(visits);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch visits' });
+  }
+};
+
+export const createStockReceipt = async (req, res) => {
+  try {
+    const { outletId, outletName, date, lines, notes, location } = req.body;
+    if (!outletName) {
+      return res.status(400).json({ message: 'Outlet name is required' });
+    }
+    if (!Array.isArray(lines) || lines.length === 0) {
+      return res.status(400).json({ message: 'Add at least one product line' });
+    }
+
+    const cleaned = lines
+      .filter((l) => l.productName && Number(l.quantity) > 0)
+      .map((l) => ({
+        productName: l.productName,
+        category: l.category || '',
+        unit: ['PC', 'Pack', 'Carton'].includes(l.unit) ? l.unit : 'PC',
+        quantity: Number(l.quantity),
+      }));
+
+    if (cleaned.length === 0) {
+      return res.status(400).json({ message: 'Invalid product lines' });
+    }
+
+    const receipt = await StockReceipt.create({
+      userId: req.user._id,
+      outletId: outletId || undefined,
+      outletName,
+      date: date || new Date().toISOString().slice(0, 10),
+      lines: cleaned,
+      notes: notes || '',
+      location: location || undefined,
+    });
+
+    res.status(201).json(receipt);
+  } catch (error) {
+    console.error('Stock receipt error:', error);
+    res.status(500).json({ message: 'Failed to save stock receipt' });
+  }
+};
+
+export const getStockReceipts = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const filter = { userId: req.user._id };
+    if (date) filter.date = date;
+    const rows = await StockReceipt.find(filter).sort({ createdAt: -1 });
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch stock receipts' });
   }
 };

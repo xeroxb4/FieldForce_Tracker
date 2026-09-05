@@ -10,6 +10,8 @@ import Outlets from './pages/omr/Outlets';
 import Beats from './pages/omr/Beats';
 import Owings from './pages/omr/Owings';
 import MerchLayout from './pages/merchandiser/MerchLayout';
+import MerchDashboard from './pages/merchandiser/MerchDashboard';
+import MerchBeats from './pages/merchandiser/MerchBeats';
 import MerchVisit from './pages/merchandiser/MerchVisit';
 import MerchHistory from './pages/merchandiser/MerchHistory';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -46,7 +48,9 @@ export default function App() {
       </Route>
 
       <Route path="/merch" element={<PrivateRoute roles={['merchandiser', 'admin']}><MerchLayout /></PrivateRoute>}>
-        <Route index element={<Navigate to="visit" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<MerchDashboard />} />
+        <Route path="beats" element={<MerchBeats />} />
         <Route path="visit" element={<MerchVisit />} />
         <Route path="history" element={<MerchHistory />} />
       </Route>

@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(protect);
 
-// OMR + Admin
-router.post('/', restrictTo('omr', 'admin'), createOutlet);
-router.get('/', restrictTo('omr', 'admin'), getOutlets);
-router.put('/:id', restrictTo('omr', 'admin'), updateOutlet);
+// OMR, Merchandiser, Admin can create/list own outlets
+router.post('/', restrictTo('omr', 'merchandiser', 'admin'), createOutlet);
+router.get('/', restrictTo('omr', 'merchandiser', 'admin'), getOutlets);
+router.put('/:id', restrictTo('omr', 'merchandiser', 'admin'), updateOutlet);
 
 // Admin only
 router.get('/pending', restrictTo('admin'), getPendingOutlets);

@@ -1,9 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import logo from '../../assets/logo.png';
 
-export default function AdminLayout() {
+export default function MerchLayout() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
@@ -14,29 +13,28 @@ export default function AdminLayout() {
   };
 
   const navItems = [
-    { to: '/admin/reports', label: 'Reports' },
-    { to: '/admin/export', label: 'Export' },
-    { to: '/admin/outlets', label: 'Outlets' },
-    { to: '/admin/targets', label: 'Targets' },
-    { to: '/admin/users', label: 'Users' },
+    { to: '/merch/dashboard', label: 'Home' },
+    { to: '/merch/beats', label: 'Beat' },
+    { to: '/merch/visit', label: 'Visit' },
+    { to: '/merch/history', label: 'History' },
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col pb-16 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
       <header
         className={`px-4 py-3 sticky top-0 z-10 border-b backdrop-blur ${
           dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
         }`}
       >
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="FieldForce" className="w-9 h-9 rounded-xl object-contain" />
+            <img src="/favicon.jpeg" alt="FieldForce" className="w-8 h-8 rounded-lg object-cover" />
             <div>
               <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-                FieldForce Admin
+                FieldForce
               </h1>
               <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {user?.fullName}
+                {user?.fullName} · Merchandiser
               </p>
             </div>
           </div>
@@ -62,7 +60,7 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 max-w-2xl mx-auto w-full">
+      <main className="flex-1 p-4 max-w-lg mx-auto w-full">
         <Outlet />
       </main>
 
@@ -71,15 +69,15 @@ export default function AdminLayout() {
           dark ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-slate-100'
         }`}
       >
-        <div className="flex max-w-2xl mx-auto overflow-x-auto">
+        <div className="flex max-w-lg mx-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex-1 min-w-[4.2rem] flex flex-col items-center py-2.5 text-[10px] ${
+                `flex-1 flex flex-col items-center py-3 text-xs ${
                   isActive
-                    ? 'text-indigo-500 font-semibold'
+                    ? 'text-teal-600 font-semibold'
                     : dark
                     ? 'text-slate-500'
                     : 'text-slate-400'
