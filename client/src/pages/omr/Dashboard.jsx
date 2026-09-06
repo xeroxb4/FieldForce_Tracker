@@ -185,7 +185,7 @@ export default function Dashboard() {
           <span className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
             Monthly Target
           </span>
-          <span className="text-indigo-500 font-bold text-sm">{pct}%</span>
+          <span className="text-[#2596be] font-bold text-sm">{pct}%</span>
         </div>
         {target?.hasTarget ? (
           <>
@@ -238,7 +238,7 @@ export default function Dashboard() {
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-indigo-600'}`}>
                 Coverage (target 100%)
               </div>
-              <div className="text-sm font-bold text-indigo-500">{coveragePct}%</div>
+              <div className="text-sm font-bold text-[#2596be]">{coveragePct}%</div>
             </div>
           </div>
         </div>
@@ -342,7 +342,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setShowTop10(!showTop10)}
-                className="text-[10px] text-indigo-500 font-medium"
+                className="text-[10px] text-[#2596be] font-medium"
               >
                 {showTop10 ? 'Hide list' : 'View list'}
               </button>
@@ -381,7 +381,7 @@ export default function Dashboard() {
             </div>
             <div>
               <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Prod</div>
-              <div className="text-xs font-bold text-indigo-500">{mtd.productiveCalls}</div>
+              <div className="text-xs font-bold text-[#2596be]">{mtd.productiveCalls}</div>
             </div>
             <div>
               <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Top10</div>
@@ -427,7 +427,7 @@ export default function Dashboard() {
 
       <Link
         to="/omr/beats"
-        className="block w-full text-center bg-indigo-600 text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20"
+        className="block w-full text-center bg-[#2596be] text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20"
       >
         Start today's beat
       </Link>

@@ -21,7 +21,7 @@ export default function MerchLayout() {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'bg-[#e8edf5]'}`}>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'light-page'}`}>
       <header
         className={`px-4 py-3 sticky top-0 z-10 border-b backdrop-blur ${
           dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-sm'

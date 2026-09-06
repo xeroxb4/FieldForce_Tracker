@@ -120,10 +120,10 @@ export default function MerchBeats() {
                   key={o._id}
                   type="button"
                   onClick={() => startVisit(o)}
-                  className={`w-full text-left rounded-2xl border-2 p-4 transition ${
+                  className={`w-full text-left rounded-2xl p-4 transition ${
                     dark
-                      ? 'bg-slate-800 border-slate-700 hover:border-[#2596be]'
-                      : 'bg-white border-[#2596be]/50 shadow-sm hover:border-[#2596be] hover:shadow-md'
+                      ? 'bg-slate-800 border border-slate-700 hover:border-[#2596be]'
+                      : 'ff-card-accent hover:shadow-lg hover:-translate-y-0.5'
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">

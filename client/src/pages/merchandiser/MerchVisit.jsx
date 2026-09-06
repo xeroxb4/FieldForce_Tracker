@@ -62,9 +62,7 @@ export default function MerchVisit() {
       : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'
   }`;
   const labelCls = `block text-xs font-medium mb-1 ${dark ? 'text-slate-300' : 'text-slate-600'}`;
-  const cardCls = `rounded-2xl border p-3 ${
-    dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
-  }`;
+  const cardCls = dark ? 'bg-slate-800 border border-slate-700 rounded-2xl p-4' : 'ff-card-accent p-4';
 
   const updateSos = (idx, field, value) => {
     setSosRows((rows) =>
@@ -228,10 +226,7 @@ export default function MerchVisit() {
         {tab === 'sos' && (
           <div className="space-y-3">
             <p className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Per category (e.g. Roll-on): count all brands on that shelf (Nivea + rivals).
-              NIVEA facings = total facings of ALL Nivea variants in that category combined (not per SKU).
-              Total facings = every brand's facings in that category.
-              SOS % = NIVEA facings ÷ total facings × 100. Expected share ≈ 100 ÷ # brands.
+              Tip: NIVEA facings = all Nivea variants in that category added together (not per SKU). SOS % = Nivea ÷ total facings.
             </p>
             {sosRows.map((row, idx) => {
               const c = calcRow(row);

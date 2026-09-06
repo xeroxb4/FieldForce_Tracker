@@ -22,10 +22,10 @@ export default function OMRLayout() {
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'bg-[#e8edf5]'}`}>
+    <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'light-page'}`}>
       <header
         className={`px-4 py-3 sticky top-0 z-10 backdrop-blur border-b ${
-          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white/95 border-slate-200 shadow-sm'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white/95 border-[#2596be]/60 shadow-md'
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
@@ -57,7 +57,7 @@ export default function OMRLayout() {
 
       <nav
         className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur ${
-          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]'
+          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-[#2596be]/50 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]'
         }`}
       >
         <div className="flex max-w-lg mx-auto">
@@ -68,7 +68,7 @@ export default function OMRLayout() {
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center py-2 text-[10px] ${
                   isActive
-                    ? 'text-indigo-500 font-semibold'
+                    ? 'text-[#2596be] font-semibold'
                     : dark
                     ? 'text-slate-500'
                     : 'text-slate-400'

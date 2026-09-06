@@ -41,18 +41,18 @@ function coords(location, i) {
 }
 
 const OMR_ACCOUNTS = [
-  { fullName: 'Basmah Ali', username: 'basmah', password: 'B@sm4h#R7', territory: 'Okaishie' },
+  { fullName: 'Basmah Ali', username: 'basmah', password: 'B@sm4h#R7', territory: 'Okaishie' , distributor: 'Amata' },
   { fullName: 'Christina Sefah', username: 'christina', password: 'Chr1st#N5', territory: 'Tarkwa' },
   { fullName: 'Doris Asamoah', username: 'doris', password: 'D0ris#M8k', territory: 'Accra' },
-  { fullName: 'Evelyn Okyere', username: 'evelyn', password: 'Ev3lyn$P2', territory: 'Madina' },
+  { fullName: 'Evelyn Okyere', username: 'evelyn', password: 'Ev3lyn$P2', territory: 'Madina' , distributor: 'Amata' },
   { fullName: 'Marilyn Etornam Amekudzi', username: 'marilyn', password: 'M@rilyn#9', territory: 'Makola', distributor: 'Amata' },
   { fullName: 'Mary Owusu', username: 'mary', password: 'M@ry0w#Q4', territory: 'Accra' },
   { fullName: 'Sandra Owusu', username: 'sandramo', password: 'S@ndra#M3', territory: 'Accra' },
   { fullName: 'Rafael Ahiable', username: 'rafael', password: 'R@fa3l$K6', territory: 'Accra' },
   { fullName: 'Reuben Kyei', username: 'reuben', password: 'R3uben#H8', territory: 'Accra' },
-  { fullName: 'Richard Korli', username: 'richard', password: 'R1ch#J2v9', territory: 'Koforidua' },
+  { fullName: 'Richard Korli', username: 'richard', password: 'R1ch#J2v9', territory: 'Koforidua' , distributor: 'Amata' },
   { fullName: 'Samira Nasara', username: 'samiran', password: 'S@mirN#5x', territory: 'Accra' },
-  { fullName: 'Samuel Aryeetey', username: 'samuel', password: 'S@mu3l#T7', territory: 'Accra' },
+  { fullName: 'Samuel Aryeetey', username: 'samuel', password: 'S@mu3l#T7', territory: 'Accra' , distributor: 'Amata' },
 ];
 
 // Reviewed outlets (from user Excel). Skip empty outlet names.

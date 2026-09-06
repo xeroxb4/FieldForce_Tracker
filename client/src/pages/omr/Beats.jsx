@@ -124,7 +124,7 @@ export default function Beats() {
               onClick={() => setSelectedDay(d)}
               className={`flex-1 min-w-[3.5rem] py-2 px-1 rounded-xl text-center transition ${
                 active
-                  ? 'bg-indigo-600 text-white shadow-lg'
+                  ? 'bg-[#2596be] text-white shadow-lg'
                   : dark
                   ? 'bg-slate-800 text-slate-300'
                   : 'bg-slate-100 text-slate-600'
@@ -153,7 +153,7 @@ export default function Beats() {
       {outlets.length === 0 ? (
         <div
           className={`rounded-2xl border p-6 text-center text-sm ${
-            dark ? 'border-slate-700 text-slate-400' : 'border-slate-300 text-slate-600 bg-white/80'
+            dark ? 'border-slate-700 text-slate-400' : 'border-[#2596be]/60 text-slate-600 bg-white/80'
           }`}
         >
           No outlets assigned for {dayData?.dayName}.
@@ -170,8 +170,8 @@ export default function Beats() {
               disabled={startingId === o._id}
               className={`w-full text-left rounded-2xl border p-4 transition ${
                 dark
-                  ? 'bg-slate-800 border-slate-700 hover:border-indigo-500'
-                  : 'bg-white border-slate-200 hover:border-indigo-400'
+                  ? 'bg-slate-800 border-slate-700 hover:border-[#2596be]'
+                  : 'bg-white border-[#2596be]/50 hover:border-[#2596be]'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -190,7 +190,7 @@ export default function Beats() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-indigo-500 shrink-0">
+                <span className="text-xs font-semibold text-[#2596be] shrink-0">
                   {startingId === o._id ? 'Starting…' : 'Start visit →'}
                 </span>
               </div>
