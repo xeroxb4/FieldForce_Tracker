@@ -228,8 +228,10 @@ export default function MerchVisit() {
         {tab === 'sos' && (
           <div className="space-y-3">
             <p className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              SOS % = NIVEA facings ÷ total category facings × 100. Expected share = 100 ÷ competing brands. Count Nivea + rivals on that shelf (e.g. Nivea, Dove, Rexona = 3).
-              Shelf advantage = SOS ÷ expected share.
+              Per category (e.g. Roll-on): count all brands on that shelf (Nivea + rivals).
+              NIVEA facings = total facings of ALL Nivea variants in that category combined (not per SKU).
+              Total facings = every brand's facings in that category.
+              SOS % = NIVEA facings ÷ total facings × 100. Expected share ≈ 100 ÷ # brands.
             </p>
             {sosRows.map((row, idx) => {
               const c = calcRow(row);
@@ -251,7 +253,7 @@ export default function MerchVisit() {
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Total facings</label>
+                      <label className={labelCls}>Total facings (all brands)</label>
                       <input
                         type="number"
                         min="0"
@@ -262,7 +264,7 @@ export default function MerchVisit() {
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>NIVEA facings</label>
+                      <label className={labelCls}>NIVEA facings (all variants)</label>
                       <input
                         type="number"
                         min="0"

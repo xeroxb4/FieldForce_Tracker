@@ -4,12 +4,12 @@ import defaultAvatar from '../assets/default-avatar.png';
 
 export default function UserAvatar({ size = 40, editable = true }) {
   const { user, updateProfilePicture } = useAuth();
-  const inputRef = useRef(null);
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState(false);
 
-  const onPick = (e) => {
-    const file = e.target.files?.[0];
+  const processFile = (file) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -40,6 +40,11 @@ export default function UserAvatar({ size = 40, editable = true }) {
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
+  };
+
+  const onPick = (e) => {
+    const file = e.target.files?.[0];
+    processFile(file);
     e.target.value = '';
   };
 
@@ -63,7 +68,7 @@ export default function UserAvatar({ size = 40, editable = true }) {
         type="button"
         title={editable ? 'Profile photo' : user?.fullName}
         onClick={() => editable && !busy && setMenu((m) => !m)}
-        className="w-full h-full rounded-full overflow-hidden bg-white shadow-sm border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1"
+        className="w-full h-full rounded-full overflow-hidden bg-white shadow-sm border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-[#2596be] focus:ring-offset-1"
       >
         <img
           src={user?.profilePicture || defaultAvatar}
@@ -73,38 +78,48 @@ export default function UserAvatar({ size = 40, editable = true }) {
       </button>
 
       {editable && (
-        <button
-          type="button"
-          title="Photo options"
-          onClick={() => !busy && setMenu((m) => !m)}
-          className="absolute -bottom-0.5 -right-0.5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md border-2 border-white hover:bg-blue-700 transition"
-          style={{ width: badge, height: badge }}
+        <span
+          className="absolute rounded-full bg-[#2596be] text-white flex items-center justify-center shadow border-2 border-white pointer-events-none"
+          style={{
+            width: badge,
+            height: badge,
+            right: -2,
+            bottom: -2,
+            fontSize: Math.max(10, badge * 0.55),
+            fontWeight: 700,
+          }}
         >
-          {busy ? (
-            <span className="text-[9px] font-bold">…</span>
-          ) : (
-            <svg viewBox="0 0 20 20" fill="currentColor" style={{ width: badge * 0.55, height: badge * 0.55 }}>
-              <path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z" />
-            </svg>
-          )}
-        </button>
+          +
+        </span>
       )}
 
-      {menu && editable && (
+      {menu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
-          <div className="absolute left-0 top-full mt-2 z-50 w-44 rounded-xl bg-white shadow-xl border border-slate-200 py-1 text-sm text-slate-800">
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/30"
+            aria-label="Close"
+            onClick={() => setMenu(false)}
+          />
+          <div className="absolute z-50 left-0 top-full mt-2 w-52 rounded-xl bg-white shadow-xl border border-slate-200 py-1 text-sm text-slate-800">
             <button
               type="button"
-              className="w-full text-left px-3 py-2 hover:bg-slate-50"
-              onClick={() => inputRef.current?.click()}
+              className="w-full text-left px-3 py-2.5 hover:bg-slate-50 font-medium"
+              onClick={() => cameraRef.current?.click()}
             >
-              Take / upload photo
+              Take photo (camera)
+            </button>
+            <button
+              type="button"
+              className="w-full text-left px-3 py-2.5 hover:bg-slate-50 font-medium"
+              onClick={() => galleryRef.current?.click()}
+            >
+              Upload from device
             </button>
             {user?.profilePicture ? (
               <button
                 type="button"
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 text-red-600"
+                className="w-full text-left px-3 py-2.5 hover:bg-slate-50 text-red-600 font-medium"
                 onClick={removePhoto}
               >
                 Remove photo
@@ -112,7 +127,7 @@ export default function UserAvatar({ size = 40, editable = true }) {
             ) : null}
             <button
               type="button"
-              className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500"
+              className="w-full text-left px-3 py-2.5 hover:bg-slate-50 text-slate-500"
               onClick={() => setMenu(false)}
             >
               Cancel
@@ -121,11 +136,20 @@ export default function UserAvatar({ size = 40, editable = true }) {
         </>
       )}
 
+      {/* Camera — capture attribute encourages camera on phones */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
-        capture="user"
+        capture="environment"
+        className="hidden"
+        onChange={onPick}
+      />
+      {/* Gallery — no capture, so gallery / files open */}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={onPick}
       />
