@@ -23,18 +23,20 @@ export default function MerchLayout() {
   return (
     <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'light-page'}`}>
       <header
-        className={`px-4 py-3 sticky top-0 z-10 border-b backdrop-blur ${
-          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+        className={`px-4 py-3 sticky top-0 z-10 border-b ${
+          dark
+            ? 'bg-slate-950/95 border-slate-800 backdrop-blur'
+            : 'bg-gradient-to-r from-[#2596be] to-[#1a7a9c] border-[#1a7a9c] shadow-md'
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2.5">
             <UserAvatar size={40} editable />
             <div>
-              <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+              <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-white'}`}>
                 FieldForce
               </h1>
-              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-white/85'}`}>
                 {user?.fullName} · Merchandiser
               </p>
             </div>
@@ -44,7 +46,7 @@ export default function MerchLayout() {
               type="button"
               onClick={toggle}
               className={`text-[10px] px-2 py-1 rounded-lg ${
-                dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                dark ? 'bg-slate-800 text-slate-300' : 'bg-white/20 text-white'
               }`}
             >
               {dark ? '☀' : '☾'}
@@ -52,7 +54,7 @@ export default function MerchLayout() {
             <button
               onClick={handleLogout}
               className={`text-[10px] px-2.5 py-1 rounded-lg ${
-                dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+                dark ? 'bg-slate-800 text-slate-300' : 'bg-white/20 text-white'
               }`}
             >
               Logout

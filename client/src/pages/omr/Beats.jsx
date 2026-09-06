@@ -171,7 +171,7 @@ export default function Beats() {
               className={`w-full text-left rounded-2xl border p-4 transition ${
                 dark
                   ? 'bg-slate-800 border-slate-700 hover:border-[#2596be]'
-                  : 'bg-white border-[#2596be]/50 hover:border-[#2596be]'
+                  : 'bg-gradient-to-r from-violet-50 to-fuchsia-50 border-violet-200 shadow-md hover:shadow-lg hover:-translate-y-0.5'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -190,7 +190,7 @@ export default function Beats() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-[#2596be] shrink-0">
+                <span className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300">
                   {startingId === o._id ? 'Starting…' : 'Start visit →'}
                 </span>
               </div>

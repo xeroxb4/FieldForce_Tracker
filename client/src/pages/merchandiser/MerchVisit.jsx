@@ -62,7 +62,7 @@ export default function MerchVisit() {
       : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'
   }`;
   const labelCls = `block text-xs font-medium mb-1 ${dark ? 'text-slate-300' : 'text-slate-600'}`;
-  const cardCls = dark ? 'bg-slate-800 border border-slate-700 rounded-2xl p-4' : 'ff-card-accent p-4';
+  const cardCls = dark ? 'bg-slate-800 border border-slate-700 rounded-2xl p-4' : 'rounded-2xl p-4 bg-gradient-to-br from-white to-sky-50 border border-sky-200 shadow-md';
 
   const updateSos = (idx, field, value) => {
     setSosRows((rows) =>
@@ -271,23 +271,23 @@ export default function MerchVisit() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-slate-900' : 'bg-indigo-50'}`}>
-                      <div className="text-[9px] text-indigo-500">SOS %</div>
-                      <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-800'}`}>
+                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-indigo-950 border-2 border-indigo-500' : 'bg-indigo-100 border-2 border-indigo-400'}`}>
+                      <div className="text-[10px] font-bold text-indigo-700">SOS %</div>
+                      <div className={`text-base font-extrabold ${dark ? 'text-indigo-200' : 'text-indigo-800'}`}>
                         {c.sosPct}
                       </div>
                     </div>
-                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
-                      <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-amber-950 border-2 border-amber-500' : 'bg-amber-100 border-2 border-amber-400'}`}>
+                      <div className="text-[10px] font-bold text-amber-700">
                         Expected %
                       </div>
-                      <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-800'}`}>
+                      <div className={`text-base font-extrabold ${dark ? 'text-amber-200' : 'text-amber-800'}`}>
                         {c.expectedSharePct}
                       </div>
                     </div>
-                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-slate-900' : 'bg-emerald-50'}`}>
-                      <div className="text-[9px] text-emerald-500">Advantage</div>
-                      <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-800'}`}>
+                    <div className={`rounded-lg py-1.5 ${dark ? 'bg-emerald-950 border-2 border-emerald-500' : 'bg-emerald-100 border-2 border-emerald-400'}`}>
+                      <div className="text-[10px] font-bold text-emerald-700">Advantage</div>
+                      <div className={`text-base font-extrabold ${dark ? 'text-emerald-200' : 'text-emerald-800'}`}>
                         {c.shelfAdvantage}x
                       </div>
                     </div>

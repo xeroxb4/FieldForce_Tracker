@@ -30,7 +30,7 @@ export default function Outlets() {
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm border ${
     dark
       ? 'bg-slate-900 border-slate-600 text-white placeholder:text-slate-500'
-      : 'bg-white border-slate-300 text-slate-900'
+      : 'bg-white border-[#2596be]/60 text-slate-900'
   }`;
 
   const load = () => {
@@ -121,7 +121,7 @@ export default function Outlets() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-lg"
+          className="bg-[#2596be] text-white text-xs font-semibold px-3 py-2 rounded-lg"
         >
           {showForm ? 'Cancel' : '+ New Outlet'}
         </button>
@@ -143,7 +143,7 @@ export default function Outlets() {
         <form
           onSubmit={handleSubmit}
           className={`rounded-xl border p-4 space-y-3 mb-4 ${
-            dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+            dark ? 'bg-slate-800 border-slate-700' : 'bg-gradient-to-r from-sky-50 to-teal-50 border-sky-200 shadow-md'
           }`}
         >
           <input
@@ -177,7 +177,7 @@ export default function Outlets() {
           {/* AVC Program */}
           <div
             className={`rounded-xl border p-3 space-y-2 ${
-              dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-slate-50'
+              dark ? 'border-slate-600 bg-slate-900' : 'border-[#2596be]/50 bg-slate-50'
             }`}
           >
             <label className={`flex items-center gap-2 text-sm font-medium ${dark ? 'text-white' : 'text-slate-800'}`}>
@@ -202,10 +202,10 @@ export default function Outlets() {
                       onClick={() => setForm({ ...form, avcTier: t.id })}
                       className={`py-2 rounded-lg text-xs font-semibold border ${
                         form.avcTier === t.id
-                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          ? 'bg-[#2596be] text-white border-indigo-600'
                           : dark
                           ? 'bg-slate-800 text-slate-300 border-slate-600'
-                          : 'bg-white text-slate-600 border-slate-200'
+                          : 'bg-white text-slate-600 border-[#2596be]/50'
                       }`}
                     >
                       {t.id}
@@ -235,7 +235,7 @@ export default function Outlets() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl disabled:opacity-60"
+            className="w-full bg-[#2596be] text-white font-semibold py-3 rounded-xl disabled:opacity-60"
           >
             {saving ? 'Getting GPS & Saving...' : 'Submit for Approval'}
           </button>
@@ -254,7 +254,7 @@ export default function Outlets() {
             <div
               key={o._id}
               className={`rounded-xl border p-3 ${
-                dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                dark ? 'bg-slate-800 border-slate-700' : 'bg-gradient-to-r from-sky-50 to-teal-50 border-sky-200 shadow-md'
               }`}
             >
               <div className="flex items-start justify-between">

@@ -24,18 +24,20 @@ export default function OMRLayout() {
   return (
     <div className={`min-h-screen flex flex-col pb-20 ${dark ? 'bg-slate-950' : 'light-page'}`}>
       <header
-        className={`px-4 py-3 sticky top-0 z-10 backdrop-blur border-b ${
-          dark ? 'bg-slate-950/95 border-slate-800' : 'bg-white/95 border-[#2596be]/60 shadow-md'
+        className={`px-4 py-3 sticky top-0 z-10 border-b ${
+          dark
+            ? 'bg-slate-950/95 border-slate-800 backdrop-blur'
+            : 'bg-gradient-to-r from-[#7c3aed] to-[#5b21b6] border-violet-800 shadow-md'
         }`}
       >
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-2.5">
             <UserAvatar size={40} editable />
             <div>
-              <h1 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+              <h1 className="text-sm font-bold text-white">
                 FieldForce
               </h1>
-              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] ${dark ? 'text-slate-400' : 'text-white/85'}`}>
                 {user?.fullName}
               </p>
             </div>
@@ -43,7 +45,7 @@ export default function OMRLayout() {
           <button
             onClick={handleLogout}
             className={`text-[10px] px-2.5 py-1 rounded-lg ${
-              dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+              dark ? 'bg-slate-800 text-slate-300' : 'bg-white/20 text-white'
             }`}
           >
             Logout
