@@ -22,7 +22,7 @@ function applyAvc(body) {
 
 export const createOutlet = async (req, res) => {
   try {
-    const { name, contactName, contactPhone, address, lat, lng, notes } = req.body;
+    const { name, contactName, contactPhone, address, lat, lng, notes, locationVerified } = req.body;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Outlet name is required' });
@@ -48,6 +48,7 @@ export const createOutlet = async (req, res) => {
       territory: req.user.territory || '',
       distributor: req.user.distributor || '',
       location: { lat: Number(lat), lng: Number(lng) },
+      locationVerified: !!locationVerified,
       status: 'pending',
       notes: notes || '',
       avcEnrolled: avc.avcEnrolled,

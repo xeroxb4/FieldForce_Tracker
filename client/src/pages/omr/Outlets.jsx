@@ -49,6 +49,20 @@ export default function Outlets() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setStatus(null);
+
+    const atShop = window.confirm(
+      'IMPORTANT\n\nYou must be STANDING AT THIS SHOP when you create it.\n\nThe app will save your current GPS as the shop location.\n\nIf you create many shops from one place, every pin will be wrong and Start visit will fail.\n\nAre you at "' +
+        (form.name || 'this shop') +
+        '" right now?'
+    );
+    if (!atShop) {
+      setStatus({
+        type: 'error',
+        msg: 'Go to the shop first, then create the outlet so the GPS pin is exact.',
+      });
+      return;
+    }
+
     setSaving(true);
 
     if (!navigator.geolocation) {
@@ -64,10 +78,11 @@ export default function Outlets() {
             ...form,
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
+            locationVerified: true,
             avcEnrolled: form.avcEnrolled,
             avcTier: form.avcEnrolled ? form.avcTier : '',
           });
-          setStatus({ type: 'success', msg: 'Outlet submitted for admin approval' });
+          setStatus({ type: 'success', msg: 'Outlet submitted for admin approval (GPS saved at shop)' });
           setForm({
             name: '',
             contactName: '',
@@ -230,7 +245,7 @@ export default function Outlets() {
             className={inputCls}
           />
           <p className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-            GPS location will be captured when you save.
+            You must be at the shop. GPS is captured on save. Creating many outlets from one place will put every pin in the wrong location.
           </p>
           <button
             type="submit"
@@ -279,7 +294,7 @@ export default function Outlets() {
                   )}
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-lg border ${statusBadge(o.status)}`}>
-                  {o.status}
+                  {o.status}{o.locationVerified === false ? ' · Pin not verified' : ''}
                 </span>
               </div>
             </div>

@@ -346,6 +346,7 @@ export const updateOutletGps = async (req, res) => {
       lat: Number(lat),
       lng: Number(lng),
     };
+    outlet.locationVerified = true;
     if (outlet.markModified) outlet.markModified('location');
     await outlet.save();
 

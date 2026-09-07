@@ -52,6 +52,11 @@ const outletSchema = new mongoose.Schema(
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },
     },
+    /** true after GPS was set while standing at the shop (create confirm or update pin) */
+    locationVerified: {
+      type: Boolean,
+      default: false,
+    },
     // AVC Program
     avcEnrolled: {
       type: Boolean,
