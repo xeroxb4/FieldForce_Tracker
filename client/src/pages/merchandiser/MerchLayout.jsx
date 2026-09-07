@@ -51,6 +51,14 @@ export default function MerchLayout() {
             >
               {dark ? '☀' : '☾'}
             </button>
+            <Link
+              to="/profile"
+              className={`text-[10px] px-2.5 py-1 rounded-lg ${
+                dark ? 'bg-slate-800 text-slate-300' : 'bg-white/20 text-white'
+              }`}
+            >
+              Profile
+            </Link>
             <button
               onClick={handleLogout}
               className={`text-[10px] px-2.5 py-1 rounded-lg ${
