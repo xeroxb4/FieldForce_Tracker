@@ -30,6 +30,20 @@ export default function Beats() {
     load();
   }, []);
 
+  const goToLogShop = (data, agentLocation, outlet) => {
+    navigate('/omr/log-shop', {
+      state: {
+        outletId: data.outlet?._id || outlet._id,
+        shopName: data.outlet?.displayName || data.outlet?.name || outlet.displayName || outlet.name,
+        contactName: data.outlet?.contactName || outlet.contactName,
+        contactPhone: data.outlet?.contactPhone || outlet.contactPhone,
+        outletLocation: data.outlet?.location || outlet.location,
+        agentLocation: data.agentLocation || agentLocation,
+        distanceMeters: data.distanceMeters,
+      },
+    });
+  };
+
   const startOutletVisit = (outlet) => {
     setGpsMsg('');
     setStartingId(outlet._id);
@@ -54,19 +68,31 @@ export default function Beats() {
               outletId: outlet._id,
               ...agentLocation,
             });
-            navigate('/omr/log-shop', {
-              state: {
-                outletId: data.outlet._id,
-                shopName: data.outlet.displayName || data.outlet.name,
-                contactName: data.outlet.contactName,
-                contactPhone: data.outlet.contactPhone,
-                outletLocation: data.outlet.location,
-                agentLocation: data.agentLocation,
-                distanceMeters: data.distanceMeters,
-              },
-            });
+            goToLogShop(data, agentLocation, outlet);
           } catch (err) {
-            setGpsMsg(err.response?.data?.message || 'Could not start visit. Move closer to the outlet.');
+            const body = err.response?.data;
+            // Standing at shop but pin is wrong → offer exact GPS update
+            if (body?.code === 'TOO_FAR' && body?.canUpdateLocation) {
+              const ok = window.confirm(
+                `${body.message}\n\nAre you standing at "${outlet.displayName || outlet.name}" right now?\n\nTap OK to save THIS exact GPS as the shop location, then start the visit.\nTap Cancel if you are not at the shop yet.`
+              );
+              if (ok) {
+                try {
+                  await api.patch(`/omr/outlets/${outlet._id}/location`, agentLocation);
+                  const { data } = await api.post('/omr/visits/start', {
+                    outletId: outlet._id,
+                    ...agentLocation,
+                  });
+                  goToLogShop(data, agentLocation, outlet);
+                  return;
+                } catch (e2) {
+                  setGpsMsg(e2.response?.data?.message || 'Could not update shop location.');
+                  setStartingId(null);
+                  return;
+                }
+              }
+            }
+            setGpsMsg(body?.message || 'Could not start visit. Move closer to the outlet.');
             setStartingId(null);
           }
         } else {
@@ -87,7 +113,7 @@ export default function Beats() {
         setGpsMsg('Location is off. Turn on GPS to start a visit.');
         setStartingId(null);
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      { enableHighAccuracy: true, timeout: 20000 }
     );
   };
 

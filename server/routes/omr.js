@@ -2,6 +2,7 @@ import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import {
   startVisit,
+  updateOutletGps,
   getProducts,
   getNoOrderReasons,
   createVisit,
@@ -17,6 +18,7 @@ router.use(protect);
 router.use(restrictTo('omr', 'admin'));
 
 router.post('/visits/start', startVisit);
+router.patch('/outlets/:id/location', updateOutletGps);
 router.get('/products', getProducts);
 router.get('/no-order-reasons', getNoOrderReasons);
 router.post('/visits', createVisit);

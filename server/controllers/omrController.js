@@ -61,10 +61,13 @@ export const startVisit = async (req, res) => {
 
     if (dist > MAX_DISTANCE_M) {
       return res.status(400).json({
-        message: `You are about ${Math.round(dist)}m away from this outlet. Please go to the shop (within ${MAX_DISTANCE_M}m) to start the visit.`,
+        message: `You are about ${Math.round(dist)}m away from the saved shop pin. If you are at this shop now, update the pin to your exact location.`,
         code: 'TOO_FAR',
         distanceMeters: Math.round(dist),
         maxDistance: MAX_DISTANCE_M,
+        canUpdateLocation: true,
+        outletId,
+        outletName: outlet.name,
       });
     }
 
@@ -313,5 +316,49 @@ export const getWrapUps = async (req, res) => {
     res.json(wrapUps);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch wrap-ups' });
+  }
+};
+
+
+/** OMR standing at shop: save exact GPS on their assigned outlet */
+export const updateOutletGps = async (req, res) => {
+  try {
+    const { lat, lng, accuracy } = req.body;
+    if (lat === undefined || lng === undefined || lat === null || lng === null) {
+      return res.status(400).json({
+        message: 'GPS is required to update shop location.',
+        code: 'GPS_REQUIRED',
+      });
+    }
+
+    const outlet = await Outlet.findOne({
+      _id: req.params.id,
+      assignedTo: req.user._id,
+      status: 'approved',
+      isActive: true,
+    });
+
+    if (!outlet) {
+      return res.status(404).json({ message: 'Outlet not found or not assigned to you' });
+    }
+
+    outlet.location = {
+      lat: Number(lat),
+      lng: Number(lng),
+    };
+    if (outlet.markModified) outlet.markModified('location');
+    await outlet.save();
+
+    res.json({
+      message: 'Shop location updated to your current GPS.',
+      outlet: {
+        _id: outlet._id,
+        name: outlet.name,
+        location: outlet.location,
+      },
+    });
+  } catch (error) {
+    console.error('Update outlet GPS error:', error);
+    res.status(500).json({ message: 'Failed to update shop location' });
   }
 };
