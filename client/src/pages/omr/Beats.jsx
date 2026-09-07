@@ -101,6 +101,7 @@ export default function Beats() {
 
   const dayData = week?.days?.[selectedDay];
   const outlets = dayData?.outlets || [];
+  const isTodayBeat = Number(week?.today) === Number(selectedDay);
 
   return (
     <div>
@@ -143,6 +144,12 @@ export default function Beats() {
       <div className={`mb-3 text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
         {dayData?.dayName || ''} · {outlets.length} outlet{outlets.length !== 1 ? 's' : ''}
       </div>
+
+      {!isTodayBeat && selectedDay && (
+        <div className="mb-3 text-xs font-semibold px-3 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
+          Planning view only — start a visit on today&apos;s beat. Other days are for review.
+        </div>
+      )}
 
       {gpsMsg && (
         <div className="mb-3 text-sm px-3 py-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
