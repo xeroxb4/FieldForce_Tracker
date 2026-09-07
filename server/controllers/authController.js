@@ -14,6 +14,7 @@ const userPayload = (user) => ({
   distributor: user.distributor,
   region: user.region,
   profilePicture: user.profilePicture || '',
+    phone: user.phone || '',
 });
 
 export const login = async (req, res) => {
@@ -108,5 +109,22 @@ export const updateProfilePicture = async (req, res) => {
   } catch (error) {
     console.error('Profile picture error:', error);
     res.status(500).json({ message: 'Failed to update profile picture' });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const { fullName, phone, territory, password } = req.body;
+    if (fullName !== undefined) user.fullName = fullName;
+    if (phone !== undefined) user.phone = phone;
+    if (territory !== undefined) user.territory = territory;
+    if (password) user.password = password;
+    await user.save();
+    res.json(userPayload(user));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Failed to update profile' });
   }
 };

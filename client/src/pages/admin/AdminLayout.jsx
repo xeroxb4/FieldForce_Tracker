@@ -9,9 +9,11 @@ const NAV = [
   { to: '/admin/sales', label: 'Sales', icon: '💰' },
   { to: '/admin/distributors', label: 'Distributors', icon: '🏢' },
   { to: '/admin/analytics', label: 'Data Analysis', icon: '📈' },
+  { to: '/admin/products', label: 'Products', icon: '🧴' },
   { to: '/admin/programs', label: 'Programs', icon: '🎯' },
   { to: '/admin/promotions', label: 'Promotions', icon: '📣' },
   { to: '/admin/outlets', label: 'Outlets & Beats', icon: '📍' },
+  { to: '/admin/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 

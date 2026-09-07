@@ -450,3 +450,20 @@ export const getDashboardStats = async (req, res) => {
     res.status(500).json({ message: 'Failed to load dashboard stats' });
   }
 };
+
+
+export const deactivateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Cannot deactivate admin accounts here' });
+    }
+    user.isActive = false;
+    await user.save();
+    res.json({ message: 'User deactivated', user: { _id: user._id, isActive: false } });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Failed to deactivate user' });
+  }
+};

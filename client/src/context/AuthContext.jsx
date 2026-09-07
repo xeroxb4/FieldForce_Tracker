@@ -39,6 +39,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const setUserFromProfile = (data) => {
+    const next = { ...user, ...data, token: user?.token || localStorage.getItem('token') };
+    localStorage.setItem('user', JSON.stringify(next));
+    setUser(next);
+  };
+
   const updateProfilePicture = async (profilePicture) => {
     const { data } = await api.put('/auth/profile-picture', { profilePicture });
     const next = { ...user, ...data };
@@ -48,7 +54,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, updateProfilePicture }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateProfilePicture, setUserFromProfile }}>
       {children}
     </AuthContext.Provider>
   );

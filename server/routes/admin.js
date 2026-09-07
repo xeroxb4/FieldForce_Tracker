@@ -14,6 +14,7 @@ import {
   updateOutletFull,
   removeOutlet,
   getDashboardStats,
+  deactivateUser,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -22,6 +23,17 @@ import {
   rejectOutlet,
 } from '../controllers/outletController.js';
 import { exportOmrXlsx, exportMerchXlsx } from '../controllers/exportController.js';
+import {
+  listProducts,
+  createProduct,
+  updateProduct,
+  removeProduct,
+} from '../controllers/productController.js';
+import {
+  listNotifications,
+  markRead,
+  markAllRead,
+} from '../controllers/notificationController.js';
 
 const router = express.Router();
 
@@ -32,6 +44,7 @@ router.get('/dashboard', getDashboardStats);
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
+router.delete('/users/:id', deactivateUser);
 
 router.get('/reports/visits', getVisitsReport);
 router.get('/reports/wrapups', getWrapUpsReport);
@@ -48,6 +61,15 @@ router.patch('/outlets/:id/reject', rejectOutlet);
 
 router.get('/targets', listTargets);
 router.post('/targets', setTarget);
+
+router.get('/products', listProducts);
+router.post('/products', createProduct);
+router.put('/products/:id', updateProduct);
+router.delete('/products/:id', removeProduct);
+
+router.get('/notifications', listNotifications);
+router.put('/notifications/read-all', markAllRead);
+router.put('/notifications/:id/read', markRead);
 
 router.get('/export/omr', exportOmrXlsx);
 router.get('/export/merch', exportMerchXlsx);

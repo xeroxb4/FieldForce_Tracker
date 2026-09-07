@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
       enum: ['omr', 'merchandiser', 'admin'],
       required: true,
     },
+    phone: {
+      type: String,
+      default: '',
+    },
     territory: {
       type: String,
       default: '',

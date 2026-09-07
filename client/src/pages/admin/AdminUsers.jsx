@@ -90,6 +90,17 @@ export default function AdminUsers() {
     setShowForm(false);
   };
 
+  const deactivate = async (id, name) => {
+    if (!confirm(`Deactivate ${name}? They will not be able to log in.`)) return;
+    try {
+      await api.delete(`/admin/users/${id}`);
+      setStatus({ type: 'success', msg: 'User deactivated' });
+      load();
+    } catch (err) {
+      setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed' });
+    }
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     setStatus(null);

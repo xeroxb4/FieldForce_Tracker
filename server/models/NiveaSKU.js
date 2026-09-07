@@ -15,7 +15,7 @@ const niveaSKUSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Roll-on', 'Spray', 'Lotion', 'Shower Gel', 'Other'],
+      enum: ['Roll-on', 'Spray', 'Lotion', 'Shower Gel', 'Body Care', 'Other'],
       required: true,
       index: true,
     },

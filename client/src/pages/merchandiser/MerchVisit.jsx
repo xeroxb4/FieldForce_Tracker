@@ -5,13 +5,27 @@ import { useTheme } from '../../context/ThemeContext';
 
 const SOS_CATEGORIES = [
   'Roll-on',
-  'Body Care',
+  'Body Care 400ml',
+  'Body Care 250ml',
   'Spray',
   'Shower',
   'Face Care',
   'Face Cleansing',
   'Men Care',
   'Lip Care',
+];
+
+const TOP10_SKUS = [
+  'Nivea Nourishing Cocoa',
+  'Nivea Perfect and Radiant',
+  'Nivea Rich Nourishing',
+  'Nivea Radiant and Beauty (Even Glow)',
+  'Nivea Firming Q10',
+  'Nivea Dry Impact Roll On',
+  'Nivea Dry Comfort Roll On',
+  'Nivea Black and White Men Roll On',
+  'Nivea Black and White Women Roll On',
+  'Nivea Pearl and Beauty Roll On',
 ];
 
 const emptySos = () =>
@@ -45,6 +59,9 @@ export default function MerchVisit() {
   const [visitType, setVisitType] = useState('Merchandising Visit');
   const [tab, setTab] = useState('sos'); // sos | photos | notes
   const [sosRows, setSosRows] = useState(emptySos);
+  const [top10Counts, setTop10Counts] = useState(
+    () => Object.fromEntries(TOP10_SKUS.map((s) => [s, '']))
+  );
   const [photos, setPhotos] = useState([]);
   const [notes, setNotes] = useState('');
   const [stockLines, setStockLines] = useState([]);
@@ -123,11 +140,19 @@ export default function MerchVisit() {
         }));
 
       const today = new Date().toISOString().slice(0, 10);
+      const skuEntries = TOP10_SKUS.map((skuName) => ({
+        skuName,
+        category: 'Top10',
+        facings: Number(top10Counts[skuName]) || 0,
+        available: (Number(top10Counts[skuName]) || 0) > 0,
+      }));
+
       await api.post('/merchandiser/visits', {
         shopName,
         visitType,
         date: today,
         sosRows: payloadRows,
+        skuEntries,
         photos,
         overallNotes: notes,
         status: 'completed',
@@ -150,6 +175,7 @@ export default function MerchVisit() {
       });
       setShopName('');
       setSosRows(emptySos());
+      setTop10Counts(Object.fromEntries(TOP10_SKUS.map((s) => [s, ''])));
       setPhotos([]);
       setNotes('');
       setStockLines([]);
@@ -202,6 +228,7 @@ export default function MerchVisit() {
         >
           {[
             { id: 'sos', label: 'Share of Shelf' },
+            { id: 'top10', label: 'Top 10 SKU' },
             { id: 'stock', label: 'New stock' },
             { id: 'photos', label: 'Photos' },
             { id: 'notes', label: 'Notes' },
@@ -299,7 +326,31 @@ export default function MerchVisit() {
         )}
 
         
-        {tab === 'stock' && (
+        
+        {tab === 'top10' && (
+          <div className="space-y-3">
+            <p className={`text-[11px] font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              Count facings (or units on shelf) for each Top 10 SKU at this outlet.
+            </p>
+            {TOP10_SKUS.map((sku) => (
+              <div key={sku} className={cardCls + ' flex items-center justify-between gap-3'}>
+                <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{sku}</div>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputCls + ' max-w-[6rem]'}
+                  value={top10Counts[sku] ?? ''}
+                  onChange={(e) =>
+                    setTop10Counts((prev) => ({ ...prev, [sku]: e.target.value }))
+                  }
+                  placeholder="0"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+{tab === 'stock' && (
           <div className="space-y-3">
             <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
               Log new stock received at this outlet — product variant and quantity (PC / Pack / Carton).

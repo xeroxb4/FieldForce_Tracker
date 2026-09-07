@@ -27,6 +27,9 @@ import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminExport from './pages/admin/AdminExport';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminNotifications from './pages/admin/AdminNotifications';
+import Profile from './pages/Profile';
 
 function PrivateRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -41,6 +44,7 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/profile" element={<PrivateRoute roles={['omr','merchandiser','admin']}><Profile /></PrivateRoute>} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
 
       <Route path="/omr" element={<PrivateRoute roles={['omr', 'admin']}><OMRLayout /></PrivateRoute>}>
@@ -71,6 +75,8 @@ export default function App() {
         <Route path="programs" element={<AdminPrograms />} />
         <Route path="promotions" element={<AdminPromotions />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="notifications" element={<AdminNotifications />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="export" element={<AdminExport />} />
         <Route path="outlets" element={<AdminOutlets />} />

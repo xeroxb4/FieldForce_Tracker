@@ -1,4 +1,5 @@
 import Outlet, { AVC_TARGETS } from '../models/Outlet.js';
+import Notification from '../models/Notification.js';
 
 const getTodayDayNumber = () => {
   const d = new Date().getDay();
@@ -52,6 +53,16 @@ export const createOutlet = async (req, res) => {
       avcEnrolled: avc.avcEnrolled,
       avcTier: avc.avcTier,
       avcTarget: avc.avcTarget,
+    });
+
+    await Notification.create({
+      type: 'outlet_pending',
+      title: 'New outlet pending approval',
+      message: `${req.user.fullName} submitted "${outlet.name}" for approval`,
+      outletId: outlet._id,
+      createdBy: req.user._id,
+      forRole: 'admin',
+      meta: { outletName: outlet.name, by: req.user.fullName },
     });
 
     res.status(201).json({

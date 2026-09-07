@@ -50,6 +50,9 @@ export default function OMRLayout() {
           >
             Logout
           </button>
+          <Link to="/profile" className={`text-[10px] px-2 py-1 rounded-lg ${dark ? 'bg-slate-800 text-slate-300' : 'bg-white/20 text-white'}`}>
+            Profile
+          </Link>
         </div>
       </header>
 
