@@ -10,6 +10,17 @@ const DAY_OPTIONS = [
   { value: 5, label: 'Fri' },
   { value: 6, label: 'Sat' },
 ];
+const statusBadge = (status) => {
+  const s = (status || '').toLowerCase();
+  if (s === 'pending')
+    return 'bg-amber-400 text-amber-950 border-amber-500';
+  if (s === 'approved')
+    return 'bg-emerald-500 text-white border-emerald-600';
+  if (s === 'rejected')
+    return 'bg-red-500 text-white border-red-600';
+  return 'bg-slate-300 text-slate-800 border-slate-400';
+};
+
 const DAY_LABEL = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
 
 const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea Ghana'];
@@ -88,6 +99,7 @@ export default function AdminOutlets() {
       avcEnrolled: !!o.avcEnrolled,
       avcTier: o.avcTier || 'Gold',
       isActive: o.isActive !== false,
+      status: o.status || 'pending',
     });
   };
 
@@ -208,7 +220,17 @@ export default function AdminOutlets() {
             <div
               key={o._id}
               className={`rounded-2xl border-2 p-3 ${
-                dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
+                (o.status || '').toLowerCase() === 'pending'
+                  ? dark
+                    ? 'bg-amber-950/40 border-amber-400'
+                    : 'bg-amber-50 border-amber-400 shadow-md'
+                  : (o.status || '').toLowerCase() === 'approved'
+                  ? dark
+                    ? 'bg-emerald-950/30 border-emerald-500'
+                    : 'bg-emerald-50 border-emerald-400 shadow-sm'
+                  : dark
+                  ? 'bg-slate-900 border-slate-700'
+                  : 'bg-white border-[#2596be]/40 shadow-sm'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
@@ -216,10 +238,18 @@ export default function AdminOutlets() {
                   <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                     {o.displayName || o.name}
                   </div>
-                  <div className={`text-xs mt-0.5 font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {o.assignedTo?.fullName || 'Unassigned'} · {o.status}
-                    {o.assignedDays?.length > 0 &&
-                      ` · ${o.assignedDays.map((d) => DAY_LABEL[d]).join(', ')}`}
+                  <div className={`text-xs mt-1 font-medium flex flex-wrap items-center gap-1.5 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <span>{o.assignedTo?.fullName || 'Unassigned'}</span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${statusBadge(o.status)}`}
+                    >
+                      {o.status || 'unknown'}
+                    </span>
+                    {o.assignedDays?.length > 0 && (
+                      <span className={dark ? 'text-slate-400' : 'text-slate-500'}>
+                        · {o.assignedDays.map((d) => DAY_LABEL[d]).join(', ')}
+                      </span>
+                    )}
                   </div>
                   {o.avcEnrolled && (
                     <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 font-bold">

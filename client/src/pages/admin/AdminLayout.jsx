@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import logo from '../../assets/logo.png';
@@ -22,6 +23,19 @@ export default function AdminLayout() {
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [unreadNotif, setUnreadNotif] = useState(0);
+
+  useEffect(() => {
+    const loadNotif = () => {
+      api
+        .get('/admin/notifications')
+        .then((r) => setUnreadNotif(r.data?.unread || 0))
+        .catch(() => {});
+    };
+    loadNotif();
+    const id = setInterval(loadNotif, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -70,8 +84,20 @@ export default function AdminLayout() {
               }`
             }
           >
-            <span className="text-base">{item.icon}</span>
-            {item.label}
+            <span className="text-base relative">
+              {item.icon}
+              {item.to === '/admin/notifications' && unreadNotif > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center shadow">
+                  {unreadNotif > 99 ? '99+' : unreadNotif}
+                </span>
+              )}
+            </span>
+            <span className="flex-1">{item.label}</span>
+            {item.to === '/admin/notifications' && unreadNotif > 0 && (
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-500 text-white">
+                {unreadNotif}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -116,8 +142,13 @@ export default function AdminLayout() {
             dark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
           }`}
         >
-          <button type="button" onClick={() => setOpen(true)} className="text-sm font-bold text-[#2596be]">
+          <button type="button" onClick={() => setOpen(true)} className="text-sm font-bold text-[#2596be] relative">
             ☰ Menu
+            {unreadNotif > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[1rem] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                {unreadNotif}
+              </span>
+            )}
           </button>
           <span className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Admin</span>
           <span className="w-10" />
