@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
+import { printOrderInvoice } from '../../utils/printInvoice';
 import {
   cacheProducts,
   getCachedProducts,
@@ -15,6 +16,7 @@ const NO_ORDER_REASONS = [
   'Owner not available',
   'I have a supplier',
   'High price',
+  'Previous Customer with payment issues',
   'Shop closed',
   'Not interested',
   'Stock still available',
@@ -177,6 +179,31 @@ export default function LogShop() {
     setStatus(null);
 
     const finishOk = (msg) => {
+      const shouldPrint =
+        form.outcome === 'Order Placed' && cart.length > 0 && form.paymentType !== undefined;
+      if (shouldPrint) {
+        const doPrint = window.confirm(
+          'Print invoice? (Cancel if no printer — visit is already saved.)'
+        );
+        if (doPrint) {
+          printOrderInvoice({
+            shopName: form.shopName || ctx.shopName,
+            contactName: form.contactName || ctx.contactName,
+            repName: user?.fullName,
+            territory: user?.territory,
+            date: new Date().toLocaleDateString(),
+            lines: cart.map((c) => ({
+              productName: c.productName || c.name,
+              unit: c.unit,
+              qty: c.qty || c.quantity,
+              lineTotal: c.lineTotal || c.total,
+            })),
+            paymentType: form.paymentType,
+            creditDays: form.creditDurationWeeks === '2' ? 14 : 7,
+            total: cartTotal,
+          });
+        }
+      }
       setStatus({ type: 'success', msg });
       setCart([]);
       setOfflinePending(queueCount());

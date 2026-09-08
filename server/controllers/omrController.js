@@ -22,6 +22,7 @@ const NO_ORDER_REASONS = [
   'Owner not available',
   'I have a supplier',
   'High price',
+  'Previous Customer with payment issues',
   'Shop closed',
   'Not interested',
   'Stock still available',
