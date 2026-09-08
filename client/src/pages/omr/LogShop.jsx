@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
 import { printOrderInvoice } from '../../utils/printInvoice';
+import { useAuth } from '../../context/AuthContext';
 import {
   cacheProducts,
   getCachedProducts,
@@ -27,6 +28,7 @@ const CATEGORIES = ['Lotion', 'Roll-on', 'Spray'];
 export default function LogShop() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const ctx = location.state || {};
   const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
 
