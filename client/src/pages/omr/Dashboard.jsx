@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [gpsError, setGpsError] = useState('');
   const [checkingIn, setCheckingIn] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -105,6 +106,38 @@ export default function Dashboard() {
     );
   };
 
+
+  const handleCheckOut = () => {
+    setGpsError('');
+    setCheckingOut(true);
+    if (!navigator.geolocation) {
+      setGpsError('GPS not supported on this device');
+      setCheckingOut(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await api.post('/attendance/check-out', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+          await load();
+        } catch (err) {
+          setGpsError(err.response?.data?.message || 'Failed to check out');
+        } finally {
+          setCheckingOut(false);
+        }
+      },
+      () => {
+        setGpsError('Location is off. Turn on GPS to check out.');
+        setCheckingOut(false);
+      },
+      { enableHighAccuracy: true, timeout: 20000 }
+    );
+  };
+
   const pct = target?.percentage || 0;
   const total = beat?.total || incentive?.day?.beatOutlets || 0;
   const visited = beat?.visitedCount ?? incentive?.day?.outletsVisited ?? 0;
@@ -159,11 +192,7 @@ export default function Dashboard() {
         </div>
         <div className="mt-4 flex items-center gap-2 text-xs text-indigo-100">
           <span className="bg-white/15 px-2.5 py-1 rounded-lg">{todayLabel}</span>
-          {attendance?.checkedIn ? (
-            <span className="bg-emerald-500/30 text-emerald-100 px-2.5 py-1 rounded-lg">
-              ✓ Present
-            </span>
-          ) : (
+          {!attendance?.checkedIn ? (
             <button
               type="button"
               onClick={handleCheckIn}
@@ -172,12 +201,26 @@ export default function Dashboard() {
             >
               {checkingIn ? 'GPS...' : 'Check in'}
             </button>
+          ) : attendance?.checkedOut ? (
+            <span className="bg-slate-500/40 text-white px-2.5 py-1 rounded-lg text-xs">
+              ✓ Day closed
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCheckOut}
+              disabled={checkingOut}
+              className="bg-emerald-400 text-emerald-950 font-semibold px-2.5 py-1 rounded-lg disabled:opacity-60"
+            >
+              {checkingOut ? 'GPS...' : 'Check out'}
+            </button>
           )}
         </div>
         {gpsError && (
           <p className="mt-2 text-xs text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{gpsError}</p>
         )}
       </div>
+
 
       {/* Target */}
       <div className={`rounded-2xl p-4 border ${card}`}>

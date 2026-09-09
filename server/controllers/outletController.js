@@ -148,19 +148,23 @@ export const rejectOutlet = async (req, res) => {
 
 export const updateOutlet = async (req, res) => {
   try {
-    const outlet = await Outlet.findOne({
+    let outlet = await Outlet.findOne({
       _id: req.params.id,
-      userId: req.user._id,
+      $or: [{ userId: req.user._id }, { assignedTo: req.user._id }],
     });
+    if (!outlet && req.user.role === 'admin') {
+      outlet = await Outlet.findById(req.params.id);
+    }
     if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
 
-    const { name, contactName, contactPhone, address, lat, lng, notes, isActive } = req.body;
+    const { name, contactName, contactPhone, address, lat, lng, notes, isActive, photo } = req.body;
     if (name) outlet.name = name.trim();
     if (contactName !== undefined) outlet.contactName = contactName;
     if (contactPhone !== undefined) outlet.contactPhone = contactPhone;
     if (address !== undefined) outlet.address = address;
     if (notes !== undefined) outlet.notes = notes;
     if (isActive !== undefined) outlet.isActive = isActive;
+    if (photo !== undefined) outlet.photo = photo || '';
     if (lat !== undefined && lng !== undefined) {
       outlet.location = { lat: Number(lat), lng: Number(lng) };
     }
@@ -177,3 +181,4 @@ export const updateOutlet = async (req, res) => {
     res.status(500).json({ message: 'Failed to update outlet' });
   }
 };
+

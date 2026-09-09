@@ -57,6 +57,11 @@ const outletSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    /** shop front photo (data URL or https URL) */
+    photo: {
+      type: String,
+      default: '',
+    },
     // AVC Program
     avcEnrolled: {
       type: Boolean,

@@ -12,6 +12,49 @@ export default function Beats() {
   const [error, setError] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
   const [startingId, setStartingId] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(null);
+
+  const uploadOutletPhoto = (outlet, file) => {
+    if (!file) return;
+    setPhotoBusy(outlet._id);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        let dataUrl = reader.result;
+        // shrink large images
+        if (typeof dataUrl === 'string' && dataUrl.length > 400000) {
+          dataUrl = await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const c = document.createElement('canvas');
+              const max = 640;
+              let w = img.width;
+              let h = img.height;
+              if (w > max) {
+                h = (h * max) / w;
+                w = max;
+              }
+              c.width = w;
+              c.height = h;
+              c.getContext('2d').drawImage(img, 0, 0, w, h);
+              resolve(c.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = dataUrl;
+          });
+        }
+        await api.put(`/outlets/${outlet._id}`, { photo: dataUrl });
+        // refresh week
+        const { data } = await api.get('/beats/week');
+        setWeek(data);
+      } catch (err) {
+        setGpsMsg(err.response?.data?.message || 'Could not save shop photo');
+      } finally {
+        setPhotoBusy(null);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const [gpsMsg, setGpsMsg] = useState('');
   const navigate = useNavigate();
 
@@ -196,27 +239,54 @@ export default function Beats() {
       ) : (
         <div className="space-y-2">
           {outlets.map((o) => (
-            <button
+            <div
               key={o._id}
-              type="button"
-              onClick={() => isTodayBeat && startOutletVisit(o)}
-              disabled={!isTodayBeat || startingId === o._id}
-              className={`w-full text-left rounded-2xl border p-4 transition ${
+              className={`w-full rounded-2xl border p-3 ${
                 dark
-                  ? 'bg-slate-800 border-slate-700 hover:border-[#2596be]'
-                  : 'bg-gradient-to-r from-violet-50 to-fuchsia-50 border-violet-200 shadow-md hover:shadow-lg hover:-translate-y-0.5'
-              } ${!isTodayBeat ? 'opacity-75' : ''}`}
+                  ? 'bg-slate-800 border-slate-700'
+                  : 'bg-gradient-to-r from-violet-50 to-fuchsia-50 border-violet-200 shadow-md'
+              } ${!isTodayBeat ? 'opacity-80' : ''}`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              <div className="flex items-center gap-3">
+                <label className="relative shrink-0 cursor-pointer">
+                  <div
+                    className={`w-12 h-12 rounded-xl overflow-hidden border flex items-center justify-center ${
+                      dark ? 'bg-slate-900 border-slate-600' : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    {o.photo ? (
+                      <img src={o.photo} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className={`text-lg ${dark ? 'text-slate-500' : 'text-slate-400'}`}>📷</span>
+                    )}
+                  </div>
+                  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-slate-800">
+                    +
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    disabled={photoBusy === o._id}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadOutletPhoto(o, f);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="min-w-0 flex-1">
                   <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                     {o.displayName || o.name}
                   </div>
-                  {(o.address || o.territory) && (
-                    <div className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {o.address || o.territory}
-                    </div>
-                  )}
+                  <div className={`text-xs mt-0.5 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {o.address || o.territory || '—'}
+                    {!o.photo && (
+                      <span className={dark ? 'text-emerald-400' : 'text-emerald-600'}> · No photo yet</span>
+                    )}
+                    {photoBusy === o._id && ' · Saving…'}
+                  </div>
                   {o.avcEnrolled && (
                     <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 font-medium">
                       AVC {o.avcTier}
@@ -224,16 +294,21 @@ export default function Beats() {
                   )}
                 </div>
                 {isTodayBeat ? (
-                  <span className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300">
+                  <button
+                    type="button"
+                    onClick={() => startOutletVisit(o)}
+                    disabled={startingId === o._id}
+                    className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300 disabled:opacity-60"
+                  >
                     {startingId === o._id ? 'Starting…' : 'Start visit →'}
-                  </span>
+                  </button>
                 ) : (
                   <span className="text-[10px] font-bold shrink-0 px-2 py-1 rounded-lg bg-slate-200 text-slate-600">
                     Not today
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

@@ -26,11 +26,7 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(username, password);
-      if (data.role !== role) {
-        setError(`This account is ${data.role}. Switch the role tab to match.`);
-        setLoading(false);
-        return;
-      }
+      // Go to the dashboard for the account's real role (tab is only a hint)
       if (data.role === 'omr') navigate('/omr');
       else if (data.role === 'merchandiser') navigate('/merch');
       else navigate('/admin');

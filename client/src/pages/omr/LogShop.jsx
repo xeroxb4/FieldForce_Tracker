@@ -278,8 +278,8 @@ export default function LogShop() {
   const labelCls = dark ? 'block text-sm font-semibold text-slate-200 mb-1' : 'block text-sm font-semibold text-slate-800 mb-1';
   const labelXs = dark ? 'block text-xs font-semibold text-slate-300 mb-1' : 'block text-xs font-semibold text-slate-600 mb-1';
   const inputCls = dark
-    ? 'w-full border border-slate-600 rounded-xl px-4 py-3 text-sm bg-slate-900 text-white placeholder:text-slate-500'
-    : 'w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white text-slate-900';
+    ? 'w-full border border-slate-600 rounded-xl px-4 py-3 text-sm bg-slate-800 text-white placeholder:text-slate-400 disabled:bg-slate-800 disabled:text-white disabled:opacity-100'
+    : 'w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white text-slate-900 disabled:bg-slate-50 disabled:text-slate-900 disabled:opacity-100';
   const inputSm = dark
     ? 'w-full border border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-slate-900 text-white'
     : 'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900';
@@ -299,8 +299,8 @@ export default function LogShop() {
           </span>
         )}
       </div>
-      <p className={`text-sm mb-3 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
-        {fromBeat ? `${form.shopName} · GPS verified` : 'Complete the visit details'}
+      <p className={`text-sm mb-3 font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+        {fromBeat ? form.shopName : 'Complete the visit details'}
         {offlinePending > 0 && (
           <span className="text-amber-600"> · {offlinePending} pending sync</span>
         )}
@@ -313,7 +313,7 @@ export default function LogShop() {
             value={form.shopName}
             onChange={(e) => setForm({ ...form, shopName: e.target.value })}
             disabled={fromBeat}
-            className={`${inputCls} disabled:opacity-60`}
+            className={inputCls}
             required
           />
         </div>

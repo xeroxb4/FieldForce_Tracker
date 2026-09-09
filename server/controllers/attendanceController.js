@@ -63,6 +63,7 @@ export const getTodayAttendance = async (req, res) => {
 
     res.json({
       checkedIn: !!attendance && attendance.status === 'present',
+      checkedOut: !!(attendance && attendance.checkedOutAt),
       attendance: attendance || null,
     });
   } catch (error) {
@@ -85,5 +86,48 @@ export const getAttendanceHistory = async (req, res) => {
     res.json(records);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch attendance history' });
+  }
+};
+
+// @desc    Check out attendance (GPS required)
+// @route   POST /api/attendance/check-out
+export const checkOut = async (req, res) => {
+  try {
+    const { lat, lng, accuracy, notes } = req.body;
+    if (lat === undefined || lng === undefined || lat === null || lng === null) {
+      return res.status(400).json({
+        message: 'GPS location is required to check out. Please turn on location.',
+        code: 'GPS_REQUIRED',
+      });
+    }
+    if (Number(lat) === 0 && Number(lng) === 0) {
+      return res.status(400).json({
+        message: 'Invalid GPS coordinates. Please turn on location services.',
+        code: 'GPS_INVALID',
+      });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const attendance = await Attendance.findOne({ userId: req.user._id, date: today });
+    if (!attendance || attendance.status !== 'present') {
+      return res.status(400).json({ message: 'You must check in before checking out.' });
+    }
+    if (attendance.checkedOutAt) {
+      return res.json({ message: 'Already checked out', attendance });
+    }
+
+    attendance.checkedOutAt = new Date();
+    attendance.checkOutLocation = {
+      lat: Number(lat),
+      lng: Number(lng),
+      accuracy: accuracy ? Number(accuracy) : undefined,
+    };
+    if (notes) attendance.notes = (attendance.notes || '') + (attendance.notes ? ' | ' : '') + notes;
+    await attendance.save();
+
+    res.json({ message: 'Checked out successfully', attendance });
+  } catch (error) {
+    console.error('Check-out error:', error);
+    res.status(500).json({ message: 'Failed to check out' });
   }
 };

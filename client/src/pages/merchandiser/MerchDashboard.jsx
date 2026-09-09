@@ -41,6 +41,7 @@ export default function MerchDashboard() {
   const [loading, setLoading] = useState(true);
   const [gpsError, setGpsError] = useState('');
   const [checkingIn, setCheckingIn] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -65,6 +66,39 @@ export default function MerchDashboard() {
   useEffect(() => {
     load();
   }, []);
+
+
+  const handleCheckOut = () => {
+    setGpsError('');
+    setCheckingOut(true);
+    if (!navigator.geolocation) {
+      setGpsError('GPS not supported');
+      setCheckingOut(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await api.post('/attendance/check-out', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+          const { data } = await api.get('/attendance/today');
+          setAttendance(data);
+        } catch (err) {
+          setGpsError(err.response?.data?.message || 'Failed to check out');
+        } finally {
+          setCheckingOut(false);
+        }
+      },
+      () => {
+        setGpsError('Location is off. Turn on GPS to check out.');
+        setCheckingOut(false);
+      },
+      { enableHighAccuracy: true, timeout: 20000 }
+    );
+  };
 
   const handleCheckIn = () => {
     setGpsError('');
@@ -161,11 +195,7 @@ export default function MerchDashboard() {
         </div>
         <div className="mt-4 flex items-center gap-2 text-xs text-teal-50">
           <span className="bg-white/15 px-2.5 py-1 rounded-lg">{todayLabel}</span>
-          {attendance?.checkedIn ? (
-            <span className="bg-emerald-500/30 text-emerald-100 px-2.5 py-1 rounded-lg">
-              ✓ Present
-            </span>
-          ) : (
+          {!attendance?.checkedIn ? (
             <button
               type="button"
               onClick={handleCheckIn}
@@ -173,6 +203,19 @@ export default function MerchDashboard() {
               className="bg-amber-400 text-amber-950 font-semibold px-2.5 py-1 rounded-lg disabled:opacity-60"
             >
               {checkingIn ? 'GPS...' : 'Check in'}
+            </button>
+          ) : attendance?.checkedOut ? (
+            <span className="bg-slate-500/40 text-white px-2.5 py-1 rounded-lg text-xs">
+              ✓ Day closed
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCheckOut}
+              disabled={checkingOut}
+              className="bg-emerald-400 text-emerald-950 font-semibold px-2.5 py-1 rounded-lg disabled:opacity-60"
+            >
+              {checkingOut ? 'GPS...' : 'Check out'}
             </button>
           )}
         </div>

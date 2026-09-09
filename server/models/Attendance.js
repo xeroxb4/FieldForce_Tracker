@@ -36,6 +36,14 @@ const attendanceSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    checkedOutAt: {
+      type: Date,
+    },
+    checkOutLocation: {
+      lat: Number,
+      lng: Number,
+      accuracy: Number,
+    },
     notes: {
       type: String,
       default: '',
