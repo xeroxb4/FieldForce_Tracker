@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
-import { printOrderInvoiceWithPrompt } from '../../utils/printInvoice';
+import { printOrderInvoice } from '../../utils/printInvoice';
 import { useAuth } from '../../context/AuthContext';
 import {
   cacheProducts,
@@ -188,7 +188,7 @@ export default function LogShop() {
           'Print invoice? (Cancel if no printer — visit is already saved.)'
         );
         if (doPrint) {
-          printOrderInvoiceWithPrompt({
+          printOrderInvoice({
             shopName: form.shopName || ctx.shopName,
             contactName: form.contactName || ctx.contactName,
             repName: user?.fullName,
