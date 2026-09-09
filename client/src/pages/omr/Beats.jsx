@@ -209,7 +209,7 @@ export default function Beats() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className={`font-semibold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                  <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                     {o.displayName || o.name}
                   </div>
                   {(o.address || o.territory) && (

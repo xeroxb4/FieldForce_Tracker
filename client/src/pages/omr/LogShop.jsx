@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
-import { printOrderInvoice } from '../../utils/printInvoice';
+import { printOrderInvoiceWithPrompt } from '../../utils/printInvoice';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   cacheProducts,
   getCachedProducts,
@@ -29,6 +30,7 @@ export default function LogShop() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { dark } = useTheme();
   const ctx = location.state || {};
   const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
 
@@ -188,7 +190,7 @@ export default function LogShop() {
           'Print invoice? (Cancel if no printer — visit is already saved.)'
         );
         if (doPrint) {
-          printOrderInvoice({
+          printOrderInvoiceWithPrompt({
             shopName: form.shopName || ctx.shopName,
             contactName: form.contactName || ctx.contactName,
             repName: user?.fullName,
@@ -273,10 +275,22 @@ export default function LogShop() {
     }
   };
 
+  const labelCls = dark ? 'block text-sm font-semibold text-slate-200 mb-1' : 'block text-sm font-semibold text-slate-800 mb-1';
+  const labelXs = dark ? 'block text-xs font-semibold text-slate-300 mb-1' : 'block text-xs font-semibold text-slate-600 mb-1';
+  const inputCls = dark
+    ? 'w-full border border-slate-600 rounded-xl px-4 py-3 text-sm bg-slate-900 text-white placeholder:text-slate-500'
+    : 'w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white text-slate-900';
+  const inputSm = dark
+    ? 'w-full border border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-slate-900 text-white'
+    : 'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900';
+  const cardCls = dark
+    ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
+    : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-bold text-slate-800">
+        <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
           {fromBeat ? 'Service Outlet' : 'Log Shop'}
         </h2>
         {!isOnline() && (
@@ -285,7 +299,7 @@ export default function LogShop() {
           </span>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-3">
+      <p className={`text-sm mb-3 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         {fromBeat ? `${form.shopName} · GPS verified` : 'Complete the visit details'}
         {offlinePending > 0 && (
           <span className="text-amber-600"> · {offlinePending} pending sync</span>
@@ -294,42 +308,42 @@ export default function LogShop() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Shop Name *</label>
+          <label className={labelCls}>Shop Name *</label>
           <input
             value={form.shopName}
             onChange={(e) => setForm({ ...form, shopName: e.target.value })}
             disabled={fromBeat}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm disabled:bg-slate-50"
+            className={`${inputCls} disabled:opacity-60`}
             required
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Contact</label>
+            <label className={labelCls}>Contact</label>
             <input
               value={form.contactName}
               onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+            <label className={labelCls}>Phone</label>
             <input
               value={form.contactPhone}
               onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
+              className={inputCls}
             />
           </div>
         </div>
 
         {/* Outcome */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Outcome *</label>
+          <label className={labelCls}>Outcome *</label>
           <select
             value={form.outcome}
             onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white"
+            className={inputCls}
           >
             {OUTCOMES.map((o) => (
               <option key={o} value={o}>
@@ -342,13 +356,13 @@ export default function LogShop() {
         {/* No Order reason */}
         {form.outcome === 'No Order' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className={labelCls}>
               Reason for No Order *
             </label>
             <select
               value={form.noOrderReason}
               onChange={(e) => setForm({ ...form, noOrderReason: e.target.value })}
-              className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white"
+              className={inputCls}
               required
             >
               <option value="">Select reason...</option>
@@ -363,12 +377,12 @@ export default function LogShop() {
 
         {/* Order: product picker */}
         {form.outcome === 'Order Placed' && (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-            <div className="text-sm font-medium text-slate-700">Add products</div>
+          <div className={cardCls}>
+            <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>Add products</div>
 
             {/* 1. Category */}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Category</label>
+              <label className={labelXs}>Category</label>
               <select
                 value={pickCategory}
                 onChange={(e) => {
@@ -376,7 +390,7 @@ export default function LogShop() {
                   setPickProductId('');
                   setPickUnit('pc');
                 }}
-                className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                className={inputSm}
               >
                 <option value="">Select category...</option>
                 {CATEGORIES.map((c) => (
@@ -390,11 +404,11 @@ export default function LogShop() {
             {/* 2. Product */}
             {pickCategory && (
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Product</label>
+                <label className={labelXs}>Product</label>
                 <select
                   value={pickProductId}
                   onChange={(e) => setPickProductId(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                  className={inputSm}
                 >
                   <option value="">Select product...</option>
                   {productList.map((p) => (
@@ -410,11 +424,11 @@ export default function LogShop() {
             {selectedProduct && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Unit</label>
+                  <label className={labelXs}>Unit</label>
                   <select
                     value={pickUnit}
                     onChange={(e) => setPickUnit(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                    className={inputSm}
                   >
                     <option value="pc">PC (GHS {selectedProduct.pricePc})</option>
                     <option value="pack">Pack (GHS {selectedProduct.pricePack})</option>
@@ -422,13 +436,13 @@ export default function LogShop() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Quantity</label>
+                  <label className={labelXs}>Quantity</label>
                   <input
                     type="number"
                     min="1"
                     value={pickQty}
                     onChange={(e) => setPickQty(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm"
+                    className={inputSm}
                   />
                 </div>
               </div>
@@ -470,7 +484,7 @@ export default function LogShop() {
 
             {/* Payment */}
             <div className="border-t border-slate-100 pt-3 space-y-2">
-              <label className="block text-xs text-slate-500">Payment</label>
+              <label className={labelXs}>Payment</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -497,13 +511,13 @@ export default function LogShop() {
               </div>
               {form.paymentType === 'credit' && (
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Credit duration</label>
+                  <label className={labelXs}>Credit duration</label>
                   <select
                     value={form.creditDurationWeeks}
                     onChange={(e) =>
                       setForm({ ...form, creditDurationWeeks: e.target.value })
                     }
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white"
+                    className={inputSm}
                   >
                     <option value="1">1 week</option>
                     <option value="2">2 weeks</option>
@@ -518,12 +532,12 @@ export default function LogShop() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+          <label className={labelCls}>Notes</label>
           <textarea
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={2}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
+            className={inputCls}
           />
         </div>
 
