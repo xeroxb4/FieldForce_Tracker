@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import UserAvatar from '../../components/UserAvatar';
+import SyncStatus from '../../components/SyncStatus';
 
 export default function MerchLayout() {
   const { user, logout } = useAuth();
@@ -51,6 +52,7 @@ export default function MerchLayout() {
             >
               {dark ? '☀' : '☾'}
             </button>
+            <SyncStatus />
             <Link
               to="/profile"
               className={`text-[10px] px-2.5 py-1 rounded-lg ${

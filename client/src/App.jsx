@@ -8,6 +8,7 @@ import DayWrapUp from './pages/omr/DayWrapUp';
 import OMRReports from './pages/omr/OMRReports';
 import Outlets from './pages/omr/Outlets';
 import Beats from './pages/omr/Beats';
+import BeatMap from './pages/omr/BeatMap';
 import Owings from './pages/omr/Owings';
 import MerchLayout from './pages/merchandiser/MerchLayout';
 import MerchDashboard from './pages/merchandiser/MerchDashboard';
@@ -51,6 +52,7 @@ export default function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="beats" element={<Beats />} />
+        <Route path="map" element={<BeatMap />} />
         <Route path="log-shop" element={<LogShop />} />
         <Route path="wrap-up" element={<DayWrapUp />} />
         <Route path="owings" element={<Owings />} />

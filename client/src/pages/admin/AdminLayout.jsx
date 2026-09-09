@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { ensureNotifyPermission, pollAdminNotifications } from '../../services/notify';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import logo from '../../assets/logo.png';
@@ -26,11 +27,10 @@ export default function AdminLayout() {
   const [unreadNotif, setUnreadNotif] = useState(0);
 
   useEffect(() => {
-    const loadNotif = () => {
-      api
-        .get('/admin/notifications')
-        .then((r) => setUnreadNotif(r.data?.unread || 0))
-        .catch(() => {});
+    ensureNotifyPermission();
+    const loadNotif = async () => {
+      const n = await pollAdminNotifications(api);
+      setUnreadNotif(n || 0);
     };
     loadNotif();
     const id = setInterval(loadNotif, 60000);
