@@ -17,3 +17,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
+
+// Register service worker for offline app shell
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        console.log('FieldForce offline ready', reg.scope)
+      })
+      .catch((err) => {
+        console.warn('SW register failed', err)
+      })
+  })
+}

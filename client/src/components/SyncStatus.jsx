@@ -21,10 +21,12 @@ export default function SyncStatus({ className = '' }) {
       refresh();
     };
     window.addEventListener('online', on);
+    window.addEventListener('ff-queue-change', refresh);
     window.addEventListener('offline', off);
     const t = setInterval(refresh, 4000);
     return () => {
       window.removeEventListener('online', on);
+      window.removeEventListener('ff-queue-change', refresh);
       window.removeEventListener('offline', off);
       clearInterval(t);
     };

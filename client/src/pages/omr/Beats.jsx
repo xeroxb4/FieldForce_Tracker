@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
+import { getCachedWeek, cacheWeek } from '../../services/offline';
 import { useTheme } from '../../context/ThemeContext';
 
 const DAY_ORDER = [1, 2, 3, 4, 5]; // OMR Mon-Fri
@@ -59,10 +60,18 @@ export default function Beats() {
     const load = async () => {
       try {
         const { data } = await api.get('/beats/week');
+        cacheWeek(data);
         setWeek(data);
         setSelectedDay(data.today >= 1 && data.today <= 5 ? data.today : 1);
       } catch {
-        setError('Failed to load beats. Ask admin to assign outlets to your days.');
+        const cached = getCachedWeek();
+        if (cached) {
+          setWeek(cached);
+          setSelectedDay(cached.today >= 1 && cached.today <= 5 ? cached.today : 1);
+          setError('Offline — showing last saved beat');
+        } else {
+          setError('Failed to load beats. Need network once to download your beat.');
+        }
       } finally {
         setLoading(false);
       }
