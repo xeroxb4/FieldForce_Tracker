@@ -154,7 +154,7 @@ export const exportOmrXlsx = async (req, res) => {
       return res.status(400).json({ message: 'startDate and endDate are required (YYYY-MM-DD)' });
     }
 
-    const omrs = await User.find({ role: 'omr', isActive: true }).sort({ fullName: 1 });
+    const omrs = await User.find({ role: 'omr', isActive: { $ne: false } }).sort({ fullName: 1 });
     const rows = [];
     for (const omr of omrs) {
       rows.push(await buildOmrRow(omr, startDate, endDate));
@@ -285,6 +285,7 @@ export const exportOmrXlsx = async (req, res) => {
     meta.addRow(['Top 10 Penetration', 'Priority SKUs sold at least once / 10']);
     meta.addRow(['Avg Lines/Outlet', 'Total lines / unique outlets serviced']);
 
+    const buffer = await wb.xlsx.writeBuffer();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -293,8 +294,8 @@ export const exportOmrXlsx = async (req, res) => {
       'Content-Disposition',
       `attachment; filename=OMR_Export_${startDate}_to_${endDate}.xlsx`
     );
-    await wb.xlsx.write(res);
-    res.end();
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('OMR export error:', error);
     res.status(500).json({ message: 'Failed to export OMR data' });
@@ -308,7 +309,7 @@ export const exportMerchXlsx = async (req, res) => {
       return res.status(400).json({ message: 'startDate and endDate are required' });
     }
 
-    const merchs = await User.find({ role: 'merchandiser', isActive: true }).sort({
+    const merchs = await User.find({ role: 'merchandiser', isActive: { $ne: false } }).sort({
       fullName: 1,
     });
     const visits = await MerchVisit.find({
@@ -417,6 +418,7 @@ export const exportMerchXlsx = async (req, res) => {
     meta.addRow(['End Date', endDate]);
     meta.addRow(['Generated', new Date().toISOString()]);
 
+    const buffer = await wb.xlsx.writeBuffer();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -425,8 +427,8 @@ export const exportMerchXlsx = async (req, res) => {
       'Content-Disposition',
       `attachment; filename=Merch_Export_${startDate}_to_${endDate}.xlsx`
     );
-    await wb.xlsx.write(res);
-    res.end();
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('Merch export error:', error);
     res.status(500).json({ message: 'Failed to export merchandiser data' });
@@ -648,6 +650,7 @@ export const exportProductivityXlsx = async (req, res) => {
       wt.addRow([o.distributor || '', o.username, o.fullName, u?.target || 0]);
     });
 
+    const buffer = await wb.xlsx.writeBuffer();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -656,8 +659,8 @@ export const exportProductivityXlsx = async (req, res) => {
       'Content-Disposition',
       `attachment; filename=FieldForce_Productivity_${startDate}_to_${endDate}.xlsx`
     );
-    await wb.xlsx.write(res);
-    res.end();
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
   } catch (error) {
     console.error('Productivity export error:', error);
     res.status(500).json({ message: 'Failed to export productivity report' });

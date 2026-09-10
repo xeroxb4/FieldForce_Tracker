@@ -18,6 +18,51 @@ function presetRange(type) {
   return { start: end, end };
 }
 
+function apiBase() {
+  // Production: VITE_API_URL = https://fieldforce-tracker.onrender.com/api
+  // Local: empty → use /api proxy
+  const env = import.meta.env.VITE_API_URL;
+  if (env && String(env).trim()) return String(env).replace(/\/$/, '');
+  return '/api';
+}
+
+async function downloadXlsx(pathWithQuery, filename) {
+  const token = localStorage.getItem('token');
+  const url = `${apiBase()}${pathWithQuery.startsWith('/') ? '' : '/'}${pathWithQuery}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Export failed (${res.status})`);
+  }
+  // Reject HTML/JSON mistaken for Excel
+  if (ct.includes('application/json') || ct.includes('text/html')) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Server returned an error instead of Excel');
+  }
+  const blob = await res.blob();
+  if (blob.size < 2000) {
+    // likely error body
+    const text = await blob.text();
+    try {
+      const j = JSON.parse(text);
+      throw new Error(j.message || 'Export file too small / invalid');
+    } catch (e) {
+      if (e.message && !e.message.includes('JSON')) throw e;
+      throw new Error('Download is not a valid Excel file. Check API URL and login.');
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
 export default function AdminExport() {
   const { dark } = useTheme();
   const [startDate, setStartDate] = useState(presetRange('month').start);
@@ -29,28 +74,26 @@ export default function AdminExport() {
     ? 'bg-slate-800 border-slate-700'
     : 'bg-white border-slate-100 shadow-sm';
 
-  const download = async (type) => {
+  const run = async (type) => {
     setError('');
     setLoading(type);
     try {
-      const token = localStorage.getItem('token');
-      const url = `/api/admin/export/${type}?startDate=${startDate}&endDate=${endDate}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Export failed');
+      if (type === 'productivity') {
+        await downloadXlsx(
+          `/admin/export/productivity?startDate=${startDate}&endDate=${endDate}`,
+          `FieldForce_Productivity_${startDate}_to_${endDate}.xlsx`
+        );
+      } else if (type === 'omr') {
+        await downloadXlsx(
+          `/admin/export/omr?startDate=${startDate}&endDate=${endDate}`,
+          `OMR_Export_${startDate}_to_${endDate}.xlsx`
+        );
+      } else {
+        await downloadXlsx(
+          `/admin/export/merch?startDate=${startDate}&endDate=${endDate}`,
+          `Merch_Export_${startDate}_to_${endDate}.xlsx`
+        );
       }
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download =
-        type === 'omr'
-          ? `OMR_Export_${startDate}_to_${endDate}.xlsx`
-          : `Merch_Export_${startDate}_to_${endDate}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(a.href);
     } catch (err) {
       setError(err.message || 'Export failed');
     } finally {
@@ -71,149 +114,95 @@ export default function AdminExport() {
           Export Data
         </h2>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Download Excel (XLSX) reports by date range
+          Download Excel (XLSX) reports by date range — same style as GH Productivity Report
         </p>
       </div>
 
       <div className={`rounded-2xl border p-4 space-y-4 ${card}`}>
         <div className="flex flex-wrap gap-2">
-          {[
-            { id: 'today', label: 'Today' },
-            { id: 'week', label: 'This week' },
-            { id: 'month', label: 'This month' },
-          ].map((p) => (
+          {['today', 'week', 'month'].map((p) => (
             <button
-              key={p.id}
+              key={p}
               type="button"
-              onClick={() => applyPreset(p.id)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border ${
-                dark
-                  ? 'border-slate-600 text-slate-300 hover:bg-slate-700'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
+              onClick={() => applyPreset(p)}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#2596be]/15 text-[#2596be]"
             >
-              {p.label}
+              {p}
             </button>
           ))}
         </div>
-
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={`block text-xs mb-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              From
+            <label className={`text-xs font-semibold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              Start
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className={`w-full rounded-xl px-3 py-2.5 text-sm border ${
-                dark
-                  ? 'bg-slate-900 border-slate-600 text-white'
-                  : 'bg-slate-50 border-slate-200 text-slate-900'
-              }`}
+              className="w-full mt-1 rounded-xl border px-3 py-2 text-sm text-slate-900"
             />
           </div>
           <div>
-            <label className={`block text-xs mb-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              To
+            <label className={`text-xs font-semibold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              End
             </label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className={`w-full rounded-xl px-3 py-2.5 text-sm border ${
-                dark
-                  ? 'bg-slate-900 border-slate-600 text-white'
-                  : 'bg-slate-50 border-slate-200 text-slate-900'
-              }`}
+              className="w-full mt-1 rounded-xl border px-3 py-2 text-sm text-slate-900"
             />
           </div>
         </div>
 
         {error && (
-          <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-            {error}
-          </div>
+          <p className="text-sm text-red-500 font-medium">{error}</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            disabled={!!loading}
-            onClick={() => download('omr')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl disabled:opacity-60 shadow-lg shadow-indigo-600/20"
-          >
-            {loading === 'omr' ? 'Preparing…' : 'Download OMR Excel'}
-          </button>
-          <button
-            type="button"
-            disabled={!!loading}
-            onClick={() => download('merch')}
-            className={`font-semibold py-3.5 rounded-xl border disabled:opacity-60 ${
-              dark
-                ? 'bg-slate-900 border-slate-600 text-white'
-                : 'bg-white border-slate-200 text-slate-800'
-            }`}
-          >
-            {loading === 'merch' ? 'Preparing…' : 'Download Merchandiser Excel'}
-          </button>
-        </div>
-      </div>
-
-      <div className={`rounded-2xl border p-4 text-xs space-y-2 ${card}`}>
-        <div className={`font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
-          OMR file includes
-        </div>
-        <ul className={`list-disc pl-4 space-y-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          <li>Sales, visits, productive calls, productivity %, hit rate, LPPC</li>
-          <li>Coverage %, top 10 count & penetration, avg top 10 penetration</li>
-          <li>Avg lines per outlet, total outlets serviced</li>
-          <li>Each top 10 product (Yes/No sold in range)</li>
-          <li>Visit detail sheet + definitions</li>
-        </ul>
-        <div className={`font-semibold pt-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
-          Merchandiser file includes
-        </div>
-        <ul className={`list-disc pl-4 space-y-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          <li>Visits, unique shops, SKU entries, in-stock / OOS, order qty</li>
-          <li>Line-level visit detail</li>
-        </ul>
-      </div>
-    
-      <div className={`rounded-2xl border p-4 mt-4 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <h2 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Productivity report (Excel)
-        </h2>
-        <p className={`text-xs mb-3 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Like GH Productivity Report: Regional + Distributor sheets with coverage %, hit rate, LPPC, outlet/day, achievement % (Excel formulas).
-        </p>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <input id="prod-start" type="date" className="rounded-lg border px-2 py-2 text-sm text-slate-900" />
-          <input id="prod-end" type="date" className="rounded-lg border px-2 py-2 text-sm text-slate-900" />
-        </div>
         <button
           type="button"
-          onClick={async () => {
-            const start = document.getElementById('prod-start')?.value;
-            const end = document.getElementById('prod-end')?.value;
-            if (!start || !end) return alert('Pick start and end dates');
-            const token = localStorage.getItem('token');
-            const base = import.meta.env.VITE_API_URL || '';
-            const url = `${base}/admin/export/productivity?startDate=${start}&endDate=${end}`;
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-            if (!res.ok) return alert('Export failed');
-            const blob = await res.blob();
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `FieldForce_Productivity_${start}_to_${end}.xlsx`;
-            a.click();
-          }}
-          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold text-sm"
+          disabled={!!loading}
+          onClick={() => run('productivity')}
+          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold text-sm disabled:opacity-60"
         >
-          Download productivity workbook
+          {loading === 'productivity' ? 'Preparing…' : 'Download productivity workbook (GH style)'}
+        </button>
+        <button
+          type="button"
+          disabled={!!loading}
+          onClick={() => run('omr')}
+          className="w-full py-3 rounded-xl border border-[#2596be] text-[#2596be] font-bold text-sm disabled:opacity-60"
+        >
+          {loading === 'omr' ? 'Preparing…' : 'Download OMR detail export'}
+        </button>
+        <button
+          type="button"
+          disabled={!!loading}
+          onClick={() => run('merch')}
+          className="w-full py-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-sm disabled:opacity-60"
+        >
+          {loading === 'merch' ? 'Preparing…' : 'Download Merchandiser export'}
         </button>
       </div>
 
-</div>
+      <div className={`rounded-2xl border p-4 text-sm ${card}`}>
+        <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
+          Productivity workbook includes
+        </div>
+        <ul className={`list-disc pl-4 space-y-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <li>
+            <strong>Regional</strong> — coverage planned/visited, coverage %, hit rate, LPPC,
+            outlet/day, target, actual sales, achievement % (Excel formulas)
+          </li>
+          <li>
+            <strong>Distributor</strong> — per OMR with comments (below run-rate / on track)
+          </li>
+          <li>
+            <strong>Target</strong> — distributor / OMR target list
+          </li>
+        </ul>
+      </div>
+    </div>
   );
 }
