@@ -179,6 +179,41 @@ export default function AdminExport() {
           <li>Line-level visit detail</li>
         </ul>
       </div>
-    </div>
+    
+      <div className={`rounded-2xl border p-4 mt-4 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <h2 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          Productivity report (Excel)
+        </h2>
+        <p className={`text-xs mb-3 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          Like GH Productivity Report: Regional + Distributor sheets with coverage %, hit rate, LPPC, outlet/day, achievement % (Excel formulas).
+        </p>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <input id="prod-start" type="date" className="rounded-lg border px-2 py-2 text-sm text-slate-900" />
+          <input id="prod-end" type="date" className="rounded-lg border px-2 py-2 text-sm text-slate-900" />
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            const start = document.getElementById('prod-start')?.value;
+            const end = document.getElementById('prod-end')?.value;
+            if (!start || !end) return alert('Pick start and end dates');
+            const token = localStorage.getItem('token');
+            const base = import.meta.env.VITE_API_URL || '';
+            const url = `${base}/admin/export/productivity?startDate=${start}&endDate=${end}`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) return alert('Export failed');
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `FieldForce_Productivity_${start}_to_${end}.xlsx`;
+            a.click();
+          }}
+          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold text-sm"
+        >
+          Download productivity workbook
+        </button>
+      </div>
+
+</div>
   );
 }

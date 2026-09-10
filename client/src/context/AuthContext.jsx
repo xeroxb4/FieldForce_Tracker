@@ -11,12 +11,22 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem('user');
     const token = localStorage.getItem('token');
     if (stored && token) {
-      setUser(JSON.parse(stored));
-      // Refresh profile (incl. picture) from server
+      try {
+        setUser(JSON.parse(stored));
+      } catch {
+        /* ignore */
+      }
       api
         .get('/auth/me')
         .then((res) => {
-          const next = { ...JSON.parse(stored), ...res.data, token };
+          const prev = (() => {
+            try {
+              return JSON.parse(localStorage.getItem('user') || '{}');
+            } catch {
+              return {};
+            }
+          })();
+          const next = { ...prev, ...res.data, token };
           localStorage.setItem('user', JSON.stringify(next));
           setUser(next);
         })
@@ -54,10 +64,14 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, updateProfilePicture, setUserFromProfile }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, loading, updateProfilePicture, setUserFromProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

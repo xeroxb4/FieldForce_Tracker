@@ -15,6 +15,7 @@ function StatCard({ title, value, sub, gradient }) {
 
 export default function AdminDashboard() {
   const { dark } = useTheme();
+  const [unvisited, setUnvisited] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +25,10 @@ export default function AdminDashboard() {
       .then((r) => setData(r.data))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+    api
+      .get('/admin/unvisited-today')
+      .then((r) => setUnvisited(r.data))
+      .catch(() => {});
   }, []);
 
   const fmt = (n) =>
@@ -94,6 +99,48 @@ export default function AdminDashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div
+        className={`rounded-2xl border-2 p-4 ${
+          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+            Unvisited today (OMR beats)
+          </h2>
+          <Link to="/admin/outlet-sales" className="text-xs font-bold text-[#2596be]">
+            Outlet sales →
+          </Link>
+        </div>
+        {!unvisited && <p className="text-sm text-slate-500">Loading…</p>}
+        {unvisited?.reps?.length === 0 && (
+          <p className="text-sm text-slate-500">No OMR beat data.</p>
+        )}
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {(unvisited?.reps || []).map((r) => (
+            <div
+              key={r.omr._id}
+              className={`rounded-xl p-3 text-sm ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}
+            >
+              <div className="flex justify-between gap-2 font-semibold">
+                <span className={dark ? 'text-white' : 'text-slate-900'}>{r.omr.fullName}</span>
+                <span className={r.unvisitedCount ? 'text-amber-500' : 'text-emerald-500'}>
+                  {r.visitedCount}/{r.plannedCount} visited · {r.unvisitedCount} left
+                </span>
+              </div>
+              {r.unvisitedCount > 0 && (
+                <ul className={`mt-1 text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {r.unvisited.slice(0, 8).map((o) => (
+                    <li key={o._id}>• {o.name}</li>
+                  ))}
+                  {r.unvisited.length > 8 && <li>… +{r.unvisited.length - 8} more</li>}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

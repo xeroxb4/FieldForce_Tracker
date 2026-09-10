@@ -1,4 +1,5 @@
 import Outlet from '../models/Outlet.js';
+import Visit from '../models/Visit.js';
 
 const DAY_NAMES = {
   1: 'Monday',
@@ -10,14 +11,32 @@ const DAY_NAMES = {
 };
 
 const getTodayDayNumber = () => {
-  const d = new Date().getDay(); // 0=Sun
+  const d = new Date().getDay();
   return d === 0 ? 7 : d;
 };
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+async function visitedOutletIdsForUser(userId) {
+  const visits = await Visit.find({
+    userId,
+    date: todayStr(),
+    outletId: { $ne: null },
+  }).select('outletId');
+  return new Set(visits.map((v) => String(v.outletId)));
+}
+
+function attachVisited(outlets, visitedSet) {
+  return outlets.map((o) => {
+    const obj = o.toObject ? o.toObject() : { ...o };
+    obj.visitedToday = visitedSet.has(String(o._id));
+    return obj;
+  });
+}
 
 export const getTodayBeat = async (req, res) => {
   try {
     const dayNum = getTodayDayNumber();
-    // OMR works Mon-Fri only for beat enforcement; still return list
     const outlets = await Outlet.find({
       $or: [{ assignedTo: req.user._id }, { userId: req.user._id }],
       status: 'approved',
@@ -25,11 +44,15 @@ export const getTodayBeat = async (req, res) => {
       assignedDays: dayNum,
     }).sort({ name: 1 });
 
+    const visited = await visitedOutletIdsForUser(req.user._id);
+    const list = attachVisited(outlets, visited);
+
     res.json({
       dayNumber: dayNum,
       dayName: DAY_NAMES[dayNum] || 'Weekend',
-      outlets,
-      count: outlets.length,
+      outlets: list,
+      count: list.length,
+      visitedCount: list.filter((o) => o.visitedToday).length,
     });
   } catch (error) {
     console.error(error);
@@ -40,7 +63,7 @@ export const getTodayBeat = async (req, res) => {
 export const getWeekBeat = async (req, res) => {
   try {
     const role = req.user.role;
-    const maxDay = role === 'merchandiser' ? 6 : 5; // OMR Mon-Fri, Merch Mon-Sat
+    const maxDay = role === 'merchandiser' ? 6 : 5;
 
     const outlets = await Outlet.find({
       $or: [{ assignedTo: req.user._id }, { userId: req.user._id }],
@@ -48,12 +71,15 @@ export const getWeekBeat = async (req, res) => {
       isActive: true,
     }).sort({ name: 1 });
 
+    const visited = await visitedOutletIdsForUser(req.user._id);
+
     const byDay = {};
     for (let d = 1; d <= maxDay; d++) {
+      const dayOutlets = outlets.filter((o) => (o.assignedDays || []).includes(d));
       byDay[d] = {
         dayNumber: d,
         dayName: DAY_NAMES[d],
-        outlets: outlets.filter((o) => (o.assignedDays || []).includes(d)),
+        outlets: attachVisited(dayOutlets, visited),
       };
     }
 
@@ -61,6 +87,7 @@ export const getWeekBeat = async (req, res) => {
       today: getTodayDayNumber(),
       days: byDay,
       totalOutlets: outlets.length,
+      visitedToday: visited.size,
     });
   } catch (error) {
     console.error(error);

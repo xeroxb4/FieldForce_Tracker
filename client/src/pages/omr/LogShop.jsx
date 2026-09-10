@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
-import { printOrderInvoiceWithPrompt } from '../../utils/printInvoice';
+import InvoicePreview from '../../components/InvoicePreview';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -56,6 +56,7 @@ export default function LogShop() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [offlinePending, setOfflinePending] = useState(queueCount());
+  const [invoicePreview, setInvoicePreview] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -190,7 +191,7 @@ export default function LogShop() {
           'Print invoice? (Cancel if no printer — visit is already saved.)'
         );
         if (doPrint) {
-          printOrderInvoiceWithPrompt({
+          setInvoicePreview({
             shopName: form.shopName || ctx.shopName,
             contactName: form.contactName || ctx.contactName,
             repName: user?.fullName,
@@ -289,6 +290,7 @@ export default function LogShop() {
 
   return (
     <div>
+      <InvoicePreview open={!!invoicePreview} invoice={invoicePreview} onClose={() => setInvoicePreview(null)} />
       <div className="flex items-center justify-between mb-1">
         <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
           {fromBeat ? 'Service Outlet' : 'Log Shop'}

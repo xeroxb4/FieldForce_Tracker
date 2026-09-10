@@ -28,6 +28,7 @@ import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminExport from './pages/admin/AdminExport';
+import AdminOutletSales from './pages/admin/AdminOutletSales';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import Profile from './pages/Profile';
@@ -81,6 +82,7 @@ export default function App() {
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="export" element={<AdminExport />} />
+        <Route path="outlet-sales" element={<AdminOutletSales />} />
         <Route path="outlets" element={<AdminOutlets />} />
         <Route path="targets" element={<AdminTargets />} />
         <Route path="users" element={<AdminUsers />} />

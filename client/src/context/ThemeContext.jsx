@@ -4,21 +4,36 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('ff_theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+    try {
+      const saved = localStorage.getItem('ff_theme');
+      if (saved) return saved === 'dark';
+    } catch {
+      /* ignore */
+    }
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('ff_theme', dark ? 'dark' : 'light');
+    try {
+      localStorage.setItem('ff_theme', dark ? 'dark' : 'light');
+    } catch {
+      /* ignore */
+    }
   }, [dark]);
 
+  const toggle = () => setDark((d) => !d);
+
   return (
-    <ThemeContext.Provider value={{ dark, setDark, toggle: () => setDark((d) => !d) }}>
+    <ThemeContext.Provider value={{ dark, setDark, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  return useContext(ThemeContext);
+}

@@ -1,3 +1,4 @@
+import Target from '../models/Target.js';
 import ExcelJS from 'exceljs';
 import User from '../models/User.js';
 import Visit from '../models/Visit.js';
@@ -429,5 +430,236 @@ export const exportMerchXlsx = async (req, res) => {
   } catch (error) {
     console.error('Merch export error:', error);
     res.status(500).json({ message: 'Failed to export merchandiser data' });
+  }
+};
+
+
+/** Productivity workbook styled like GH Productivity Report (formulas included) */
+export const exportProductivityXlsx = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate required (YYYY-MM-DD)' });
+    }
+
+    const omrs = await User.find({ role: 'omr', isActive: { $ne: false } }).lean();
+    const visits = await Visit.find({
+      date: { $gte: startDate, $lte: endDate },
+    }).lean();
+    const outlets = await Outlet.find({ status: 'approved', isActive: true }).lean();
+    const targets = await Target.find({}).lean();
+
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    let workingDays = 0;
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const day = d.getDay();
+      if (day >= 1 && day <= 5) workingDays += 1;
+    }
+    if (workingDays < 1) workingDays = 1;
+
+    const byUser = {};
+    for (const o of omrs) {
+      byUser[String(o._id)] = {
+        name: o.fullName || o.username,
+        distributor: o.distributor || '',
+        territory: o.territory || '',
+        region: o.region || o.territory || '',
+        plannedOutlets: outlets.filter(
+          (x) => String(x.assignedTo) === String(o._id)
+        ).length,
+        coveragePlan: 0,
+        visited: 0,
+        hits: 0,
+        lines: 0,
+        sales: 0,
+        target: 0,
+      };
+    }
+
+    // coverage plan ≈ unique outlets * working days / 5 * assigned day count rough
+    for (const o of outlets) {
+      const uid = String(o.assignedTo || '');
+      if (!byUser[uid]) continue;
+      const days = (o.assignedDays || []).filter((d) => d >= 1 && d <= 5).length || 1;
+      byUser[uid].coveragePlan += Math.round((workingDays * days) / 5);
+    }
+
+    for (const v of visits) {
+      const uid = String(v.userId);
+      if (!byUser[uid]) continue;
+      byUser[uid].visited += 1;
+      if (v.outcome === 'Order Placed' || (v.amount || 0) > 0) {
+        byUser[uid].hits += 1;
+        byUser[uid].sales += v.amount || 0;
+        byUser[uid].lines += (v.lineItems || []).filter((li) => (li.quantity || 0) > 0).length;
+      }
+    }
+
+    for (const t of targets) {
+      const uid = String(t.userId || t.omrId || '');
+      if (byUser[uid] && (t.amount || t.targetAmount)) {
+        byUser[uid].target = t.amount || t.targetAmount || 0;
+      }
+    }
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'FieldForce Tracker';
+
+    // --- Regional sheet ---
+    const ws = wb.addWorksheet('Regional');
+    ws.addRow(['OMR PRODUCTIVITY OVERVIEW']);
+    ws.addRow([`Period: ${startDate} to ${endDate}`, '', '', `Working days: ${workingDays}`]);
+    ws.addRow([]);
+    ws.addRow([
+      'REGION / TERRITORY',
+      'REP NAME',
+      'DISTRIBUTOR',
+      'TOTAL OUTLETS',
+      'COVERAGE PLANNED',
+      'OUTLET VISITED',
+      'COVERAGE %',
+      'HIT/STRIKE',
+      'HIT RATE %',
+      'Av. LPPC',
+      'OUTLET PER DAY',
+      'TARGET',
+      'ACTUAL SALES',
+      'ACHI %',
+      'RUNNING RATE (EXPECTED)',
+    ]);
+
+    const rows = Object.values(byUser);
+    let startDataRow = 5;
+    rows.forEach((r, i) => {
+      const rowNum = startDataRow + i;
+      const excelRow = ws.addRow([
+        r.region || r.territory || '',
+        r.name,
+        r.distributor,
+        r.plannedOutlets,
+        r.coveragePlan || r.plannedOutlets * workingDays,
+        r.visited,
+        null, // F coverage formula
+        r.hits,
+        null, // H hit rate
+        null, // I LPPC
+        null, // J outlet per day
+        r.target || 0,
+        Math.round(r.sales * 100) / 100,
+        null, // M achi
+        null, // N running rate
+      ]);
+      // Formulas (Excel columns A=1 ... N=14)
+      // Coverage % = Visited / Coverage Planned
+      excelRow.getCell(7).value = { formula: `IF(E${rowNum}=0,0,F${rowNum}/E${rowNum})` };
+      // Hit rate = Hits / Visited
+      excelRow.getCell(9).value = { formula: `IF(F${rowNum}=0,0,H${rowNum}/F${rowNum})` };
+      // LPPC = lines / hits (approx stored in hits lines - use hits as productive; lines/hits)
+      const lppc = r.hits ? r.lines / r.hits : 0;
+      excelRow.getCell(10).value = Math.round(lppc * 100) / 100;
+      // Outlet per day = visited / working days
+      excelRow.getCell(11).value = { formula: `IF(${workingDays}=0,0,F${rowNum}/${workingDays})` };
+      // Achi % = Actual / Target
+      excelRow.getCell(14).value = { formula: `IF(L${rowNum}=0,0,M${rowNum}/L${rowNum})` };
+      // Running rate expected = Target * (days gone / working days) — use full period as days gone
+      excelRow.getCell(15).value = { formula: `IF(${workingDays}=0,0,L${rowNum}*${workingDays}/${workingDays})` };
+    });
+
+    const endRow = startDataRow + rows.length - 1;
+    if (rows.length) {
+      const tot = ws.addRow(['NATIONAL', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+      const tr = endRow + 1;
+      tot.getCell(4).value = { formula: `SUM(D${startDataRow}:D${endRow})` };
+      tot.getCell(5).value = { formula: `SUM(E${startDataRow}:E${endRow})` };
+      tot.getCell(6).value = { formula: `SUM(F${startDataRow}:F${endRow})` };
+      tot.getCell(7).value = { formula: `IF(E${tr}=0,0,F${tr}/E${tr})` };
+      tot.getCell(8).value = { formula: `SUM(H${startDataRow}:H${endRow})` };
+      tot.getCell(9).value = { formula: `IF(F${tr}=0,0,H${tr}/F${tr})` };
+      tot.getCell(12).value = { formula: `SUM(L${startDataRow}:L${endRow})` };
+      tot.getCell(13).value = { formula: `SUM(M${startDataRow}:M${endRow})` };
+      tot.getCell(14).value = { formula: `IF(L${tr}=0,0,M${tr}/L${tr})` };
+      tot.font = { bold: true };
+    }
+
+    ws.getRow(4).font = { bold: true };
+    ws.columns.forEach((c) => {
+      c.width = 14;
+    });
+
+    // --- Distributor sheet ---
+    const wd = wb.addWorksheet('Distributor');
+    wd.addRow(['DISTRIBUTOR / REP DETAIL']);
+    wd.addRow([`Working Days`, workingDays, `Days in period`, workingDays]);
+    wd.addRow([]);
+    wd.addRow([
+      'REGION',
+      'DISTRIBUTOR',
+      'SALESPERSON',
+      'TOTAL OUTLETS',
+      'COVERAGE PLAN',
+      'VISITED',
+      'COV. RATE',
+      'HIT/STRIKE',
+      'HIT RATE',
+      'LPPC',
+      'OUTLET PER DAY',
+      'TARGET',
+      'ACTUAL SALES',
+      'ACHI %',
+      'COMMENTS',
+    ]);
+    let dStart = 5;
+    Object.values(byUser).forEach((r, i) => {
+      const rn = dStart + i;
+      const row = wd.addRow([
+        r.region || r.territory,
+        r.distributor,
+        r.name,
+        r.plannedOutlets,
+        r.coveragePlan || r.plannedOutlets * workingDays,
+        r.visited,
+        null,
+        r.hits,
+        null,
+        r.hits ? Math.round((r.lines / r.hits) * 100) / 100 : 0,
+        null,
+        r.target || 0,
+        Math.round(r.sales * 100) / 100,
+        null,
+        '',
+      ]);
+      row.getCell(7).value = { formula: `IF(E${rn}=0,0,F${rn}/E${rn})` };
+      row.getCell(9).value = { formula: `IF(F${rn}=0,0,H${rn}/F${rn})` };
+      row.getCell(11).value = { formula: `F${rn}/${workingDays}` };
+      row.getCell(14).value = { formula: `IF(L${rn}=0,0,M${rn}/L${rn})` };
+      row.getCell(15).value = {
+        formula: `IF(N${rn}<0.5,"Sales below runrate",IF(N${rn}<1,"On track","Above target"))`,
+      };
+    });
+    wd.getRow(4).font = { bold: true };
+
+    // --- Target sheet ---
+    const wt = wb.addWorksheet('Target');
+    wt.addRow(['DT MONTHLY TARGET TEMPLATE']);
+    wt.addRow(['DISTRIBUTOR', 'OMR USERNAME', 'OMR NAME', 'TARGET']);
+    omrs.forEach((o) => {
+      const u = byUser[String(o._id)];
+      wt.addRow([o.distributor || '', o.username, o.fullName, u?.target || 0]);
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=FieldForce_Productivity_${startDate}_to_${endDate}.xlsx`
+    );
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Productivity export error:', error);
+    res.status(500).json({ message: 'Failed to export productivity report' });
   }
 };

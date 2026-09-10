@@ -15,6 +15,8 @@ import {
   removeOutlet,
   getDashboardStats,
   deactivateUser,
+  getUnvisitedToday,
+  getOutletSalesHistory,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -22,7 +24,7 @@ import {
   approveOutlet,
   rejectOutlet,
 } from '../controllers/outletController.js';
-import { exportOmrXlsx, exportMerchXlsx } from '../controllers/exportController.js';
+import { exportOmrXlsx, exportMerchXlsx, exportProductivityXlsx } from '../controllers/exportController.js';
 import {
   listProducts,
   createProduct,
@@ -41,6 +43,9 @@ router.use(protect);
 router.use(restrictTo('admin'));
 
 router.get('/dashboard', getDashboardStats);
+router.get('/unvisited-today', getUnvisitedToday);
+router.get('/outlet-sales-history', getOutletSalesHistory);
+router.get('/export/productivity', exportProductivityXlsx);
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);

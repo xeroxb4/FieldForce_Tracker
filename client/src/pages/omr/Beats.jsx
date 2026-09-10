@@ -13,6 +13,8 @@ export default function Beats() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [startingId, setStartingId] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(null);
+  const [gpsMsg, setGpsMsg] = useState('');
+  const navigate = useNavigate();
 
   const uploadOutletPhoto = (outlet, file) => {
     if (!file) return;
@@ -21,7 +23,6 @@ export default function Beats() {
     reader.onload = async () => {
       try {
         let dataUrl = reader.result;
-        // shrink large images
         if (typeof dataUrl === 'string' && dataUrl.length > 400000) {
           dataUrl = await new Promise((resolve) => {
             const img = new Image();
@@ -43,7 +44,6 @@ export default function Beats() {
           });
         }
         await api.put(`/outlets/${outlet._id}`, { photo: dataUrl });
-        // refresh week
         const { data } = await api.get('/beats/week');
         setWeek(data);
       } catch (err) {
@@ -54,9 +54,6 @@ export default function Beats() {
     };
     reader.readAsDataURL(file);
   };
-
-  const [gpsMsg, setGpsMsg] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
@@ -294,14 +291,20 @@ export default function Beats() {
                   )}
                 </div>
                 {isTodayBeat ? (
-                  <button
-                    type="button"
-                    onClick={() => startOutletVisit(o)}
-                    disabled={startingId === o._id}
-                    className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300 disabled:opacity-60"
-                  >
-                    {startingId === o._id ? 'Starting…' : 'Start visit →'}
-                  </button>
+                  o.visitedToday ? (
+                    <span className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                      ✓ Visited
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startOutletVisit(o)}
+                      disabled={startingId === o._id}
+                      className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300 disabled:opacity-60"
+                    >
+                      {startingId === o._id ? 'Starting…' : 'Start visit →'}
+                    </button>
+                  )
                 ) : (
                   <span className="text-[10px] font-bold shrink-0 px-2 py-1 rounded-lg bg-slate-200 text-slate-600">
                     Not today

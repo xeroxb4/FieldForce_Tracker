@@ -467,3 +467,105 @@ export const deactivateUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to deactivate user' });
   }
 };
+
+
+export const getUnvisitedToday = async (req, res) => {
+  try {
+    const dayNum = (() => {
+      const d = new Date().getDay();
+      return d === 0 ? 7 : d;
+    })();
+    const date = new Date().toISOString().slice(0, 10);
+
+    const omrs = await User.find({ role: 'omr', isActive: { $ne: false } }).select('fullName username territory distributor');
+    const visits = await Visit.find({ date, outletId: { $ne: null } }).select('outletId userId');
+    const visitedByUser = {};
+    visits.forEach((v) => {
+      const uid = String(v.userId);
+      if (!visitedByUser[uid]) visitedByUser[uid] = new Set();
+      visitedByUser[uid].add(String(v.outletId));
+    });
+
+    const rows = [];
+    for (const omr of omrs) {
+      const planned = await Outlet.find({
+        assignedTo: omr._id,
+        status: 'approved',
+        isActive: true,
+        assignedDays: dayNum,
+      }).select('name displayName address territory assignedDays');
+      const visited = visitedByUser[String(omr._id)] || new Set();
+      const unvisited = planned.filter((o) => !visited.has(String(o._id)));
+      rows.push({
+        omr: { _id: omr._id, fullName: omr.fullName, username: omr.username, territory: omr.territory, distributor: omr.distributor },
+        plannedCount: planned.length,
+        visitedCount: planned.length - unvisited.length,
+        unvisitedCount: unvisited.length,
+        unvisited: unvisited.map((o) => ({
+          _id: o._id,
+          name: o.displayName || o.name,
+          address: o.address,
+        })),
+      });
+    }
+
+    res.json({ date, dayNumber: dayNum, reps: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to load unvisited outlets' });
+  }
+};
+
+export const getOutletSalesHistory = async (req, res) => {
+  try {
+    const { outletId, startDate, endDate } = req.query;
+    const filter = {};
+    if (outletId) filter.outletId = outletId;
+    if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = startDate;
+      if (endDate) filter.date.$lte = endDate;
+    }
+    const visits = await Visit.find(filter)
+      .sort({ date: -1, createdAt: -1 })
+      .limit(500)
+      .populate('userId', 'fullName username')
+      .lean();
+
+    const byOutlet = {};
+    for (const v of visits) {
+      const key = String(v.outletId || v.shopName);
+      if (!byOutlet[key]) {
+        byOutlet[key] = {
+          outletId: v.outletId,
+          shopName: v.shopName,
+          visits: 0,
+          orders: 0,
+          totalSales: 0,
+          lastVisit: null,
+          history: [],
+        };
+      }
+      const row = byOutlet[key];
+      row.visits += 1;
+      if (v.outcome === 'Order Placed' || (v.amount || 0) > 0) {
+        row.orders += 1;
+        row.totalSales += v.amount || 0;
+      }
+      if (!row.lastVisit || v.date > row.lastVisit) row.lastVisit = v.date;
+      row.history.push({
+        date: v.date,
+        outcome: v.outcome,
+        amount: v.amount || 0,
+        rep: v.repName || v.userId?.fullName,
+        paymentType: v.paymentType,
+        lineItems: v.lineItems || [],
+      });
+    }
+
+    res.json({ outlets: Object.values(byOutlet) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to load outlet sales history' });
+  }
+};
