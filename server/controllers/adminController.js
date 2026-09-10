@@ -554,6 +554,7 @@ export const getOutletSalesHistory = async (req, res) => {
       }
       if (!row.lastVisit || v.date > row.lastVisit) row.lastVisit = v.date;
       row.history.push({
+        _id: v._id,
         date: v.date,
         outcome: v.outcome,
         amount: v.amount || 0,
@@ -567,5 +568,34 @@ export const getOutletSalesHistory = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to load outlet sales history' });
+  }
+};
+
+
+export const deleteVisit = async (req, res) => {
+  try {
+    const visit = await Visit.findByIdAndDelete(req.params.id);
+    if (!visit) return res.status(404).json({ message: 'Visit not found' });
+    res.json({ message: 'Visit deleted', id: req.params.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to delete visit' });
+  }
+};
+
+export const updateVisit = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id);
+    if (!visit) return res.status(404).json({ message: 'Visit not found' });
+    const { amount, outcome, notes, shopName } = req.body;
+    if (amount !== undefined) visit.amount = Number(amount) || 0;
+    if (outcome) visit.outcome = outcome;
+    if (notes !== undefined) visit.notes = notes;
+    if (shopName) visit.shopName = shopName;
+    await visit.save();
+    res.json(visit);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update visit' });
   }
 };

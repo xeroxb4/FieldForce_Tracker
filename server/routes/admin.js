@@ -17,6 +17,8 @@ import {
   deactivateUser,
   getUnvisitedToday,
   getOutletSalesHistory,
+  deleteVisit,
+  updateVisit,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -45,6 +47,8 @@ router.use(restrictTo('admin'));
 router.get('/dashboard', getDashboardStats);
 router.get('/unvisited-today', getUnvisitedToday);
 router.get('/outlet-sales-history', getOutletSalesHistory);
+router.delete('/visits/:id', deleteVisit);
+router.put('/visits/:id', updateVisit);
 router.get('/export/productivity', exportProductivityXlsx);
 router.get('/users', getUsers);
 router.post('/users', createUser);

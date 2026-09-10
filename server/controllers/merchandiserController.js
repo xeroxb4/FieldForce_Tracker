@@ -178,3 +178,26 @@ export const getStockReceipts = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch stock receipts' });
   }
 };
+
+
+export const getMerchMonthSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const end = now.toISOString().slice(0, 10);
+    const visits = await MerchVisit.find({
+      userId: req.user._id,
+      date: { $gte: start, $lte: end },
+    });
+    const outlets = new Set(visits.map((v) => String(v.outletId || v.shopName || v._id)));
+    res.json({
+      monthStart: start,
+      monthEnd: end,
+      totalVisits: visits.length,
+      uniqueOutlets: outlets.size,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to load merch month summary' });
+  }
+};

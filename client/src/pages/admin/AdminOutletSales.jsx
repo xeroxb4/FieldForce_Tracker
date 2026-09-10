@@ -8,18 +8,40 @@ export default function AdminOutletSales() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     api
       .get('/admin/outlet-sales-history')
       .then((r) => setRows(r.data?.outlets || []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const filtered = rows.filter((r) =>
     (r.shopName || '').toLowerCase().includes(q.toLowerCase())
   );
+
+  const deleteVisit = async (visitId, e) => {
+    e.stopPropagation();
+    if (!visitId) return alert('This row has no id — refresh after server update');
+    if (!window.confirm('Delete this visit/order permanently? This cannot be undone.')) return;
+    setBusyId(visitId);
+    try {
+      await api.delete(`/admin/visits/${visitId}`);
+      load();
+      setSelected(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -28,7 +50,7 @@ export default function AdminOutletSales() {
           Outlet sales history
         </h1>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Performance by shop — visits, orders, total sales
+          Performance by shop — visits, orders, total sales. Delete duplicates if needed.
         </p>
       </div>
       <input
@@ -60,13 +82,28 @@ export default function AdminOutletSales() {
               {r.visits} visits · {r.orders} orders · last {r.lastVisit || '—'}
             </div>
             {selected?.shopName === r.shopName && (
-              <div className="mt-3 space-y-1 border-t border-slate-700/30 pt-2">
-                {(r.history || []).slice(0, 20).map((h, i) => (
-                  <div key={i} className={`text-xs flex justify-between ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    <span>
+              <div className="mt-3 space-y-2 border-t border-slate-700/30 pt-2">
+                {(r.history || []).map((h, i) => (
+                  <div
+                    key={h._id || i}
+                    className={`text-xs flex justify-between items-center gap-2 ${
+                      dark ? 'text-slate-300' : 'text-slate-700'
+                    }`}
+                  >
+                    <span className="min-w-0">
                       {h.date} · {h.outcome} · {h.rep}
                     </span>
-                    <span className="font-semibold">GHS {Number(h.amount || 0).toFixed(2)}</span>
+                    <span className="font-semibold shrink-0">
+                      GHS {Number(h.amount || 0).toFixed(2)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => deleteVisit(h._id, e)}
+                      disabled={busyId === h._id}
+                      className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30"
+                    >
+                      {busyId === h._id ? '…' : 'Delete'}
+                    </button>
                   </div>
                 ))}
               </div>

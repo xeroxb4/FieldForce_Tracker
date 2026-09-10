@@ -364,3 +364,40 @@ export const updateOutletGps = async (req, res) => {
     res.status(500).json({ message: 'Failed to update shop location' });
   }
 };
+
+
+export const getMonthSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const end = now.toISOString().slice(0, 10);
+    const visits = await Visit.find({
+      userId: req.user._id,
+      date: { $gte: start, $lte: end },
+    });
+    let sales = 0;
+    let orders = 0;
+    let productive = 0;
+    const outlets = new Set();
+    for (const v of visits) {
+      outlets.add(String(v.outletId || v.shopName));
+      if ((v.amount || 0) > 0 || v.outcome === 'Order Placed') {
+        orders += 1;
+        sales += v.amount || 0;
+        productive += 1;
+      }
+    }
+    res.json({
+      monthStart: start,
+      monthEnd: end,
+      totalVisits: visits.length,
+      productiveCalls: productive,
+      orders,
+      totalSales: Math.round(sales * 100) / 100,
+      uniqueOutlets: outlets.size,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to load month summary' });
+  }
+};

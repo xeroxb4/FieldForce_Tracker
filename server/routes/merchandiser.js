@@ -5,6 +5,7 @@ import {
   createSKU,
   createMerchVisit,
   getMerchVisits,
+  getMerchMonthSummary,
   getSosCategories,
   createStockReceipt,
   getStockReceipts,
@@ -20,6 +21,7 @@ router.post('/skus', createSKU);
 router.get('/sos-categories', getSosCategories);
 router.post('/visits', createMerchVisit);
 router.get('/visits', getMerchVisits);
+router.get('/month-summary', getMerchMonthSummary);
 router.post('/stock-receipts', createStockReceipt);
 router.get('/stock-receipts', getStockReceipts);
 

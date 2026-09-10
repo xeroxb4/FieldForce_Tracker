@@ -4,6 +4,46 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+const MOTIVATIONS = [
+  "Every shop you walk into is a chance to grow today's total. Make it count.",
+  "Small orders stack up. Consistency beats one lucky day.",
+  "Your target does not move itself — your next productive call does.",
+  "Coverage first, then conversion. Visit every beat outlet today.",
+  "Champions check in, hit the beat, and close clean.",
+  "One more SKU on the invoice can lift your LPPC. Ask for the line.",
+  "Debt collection is part of the win. Clear what is due, then sell.",
+  "Your name on the leaderboard is written one outlet at a time.",
+  "Smile, open the catalog, and leave with a yes — or a clear next step.",
+  "Progress is monthly. Push today's sales into the month total.",
+  "Top 10 lines pay. Offer Cocoa, Perfect & Radiant, Dry Impact.",
+  "Be on time at the first shop. Momentum follows discipline.",
+  "No order still counts as coverage — log it and move to the next.",
+  "You already know the route. Today, execute it better than yesterday.",
+  "Imperial ships product. You turn product into shelf and sales.",
+  "Protect your AVC shops — they are long-term partners.",
+  "When the market is slow, your hustle is the difference.",
+  "End the day with wrap-up done. Clean data, clear mind.",
+  "Targets are promises to yourself. Keep today's promise.",
+  "Great reps do not wait for perfect conditions — they create results.",
+  "Call the decision maker. The owner opens the bigger order.",
+  "Carton talk when the shelf is empty. Pack talk when cash is tight.",
+  "Your distributor backs you. Show them volume and reliability.",
+  "Beat day is sacred. Finish today's list before tomorrow's.",
+  "A thank-you and a reorder date close the relationship.",
+  "Measure yourself by productive calls, not hours on the road.",
+  "If GPS is on and you are at the door, you are already winning.",
+  "Sell the solution: freshness, beauty, confidence — then the SKU.",
+  "Month-to-date is the real scoreboard. Add to it before sunset.",
+  "Hard work is quiet. Results are loud. Keep going.",
+  "You carry Nivea into the market. Carry pride with it.",
+];
+
+function motivationForToday() {
+  const d = new Date();
+  const key = d.getFullYear() * 1000 + d.getMonth() * 50 + d.getDate();
+  return MOTIVATIONS[key % MOTIVATIONS.length];
+}
+
 function Ring({ pct, size = 88, color = '#6366f1', track, label, value }) {
   const r = 15.5;
   const c = 2 * Math.PI * r;
@@ -41,6 +81,7 @@ export default function Dashboard() {
   const [attendance, setAttendance] = useState(null);
   const [beat, setBeat] = useState(null);
   const [incentive, setIncentive] = useState(null);
+  const [monthSum, setMonthSum] = useState(null);
   const [showTop10, setShowTop10] = useState(false);
   const [loading, setLoading] = useState(true);
   const [gpsError, setGpsError] = useState('');
@@ -50,18 +91,20 @@ export default function Dashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [tRes, sRes, aRes, bRes, iRes] = await Promise.all([
+      const [tRes, sRes, aRes, bRes, iRes, mRes] = await Promise.all([
         api.get('/targets/me'),
         api.get('/credits/summary'),
         api.get('/attendance/today'),
         api.get('/beats/today').catch(() => ({ data: null })),
         api.get('/incentives/breakdown').catch(() => ({ data: null })),
+        api.get('/omr/month-summary').catch(() => ({ data: null })),
       ]);
       setTarget(tRes.data);
       setSummary(sRes.data);
       setAttendance(aRes.data);
       setBeat(bRes.data);
       setIncentive(iRes.data);
+      setMonthSum(mRes?.data || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -248,6 +291,48 @@ export default function Dashboard() {
             No target set for this month
           </p>
         )}
+      </div>
+
+      {/* Motivation */}
+      <div className={`rounded-2xl p-4 border ${card} border-l-4 border-l-amber-400`}>
+        <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-amber-300' : 'text-amber-700'}`}>
+          Today&apos;s push
+        </div>
+        <p className={`text-sm mt-1 font-medium leading-snug ${dark ? 'text-white' : 'text-slate-800'}`}>
+          {motivationForToday()}
+        </p>
+      </div>
+
+      {/* Monthly summary */}
+      <div className={`rounded-2xl p-4 border ${card}`}>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+            Monthly summary
+          </h3>
+          <span className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            {monthSum?.monthStart || ''} → today
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-sky-50'}`}>
+            <div className="text-lg font-bold text-[#2596be]">
+              GHS {Number(monthSum?.totalSales || 0).toLocaleString()}
+            </div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-sky-800'}`}>Sales MTD</div>
+          </div>
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-violet-50'}`}>
+            <div className="text-lg font-bold text-violet-500">{monthSum?.orders || 0}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-violet-800'}`}>Orders MTD</div>
+          </div>
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-emerald-50'}`}>
+            <div className="text-lg font-bold text-emerald-500">{monthSum?.productiveCalls || 0}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-emerald-800'}`}>Productive calls</div>
+          </div>
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-amber-50'}`}>
+            <div className="text-lg font-bold text-amber-500">{monthSum?.totalVisits || 0}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-amber-800'}`}>Visits MTD</div>
+          </div>
+        </div>
       </div>
 
       {/* Visit Summary */}

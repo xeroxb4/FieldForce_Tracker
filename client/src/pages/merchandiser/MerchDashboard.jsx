@@ -4,6 +4,46 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+const MOTIVATIONS = [
+  "Every shop you walk into is a chance to grow today's total. Make it count.",
+  "Small orders stack up. Consistency beats one lucky day.",
+  "Your target does not move itself — your next productive call does.",
+  "Coverage first, then conversion. Visit every beat outlet today.",
+  "Champions check in, hit the beat, and close clean.",
+  "One more SKU on the invoice can lift your LPPC. Ask for the line.",
+  "Debt collection is part of the win. Clear what is due, then sell.",
+  "Your name on the leaderboard is written one outlet at a time.",
+  "Smile, open the catalog, and leave with a yes — or a clear next step.",
+  "Progress is monthly. Push today's sales into the month total.",
+  "Top 10 lines pay. Offer Cocoa, Perfect & Radiant, Dry Impact.",
+  "Be on time at the first shop. Momentum follows discipline.",
+  "No order still counts as coverage — log it and move to the next.",
+  "You already know the route. Today, execute it better than yesterday.",
+  "Imperial ships product. You turn product into shelf and sales.",
+  "Protect your AVC shops — they are long-term partners.",
+  "When the market is slow, your hustle is the difference.",
+  "End the day with wrap-up done. Clean data, clear mind.",
+  "Targets are promises to yourself. Keep today's promise.",
+  "Great reps do not wait for perfect conditions — they create results.",
+  "Call the decision maker. The owner opens the bigger order.",
+  "Carton talk when the shelf is empty. Pack talk when cash is tight.",
+  "Your distributor backs you. Show them volume and reliability.",
+  "Beat day is sacred. Finish today's list before tomorrow's.",
+  "A thank-you and a reorder date close the relationship.",
+  "Measure yourself by productive calls, not hours on the road.",
+  "If GPS is on and you are at the door, you are already winning.",
+  "Sell the solution: freshness, beauty, confidence — then the SKU.",
+  "Month-to-date is the real scoreboard. Add to it before sunset.",
+  "Hard work is quiet. Results are loud. Keep going.",
+  "You carry Nivea into the market. Carry pride with it.",
+];
+
+function motivationForToday() {
+  const d = new Date();
+  const key = d.getFullYear() * 1000 + d.getMonth() * 50 + d.getDate();
+  return MOTIVATIONS[key % MOTIVATIONS.length];
+}
+
 function Ring({ pct, size = 88, color = '#6366f1', track, value, label }) {
   const r = 15.5;
   const dash = Math.min(100, Math.max(0, pct)) * 0.97;
@@ -38,6 +78,7 @@ export default function MerchDashboard() {
   const [attendance, setAttendance] = useState(null);
   const [beat, setBeat] = useState(null);
   const [visitsToday, setVisitsToday] = useState([]);
+  const [monthSum, setMonthSum] = useState(null);
   const [loading, setLoading] = useState(true);
   const [gpsError, setGpsError] = useState('');
   const [checkingIn, setCheckingIn] = useState(false);
@@ -48,14 +89,16 @@ export default function MerchDashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [aRes, bRes, vRes] = await Promise.all([
+      const [aRes, bRes, vRes, mRes] = await Promise.all([
         api.get('/attendance/today'),
         api.get('/beats/today').catch(() => ({ data: null })),
         api.get(`/merchandiser/visits?date=${today}`).catch(() => ({ data: [] })),
+        api.get('/merchandiser/month-summary').catch(() => ({ data: null })),
       ]);
       setAttendance(aRes.data);
       setBeat(bRes.data);
       setVisitsToday(vRes.data || []);
+      setMonthSum(mRes?.data || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -222,6 +265,33 @@ export default function MerchDashboard() {
         {gpsError && (
           <p className="mt-2 text-xs text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{gpsError}</p>
         )}
+      </div>
+
+      {/* Motivation */}
+      <div className={`rounded-2xl p-4 border ${card} border-l-4 border-l-amber-400`}>
+        <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-amber-300' : 'text-amber-700'}`}>
+          Today&apos;s push
+        </div>
+        <p className={`text-sm mt-1 font-medium ${dark ? 'text-white' : 'text-slate-800'}`}>
+          {motivationForToday()}
+        </p>
+      </div>
+
+      {/* Monthly summary */}
+      <div className={`rounded-2xl p-4 border ${card}`}>
+        <h3 className={`text-sm font-semibold mb-3 ${dark ? 'text-white' : 'text-slate-800'}`}>
+          Monthly summary
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-sky-50'}`}>
+            <div className="text-lg font-bold text-[#2596be]">{monthSum?.totalVisits || 0}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-sky-800'}`}>Visits MTD</div>
+          </div>
+          <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-emerald-50'}`}>
+            <div className="text-lg font-bold text-emerald-500">{monthSum?.uniqueOutlets || 0}</div>
+            <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-emerald-800'}`}>Outlets MTD</div>
+          </div>
+        </div>
       </div>
 
       {/* Visit summary */}

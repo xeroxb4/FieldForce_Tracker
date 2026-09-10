@@ -1,6 +1,7 @@
 import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import {
+  getMonthSummary,
   startVisit,
   updateOutletGps,
   getProducts,
@@ -23,6 +24,7 @@ router.get('/products', getProducts);
 router.get('/no-order-reasons', getNoOrderReasons);
 router.post('/visits', createVisit);
 router.get('/visits/today', getTodayVisits);
+router.get('/month-summary', getMonthSummary);
 router.get('/visits', getVisits);
 router.post('/wrapups', createWrapUp);
 router.get('/wrapups', getWrapUps);
