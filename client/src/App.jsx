@@ -9,6 +9,7 @@ import OMRReports from './pages/omr/OMRReports';
 import Outlets from './pages/omr/Outlets';
 import Beats from './pages/omr/Beats';
 import BeatMap from './pages/omr/BeatMap';
+import AvcPhotos from './pages/omr/AvcPhotos';
 import Owings from './pages/omr/Owings';
 import MerchLayout from './pages/merchandiser/MerchLayout';
 import MerchDashboard from './pages/merchandiser/MerchDashboard';
@@ -28,6 +29,7 @@ import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminExport from './pages/admin/AdminExport';
+import AdminAvcGallery from './pages/admin/AdminAvcGallery';
 import AdminOutletSales from './pages/admin/AdminOutletSales';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminNotifications from './pages/admin/AdminNotifications';
@@ -54,6 +56,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="beats" element={<Beats />} />
         <Route path="map" element={<BeatMap />} />
+        <Route path="avc-photos" element={<AvcPhotos />} />
         <Route path="log-shop" element={<LogShop />} />
         <Route path="wrap-up" element={<DayWrapUp />} />
         <Route path="owings" element={<Owings />} />
@@ -82,6 +85,7 @@ export default function App() {
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="reports" element={<AdminReports />} />
         <Route path="export" element={<AdminExport />} />
+        <Route path="avc-photos" element={<AdminAvcGallery />} />
         <Route path="outlet-sales" element={<AdminOutletSales />} />
         <Route path="outlets" element={<AdminOutlets />} />
         <Route path="targets" element={<AdminTargets />} />

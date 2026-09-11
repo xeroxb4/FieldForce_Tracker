@@ -15,7 +15,8 @@ const NAV = [
   { to: '/admin/programs', label: 'Programs', icon: '🎯' },
   { to: '/admin/promotions', label: 'Promotions', icon: '📣' },
   { to: '/admin/outlets', label: 'Outlets & Beats', icon: '📍' },
-    { to: '/admin/outlet-sales', label: 'Outlet sales', icon: '📈' },
+    { to: '/admin/avc-photos', label: 'AVC photos', icon: '📷' },
+  { to: '/admin/outlet-sales', label: 'Outlet sales', icon: '📈' },
   { to: '/admin/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];

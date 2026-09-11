@@ -28,6 +28,10 @@ import {
 } from '../controllers/outletController.js';
 import { exportOmrXlsx, exportMerchXlsx, exportProductivityXlsx } from '../controllers/exportController.js';
 import {
+  getAdminAvcGallery,
+  deleteAvcPhoto,
+} from '../controllers/avcPhotoController.js';
+import {
   listProducts,
   createProduct,
   updateProduct,
@@ -81,6 +85,8 @@ router.put('/notifications/read-all', markAllRead);
 router.put('/notifications/:id/read', markRead);
 
 router.get('/export/omr', exportOmrXlsx);
+router.get('/avc-photos', getAdminAvcGallery);
+router.delete('/avc-photos/:id', deleteAvcPhoto);
 router.get('/export/merch', exportMerchXlsx);
 
 export default router;

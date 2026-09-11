@@ -12,6 +12,10 @@ import {
   createWrapUp,
   getWrapUps,
 } from '../controllers/omrController.js';
+import {
+  getMyAvcPhotoTasks,
+  uploadAvcPhoto,
+} from '../controllers/avcPhotoController.js';
 
 const router = express.Router();
 
@@ -25,6 +29,8 @@ router.get('/no-order-reasons', getNoOrderReasons);
 router.post('/visits', createVisit);
 router.get('/visits/today', getTodayVisits);
 router.get('/month-summary', getMonthSummary);
+router.get('/avc-photos/tasks', getMyAvcPhotoTasks);
+router.post('/avc-photos', uploadAvcPhoto);
 router.get('/visits', getVisits);
 router.post('/wrapups', createWrapUp);
 router.get('/wrapups', getWrapUps);
