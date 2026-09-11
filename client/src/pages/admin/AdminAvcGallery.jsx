@@ -34,6 +34,18 @@ export default function AdminAvcGallery() {
     load();
   }, [year, month, period]);
 
+  const deletePhoto = async (id) => {
+    if (!id) return;
+    if (!window.confirm('Delete this AVC photo? The OMR can capture again for this half-month.')) return;
+    try {
+      await api.delete(`/admin/avc-photos/${id}`);
+      setPreview(null);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
 
   return (
@@ -135,6 +147,16 @@ export default function AdminAvcGallery() {
                           <div className="text-[10px] opacity-60">
                             {p.periodLabel} · {p.omr}
                           </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deletePhoto(p._id);
+                            }}
+                            className="mt-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30"
+                          >
+                            Delete · retake
+                          </button>
                         </div>
                       </button>
                     ))}
@@ -162,13 +184,22 @@ export default function AdminAvcGallery() {
                 {preview.distributor} · AVC {preview.avcTier} · {preview.periodLabel}
               </div>
               <div className="text-xs opacity-70">{preview.omr}</div>
-              <button
-                type="button"
-                className="mt-3 w-full py-2 rounded-xl bg-[#2596be] text-white font-bold text-sm"
-                onClick={() => setPreview(null)}
-              >
-                Close
-              </button>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  className="py-2 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 font-bold text-sm"
+                  onClick={() => deletePhoto(preview._id)}
+                >
+                  Delete · retake
+                </button>
+                <button
+                  type="button"
+                  className="py-2 rounded-xl bg-[#2596be] text-white font-bold text-sm"
+                  onClick={() => setPreview(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
