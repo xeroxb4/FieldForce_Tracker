@@ -96,14 +96,24 @@ export const getVisitsReport = async (req, res) => {
   try {
     const { date, startDate, endDate, repName, territory, distributor } = req.query;
     const filter = {};
-    if (date) filter.date = date;
-    else if (startDate && endDate) filter.date = { $gte: startDate, $lte: endDate };
-    if (repName && repName !== 'All') filter.repName = repName;
-    if (territory && territory !== 'All') filter.territory = territory;
-    if (distributor && distributor !== 'All') filter.distributor = distributor;
-    const visits = await Visit.find(filter).sort({ date: -1, createdAt: -1 });
+    if (startDate && endDate) filter.date = { $gte: startDate, $lte: endDate };
+    else if (date) filter.date = date;
+    if (repName && repName !== 'All') {
+      filter.repName = new RegExp('^' + String(repName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+    }
+    if (territory && territory !== 'All') {
+      filter.territory = new RegExp(String(territory).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
+    if (distributor && distributor !== 'All') {
+      filter.distributor = new RegExp(String(distributor).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
+    const visits = await Visit.find(filter)
+      .populate('userId', 'fullName username distributor territory')
+      .sort({ date: -1, createdAt: -1 })
+      .limit(2000);
     res.json(visits);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to load visits report' });
   }
 };
