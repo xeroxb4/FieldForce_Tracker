@@ -1,3 +1,4 @@
+import AdminEnterSale from './pages/admin/AdminEnterSale';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="products" element={<AdminProducts />} />
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="enter-sale" element={<AdminEnterSale />} />
         <Route path="export" element={<AdminExport />} />
         <Route path="avc-photos" element={<AdminAvcGallery />} />
         <Route path="outlet-sales" element={<AdminOutletSales />} />

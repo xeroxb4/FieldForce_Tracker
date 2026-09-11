@@ -18,6 +18,7 @@ const NAV = [
     { to: '/admin/avc-photos', label: 'AVC photos', icon: '📷' },
   { to: '/admin/outlet-sales', label: 'Outlet sales', icon: '📈' },
   { to: '/admin/reports', label: 'OMR reports', icon: '📋' },
+  { to: '/admin/enter-sale', label: 'Enter sale', icon: '✍️' },
   { to: '/admin/export', label: 'Export', icon: '⬇️' },
   { to: '/admin/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️' },

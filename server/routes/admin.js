@@ -19,6 +19,8 @@ import {
   getOutletSalesHistory,
   deleteVisit,
   updateVisit,
+  adminCreateSale,
+  adminListOmrOutlets,
 } from '../controllers/adminController.js';
 import { setTarget } from '../controllers/targetController.js';
 import {
@@ -52,6 +54,8 @@ router.get('/dashboard', getDashboardStats);
 router.get('/unvisited-today', getUnvisitedToday);
 router.get('/outlet-sales-history', getOutletSalesHistory);
 router.delete('/visits/:id', deleteVisit);
+router.post('/sales', adminCreateSale);
+router.get('/omr-outlets', adminListOmrOutlets);
 router.put('/visits/:id', updateVisit);
 router.get('/export/productivity', exportProductivityXlsx);
 router.get('/users', getUsers);

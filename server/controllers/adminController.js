@@ -1,3 +1,4 @@
+import Credit from '../models/Credit.js';
 import User from '../models/User.js';
 import Visit from '../models/Visit.js';
 import WrapUp from '../models/WrapUp.js';
@@ -607,5 +608,131 @@ export const updateVisit = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to update visit' });
+  }
+};
+
+
+/** Admin enters a sale on behalf of an OMR (no GPS) — physical / old-app invoices */
+export const adminCreateSale = async (req, res) => {
+  try {
+    const {
+      omrId,
+      outletId,
+      shopName,
+      date,
+      outcome = 'Order Placed',
+      lineItems,
+      amount,
+      products,
+      paymentType = 'cash',
+      creditDurationWeeks,
+      notes,
+      noOrderReason,
+    } = req.body;
+
+    if (!omrId) return res.status(400).json({ message: 'Select an OMR' });
+    const omr = await User.findById(omrId);
+    if (!omr || omr.role !== 'omr') {
+      return res.status(400).json({ message: 'Invalid OMR' });
+    }
+
+    let outlet = null;
+    let finalShop = shopName;
+    if (outletId) {
+      outlet = await Outlet.findById(outletId);
+      if (!outlet) return res.status(404).json({ message: 'Outlet not found' });
+      finalShop = outlet.displayName || outlet.name || shopName;
+    }
+    if (!finalShop) return res.status(400).json({ message: 'Shop / outlet is required' });
+
+    const visitDate = date || new Date().toISOString().slice(0, 10);
+    let items = [];
+    let totalAmount = Number(amount) || 0;
+    let productsStr = products || '';
+
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      items = lineItems.map((li) => ({
+        skuId: li.skuId,
+        productName: li.productName || li.name,
+        category: li.category || '',
+        size: li.size || '',
+        unit: li.unit || 'pc',
+        quantity: Number(li.quantity) || 0,
+        unitPrice: Number(li.unitPrice) || 0,
+        lineTotal: Number(li.lineTotal) || 0,
+      }));
+      totalAmount = items.reduce((s, i) => s + (i.lineTotal || 0), 0);
+      productsStr = items
+        .map((i) => `${i.productName} x${i.quantity} (${i.unit}) GHS ${i.lineTotal}`)
+        .join('; ');
+    }
+
+    if (outcome === 'Order Placed' && totalAmount <= 0 && !productsStr) {
+      return res.status(400).json({ message: 'Enter amount or product lines' });
+    }
+
+    let creditId;
+    if (outcome === 'Order Placed' && paymentType === 'credit' && totalAmount > 0) {
+      const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
+      const due = new Date(visitDate + 'T12:00:00');
+      due.setDate(due.getDate() + weeks * 7);
+      const dueDate = due.toISOString().slice(0, 10);
+      const credit = await Credit.create({
+        userId: omr._id,
+        repName: omr.fullName,
+        outletId: outlet?._id,
+        customerName: outlet?.contactName || finalShop,
+        shopName: finalShop,
+        amount: totalAmount,
+        amountPaid: 0,
+        balance: totalAmount,
+        dueDate,
+        saleDate: visitDate,
+        status: 'pending',
+        notes: notes || `Admin-entered credit – ${weeks} week(s)`,
+      });
+      creditId = credit._id;
+    }
+
+    const visit = await Visit.create({
+      userId: omr._id,
+      repName: omr.fullName,
+      date: visitDate,
+      shopName: finalShop,
+      outletId: outlet?._id,
+      contactName: outlet?.contactName || '',
+      contactPhone: outlet?.contactPhone || '',
+      territory: omr.territory || outlet?.territory || '',
+      distributor: omr.distributor || outlet?.distributor || '',
+      outcome,
+      noOrderReason: outcome === 'No Order' ? noOrderReason || 'Admin entry' : '',
+      products: productsStr,
+      lineItems: items,
+      amount: totalAmount,
+      paymentType: outcome === 'Order Placed' ? paymentType : '',
+      creditId,
+      notes: (notes || '') + ' [Entered by admin]',
+      syncedFromOffline: false,
+    });
+
+    res.status(201).json(visit);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message || 'Failed to enter sale' });
+  }
+};
+
+export const adminListOmrOutlets = async (req, res) => {
+  try {
+    const { omrId } = req.query;
+    if (!omrId) return res.status(400).json({ message: 'omrId required' });
+    const outlets = await Outlet.find({
+      $or: [{ assignedTo: omrId }, { userId: omrId }],
+      status: 'approved',
+      isActive: { $ne: false },
+    }).sort({ name: 1 });
+    res.json(outlets);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to load outlets' });
   }
 };
