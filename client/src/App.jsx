@@ -1,3 +1,4 @@
+import DeferredSales from './pages/omr/DeferredSales';
 import AdminEnterSale from './pages/admin/AdminEnterSale';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="beats" element={<Beats />} />
         <Route path="map" element={<BeatMap />} />
         <Route path="avc-photos" element={<AvcPhotos />} />
+        <Route path="deferred-sales" element={<DeferredSales />} />
         <Route path="log-shop" element={<LogShop />} />
         <Route path="wrap-up" element={<DayWrapUp />} />
         <Route path="owings" element={<Owings />} />

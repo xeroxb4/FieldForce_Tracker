@@ -13,6 +13,7 @@ import {
 } from '../../services/offline';
 
 const OUTCOMES = ['Order Placed', 'No Order', 'Shop Closed', 'Follow Up', 'Other'];
+const EXTRA_OUTCOMES = ['Extra Coverage'];
 const NO_ORDER_REASONS = [
   'Out of cash',
   'Owner not available',
@@ -33,12 +34,13 @@ export default function LogShop() {
   const { dark } = useTheme();
   const ctx = location.state || {};
   const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
+  const extraCoverage = !!ctx.extraCoverage;
 
   const [form, setForm] = useState({
     shopName: ctx.shopName || '',
     contactName: ctx.contactName || '',
     contactPhone: ctx.contactPhone || '',
-    outcome: 'Order Placed',
+    outcome: extraCoverage ? 'Extra Coverage' : 'Order Placed',
     noOrderReason: '',
     paymentType: 'cash',
     creditDurationWeeks: '1',
@@ -143,7 +145,8 @@ export default function LogShop() {
     outletId: ctx.outletId,
     contactName: form.contactName,
     contactPhone: form.contactPhone,
-    outcome: form.outcome,
+    outcome: extraCoverage ? 'Extra Coverage' : form.outcome,
+      extraCoverage,
     noOrderReason: form.outcome === 'No Order' ? form.noOrderReason : '',
     lineItems: form.outcome === 'Order Placed' ? cart : [],
     amount: form.outcome === 'Order Placed' ? cartTotal : 0,
@@ -221,7 +224,8 @@ export default function LogShop() {
 
       // Offline → queue
       if (!isOnline()) {
-        enqueue({ type: 'visit', payload: { ...payload, syncedFromOffline: true } });
+        enqueue({ type: 'visit', payload: { ...payload, extraCoverage,
+      syncedFromOffline: true } });
         finishOk('Saved offline. Will sync when network is back.');
         return;
       }
@@ -238,7 +242,8 @@ export default function LogShop() {
       } catch (err) {
         // Network error mid-request → queue
         if (!err.response) {
-          enqueue({ type: 'visit', payload: { ...payload, syncedFromOffline: true } });
+          enqueue({ type: 'visit', payload: { ...payload, extraCoverage,
+      syncedFromOffline: true } });
           finishOk('Network issue — saved offline. Will sync when online.');
         } else {
           setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to log visit' });
@@ -347,7 +352,7 @@ export default function LogShop() {
             onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
             className={inputCls}
           >
-            {OUTCOMES.map((o) => (
+            {(extraCoverage ? EXTRA_OUTCOMES : OUTCOMES).map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>

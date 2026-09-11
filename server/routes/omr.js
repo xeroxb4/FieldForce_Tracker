@@ -2,6 +2,8 @@ import express from 'express';
 import { protect, restrictTo } from '../middleware/auth.js';
 import {
   getMonthSummary,
+  getDeferredSales,
+  completeDeferredSale,
   startVisit,
   updateOutletGps,
   getProducts,
@@ -27,6 +29,8 @@ router.patch('/outlets/:id/location', updateOutletGps);
 router.get('/products', getProducts);
 router.get('/no-order-reasons', getNoOrderReasons);
 router.post('/visits', createVisit);
+router.get('/deferred-sales', getDeferredSales);
+router.post('/deferred-sales/complete', completeDeferredSale);
 router.get('/visits/today', getTodayVisits);
 router.get('/month-summary', getMonthSummary);
 router.get('/avc-photos/tasks', getMyAvcPhotoTasks);

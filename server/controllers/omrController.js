@@ -136,6 +136,9 @@ export const createVisit = async (req, res) => {
       outletLocation,
       distanceMeters: distM,
       syncedFromOffline,
+      extraCoverage,
+      deferredSalePending,
+      physicalSaleDate,
     } = req.body;
 
     if (!shopName) {
@@ -178,7 +181,31 @@ export const createVisit = async (req, res) => {
       }
     }
 
+
     const visitDate = date || new Date().toISOString().slice(0, 10);
+    const jsDay = new Date(visitDate + 'T12:00:00').getDay(); // 0 Sun .. 6 Sat
+    const beatDay = jsDay === 0 ? 7 : jsDay; // 1 Mon .. 7 Sun
+
+    let isOffBeat = false;
+    if (outletId) {
+      const outletForBeat = await Outlet.findById(outletId);
+      const days = outletForBeat?.assignedDays || [];
+      if (days.length && !days.map(Number).includes(Number(beatDay))) {
+        isOffBeat = true;
+      }
+    }
+    const isExtra = !!extraCoverage || isOffBeat;
+    if (isExtra) {
+      // Coverage only — no sales on off-beat day
+      if (outcome === 'Order Placed' && (Number(amount) > 0 || (Array.isArray(lineItems) && lineItems.length))) {
+        return res.status(400).json({
+          message:
+            'This outlet is not on today\'s beat. Log Extra coverage only (no sales). Enter the sale on the outlet\'s beat day so KPIs land on the correct day.',
+          code: 'OFF_BEAT_NO_SALE',
+        });
+      }
+    }
+
 
     let productsStr = products || '';
     let totalAmount = Number(amount) || 0;
@@ -202,7 +229,7 @@ export const createVisit = async (req, res) => {
     let creditId = undefined;
 
     // Create credit/owing if payment is credit
-    if (outcome === 'Order Placed' && paymentType === 'credit' && totalAmount > 0) {
+    if (!isExtra && outcome === 'Order Placed' && paymentType === 'credit' && totalAmount > 0) {
       const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
       const dueDate = addWeeks(visitDate, weeks);
       const credit = await Credit.create({
@@ -222,6 +249,11 @@ export const createVisit = async (req, res) => {
       creditId = credit._id;
     }
 
+    const finalOutcome = isExtra ? 'Extra Coverage' : (outcome || 'No Order');
+    const finalAmount = isExtra ? 0 : totalAmount;
+    const finalItems = isExtra ? [] : items;
+    const finalProducts = isExtra ? '' : productsStr;
+
     const visit = await Visit.create({
       userId: req.user._id,
       repName: req.user.fullName,
@@ -232,12 +264,12 @@ export const createVisit = async (req, res) => {
       contactPhone: contactPhone || '',
       territory: req.user.territory,
       distributor: req.user.distributor,
-      outcome: outcome || 'No Order',
-      noOrderReason: outcome === 'No Order' ? noOrderReason || '' : '',
-      products: productsStr,
-      lineItems: items,
-      amount: totalAmount,
-      paymentType: outcome === 'Order Placed' ? paymentType || 'cash' : '',
+      outcome: finalOutcome,
+      noOrderReason: finalOutcome === 'No Order' ? noOrderReason || '' : (isExtra ? 'Off-beat extra coverage — sale deferred to beat day' : ''),
+      products: finalProducts,
+      lineItems: finalItems,
+      amount: finalAmount,
+      paymentType: !isExtra && outcome === 'Order Placed' ? paymentType || 'cash' : '',
       creditDurationWeeks:
         outcome === 'Order Placed' && paymentType === 'credit'
           ? Number(creditDurationWeeks)
@@ -248,6 +280,10 @@ export const createVisit = async (req, res) => {
       outletLocation: outletLocation || undefined,
       distanceMeters: distM != null ? Number(distM) : undefined,
       syncedFromOffline: !!syncedFromOffline,
+      extraCoverage: isExtra,
+      deferredSalePending: isExtra ? true : !!deferredSalePending,
+      physicalSaleDate: isExtra ? visitDate : (physicalSaleDate || ''),
+      outcome: isExtra ? 'Extra Coverage' : outcome,
     });
 
     res.status(201).json(visit);
@@ -399,5 +435,118 @@ export const getMonthSummary = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to load month summary' });
+  }
+};
+
+
+/** List outlets with deferred sale pending (physical sale off-beat, enter KPI sale today) */
+export const getDeferredSales = async (req, res) => {
+  try {
+    const pending = await Visit.find({
+      userId: req.user._id,
+      deferredSalePending: true,
+      extraCoverage: true,
+    })
+      .sort({ date: -1 })
+      .limit(50);
+    res.json(pending);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to load deferred sales' });
+  }
+};
+
+/**
+ * On the outlet's real beat day, enter the sale that was done physically off-beat.
+ * KPI date = today (beat day). Marks deferred visit complete.
+ */
+export const completeDeferredSale = async (req, res) => {
+  try {
+    const {
+      coverageVisitId,
+      outletId,
+      shopName,
+      lineItems,
+      amount,
+      products,
+      paymentType = 'cash',
+      creditDurationWeeks,
+      notes,
+    } = req.body;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const jsDay = new Date(today + 'T12:00:00').getDay();
+    const beatDay = jsDay === 0 ? 7 : jsDay;
+
+    let outlet = outletId ? await Outlet.findById(outletId) : null;
+    let coverage = coverageVisitId ? await Visit.findById(coverageVisitId) : null;
+    if (coverage && !outlet && coverage.outletId) {
+      outlet = await Outlet.findById(coverage.outletId);
+    }
+
+    if (outlet?.assignedDays?.length) {
+      if (!outlet.assignedDays.map(Number).includes(Number(beatDay))) {
+        return res.status(400).json({
+          message: 'You can only enter this deferred sale on the outlet\'s beat day (for correct KPIs).',
+          code: 'NOT_BEAT_DAY',
+        });
+      }
+    }
+
+    let items = [];
+    let totalAmount = Number(amount) || 0;
+    let productsStr = products || '';
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      items = lineItems.map((li) => ({
+        skuId: li.skuId,
+        productName: li.productName,
+        category: li.category || '',
+        size: li.size || '',
+        unit: li.unit || 'pc',
+        quantity: Number(li.quantity) || 0,
+        unitPrice: Number(li.unitPrice) || 0,
+        lineTotal: Number(li.lineTotal) || 0,
+      }));
+      totalAmount = items.reduce((s, i) => s + i.lineTotal, 0);
+      productsStr = items.map((i) => `${i.productName} (${i.quantity} ${i.unit})`).join(', ');
+    }
+
+    if (totalAmount <= 0 && !items.length) {
+      return res.status(400).json({ message: 'Enter amount or product lines' });
+    }
+
+    const finalShop = shopName || coverage?.shopName || outlet?.displayName || outlet?.name;
+    const sale = await Visit.create({
+      userId: req.user._id,
+      repName: req.user.fullName,
+      date: today,
+      shopName: finalShop,
+      outletId: outlet?._id || coverage?.outletId,
+      contactName: coverage?.contactName || outlet?.contactName || '',
+      contactPhone: coverage?.contactPhone || outlet?.contactPhone || '',
+      territory: req.user.territory || '',
+      distributor: req.user.distributor || '',
+      outcome: 'Order Placed',
+      products: productsStr,
+      lineItems: items,
+      amount: totalAmount,
+      paymentType,
+      notes:
+        (notes || '') +
+        ` [Deferred sale: physical service ${coverage?.physicalSaleDate || coverage?.date || 'earlier'}; KPI date ${today}]`,
+      extraCoverage: false,
+      deferredSalePending: false,
+      physicalSaleDate: coverage?.physicalSaleDate || coverage?.date || '',
+    });
+
+    if (coverage) {
+      coverage.deferredSalePending = false;
+      coverage.notes = (coverage.notes || '') + ` [Sale entered on ${today}]`;
+      await coverage.save();
+    }
+
+    res.status(201).json(sale);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to complete deferred sale' });
   }
 };

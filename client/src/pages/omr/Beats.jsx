@@ -79,7 +79,7 @@ export default function Beats() {
     load();
   }, []);
 
-  const goToLogShop = (data, agentLocation, outlet) => {
+  const goToLogShop = (data, agentLocation, outlet, opts = {}) => {
     navigate('/omr/log-shop', {
       state: {
         outletId: data.outlet?._id || outlet._id,
@@ -89,11 +89,12 @@ export default function Beats() {
         outletLocation: data.outlet?.location || outlet.location,
         agentLocation: data.agentLocation || agentLocation,
         distanceMeters: data.distanceMeters,
+        extraCoverage: !!opts.extraCoverage,
       },
     });
   };
 
-  const startOutletVisit = (outlet) => {
+  const startOutletVisit = (outlet, opts = {}) => {
     setGpsMsg('');
     setStartingId(outlet._id);
 
@@ -117,7 +118,7 @@ export default function Beats() {
               outletId: outlet._id,
               ...agentLocation,
             });
-            goToLogShop(data, agentLocation, outlet);
+            goToLogShop(data, agentLocation, outlet, opts);
           } catch (err) {
             const body = err.response?.data;
             // Standing at shop but pin is wrong → offer exact GPS update
@@ -132,7 +133,7 @@ export default function Beats() {
                     outletId: outlet._id,
                     ...agentLocation,
                   });
-                  goToLogShop(data, agentLocation, outlet);
+                  goToLogShop(data, agentLocation, outlet, opts);
                   return;
                 } catch (e2) {
                   setGpsMsg(e2.response?.data?.message || 'Could not update shop location.');
@@ -154,6 +155,7 @@ export default function Beats() {
               outletLocation: outlet.location,
               agentLocation,
               offline: true,
+              extraCoverage: !!opts.extraCoverage,
             },
           });
         }
@@ -221,8 +223,9 @@ export default function Beats() {
       </div>
 
       {!isTodayBeat && selectedDay && (
-        <div className="mb-3 text-xs font-semibold px-3 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
-          Planning view only — start a visit on today&apos;s beat. Other days are for review.
+        <div className="mb-3 text-xs font-semibold px-3 py-2 rounded-xl bg-amber-500/15 text-amber-600 border border-amber-500/30">
+          Off-beat day: you may log <strong>Extra coverage only</strong> (no sales).
+          Enter the sale on this outlet&apos;s real beat day so KPIs count then.
         </div>
       )}
 
@@ -315,9 +318,14 @@ export default function Beats() {
                     </button>
                   )
                 ) : (
-                  <span className="text-[10px] font-bold shrink-0 px-2 py-1 rounded-lg bg-slate-200 text-slate-600">
-                    Not today
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => startOutletVisit(o, { extraCoverage: true })}
+                    disabled={startingId === o._id}
+                    className="text-[10px] font-bold shrink-0 px-2 py-1.5 rounded-lg bg-amber-500/20 text-amber-600 border border-amber-500/40 disabled:opacity-60 max-w-[7rem] leading-tight"
+                  >
+                    {startingId === o._id ? '…' : 'Extra coverage (no sale)'}
+                  </button>
                 )}
               </div>
             </div>

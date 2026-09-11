@@ -34,6 +34,10 @@ const visitSchema = new mongoose.Schema(
     contactPhone: { type: String, default: '' },
     territory: { type: String, default: '' },
     distributor: { type: String, default: '' },
+    extraCoverage: { type: Boolean, default: false, index: true },
+    /** Physical sale done off-beat; KPI sale not yet entered on beat day */
+    deferredSalePending: { type: Boolean, default: false, index: true },
+    physicalSaleDate: { type: String, default: '' },
     outcome: {
       type: String,
       enum: [
