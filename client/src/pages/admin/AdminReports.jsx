@@ -33,13 +33,81 @@ export default function AdminReports() {
   const [error, setError] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [openId, setOpenId] = useState(null);
+  const [editId, setEditId] = useState(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editProducts, setEditProducts] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [productsCatalog, setProductsCatalog] = useState([]);
+  const [pickProduct, setPickProduct] = useState('');
+  const [pickQty, setPickQty] = useState(1);
+  const [pickUnit, setPickUnit] = useState('pc');
+  const [editLines, setEditLines] = useState([]);
 
   useEffect(() => {
     api
       .get('/admin/users?role=omr')
       .then((r) => setOmrs(r.data || []))
       .catch(() => {});
+    api
+      .get('/admin/products')
+      .then((r) => {
+        const d = r.data;
+        setProductsCatalog(Array.isArray(d) ? d : d?.products || []);
+      })
+      .catch(() => {});
   }, []);
+
+  const startEdit = (v) => {
+    setEditId(v._id);
+    setOpenId(v._id);
+    setEditAmount(v.amount > 0 ? String(v.amount) : '');
+    setEditProducts(v.products || '');
+    setEditLines(Array.isArray(v.lineItems) ? [...v.lineItems] : []);
+  };
+
+  const addEditLine = () => {
+    const prod = productsCatalog.find((p) => String(p._id) === String(pickProduct));
+    if (!prod) return alert('Select product');
+    const q = Number(pickQty) || 0;
+    if (q <= 0) return;
+    let up = Number(prod.pricePc || prod.price || prod.unitPrice || 0);
+    if (pickUnit === 'pack') up = Number(prod.pricePack || prod.packPrice || up);
+    if (pickUnit === 'carton') up = Number(prod.priceCarton || prod.cartonPrice || up);
+    const lineTotal = Math.round(up * q * 100) / 100;
+    setEditLines((prev) => [
+      ...prev,
+      {
+        skuId: prod._id,
+        productName: prod.name || prod.productName,
+        unit: pickUnit,
+        quantity: q,
+        unitPrice: up,
+        lineTotal,
+      },
+    ]);
+  };
+
+  const saveEdit = async (visitId) => {
+    setEditSaving(true);
+    try {
+      const body =
+        editLines.length > 0
+          ? { lineItems: editLines, outcome: 'Order Placed', paymentType: 'cash' }
+          : {
+              amount: Number(editAmount) || 0,
+              products: editProducts,
+              outcome: 'Order Placed',
+              paymentType: 'cash',
+            };
+      await api.put(`/admin/visits/${visitId}`, body);
+      setEditId(null);
+      await loadReports();
+    } catch (e) {
+      alert(e.response?.data?.message || 'Save failed');
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const distributors = useMemo(() => {
     const s = new Set(omrs.map((u) => u.distributor).filter(Boolean));
@@ -274,7 +342,7 @@ export default function AdminReports() {
                         </div>
                       </button>
                       {open && (
-                        <div className={`mt-2 pt-2 border-t text-xs ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <div className={`mt-2 pt-2 border-t text-xs space-y-2 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
                           {lines.length > 0 ? (
                             <ul className="space-y-1">
                               {lines.map((li, i) => (
@@ -291,10 +359,112 @@ export default function AdminReports() {
                           ) : v.products ? (
                             <p className={label}>{v.products}</p>
                           ) : (
-                            <p className={muted}>No SKU lines recorded for this visit.</p>
+                            <p className={muted}>No SKU lines / amount from old app — enter below.</p>
                           )}
                           {v.noOrderReason && (
                             <p className={`mt-1 ${muted}`}>Reason: {v.noOrderReason}</p>
+                          )}
+
+                          {editId !== id ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEdit(v);
+                              }}
+                              className="w-full py-2 rounded-lg bg-amber-500/20 text-amber-400 font-bold text-xs"
+                            >
+                              Enter / edit sale (amount & SKUs)
+                            </button>
+                          ) : (
+                            <div
+                              className={`rounded-xl p-2 space-y-2 ${dark ? 'bg-slate-900' : 'bg-white border'}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className={`text-xs font-bold ${label}`}>Complete this visit from invoice</div>
+                              <select
+                                value={pickProduct}
+                                onChange={(e) => setPickProduct(e.target.value)}
+                                className={input}
+                              >
+                                <option value="">Add product…</option>
+                                {productsCatalog.map((p) => (
+                                  <option key={p._id} value={p._id}>
+                                    {p.name || p.productName}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="grid grid-cols-3 gap-1">
+                                <select value={pickUnit} onChange={(e) => setPickUnit(e.target.value)} className={input}>
+                                  <option value="pc">PC</option>
+                                  <option value="pack">Pack</option>
+                                  <option value="carton">Carton</option>
+                                </select>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={pickQty}
+                                  onChange={(e) => setPickQty(e.target.value)}
+                                  className={input}
+                                />
+                                <button type="button" onClick={addEditLine} className="rounded-lg bg-[#2596be]/20 text-[#2596be] font-bold">
+                                  Add
+                                </button>
+                              </div>
+                              {editLines.map((l, i) => (
+                                <div key={i} className={`flex justify-between ${label}`}>
+                                  <span>
+                                    {l.productName} × {l.quantity}
+                                  </span>
+                                  <span>
+                                    GHS {l.lineTotal}
+                                    <button
+                                      type="button"
+                                      className="ml-2 text-red-400"
+                                      onClick={() => setEditLines((prev) => prev.filter((_, j) => j !== i))}
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                </div>
+                              ))}
+                              {!editLines.length && (
+                                <>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Total GHS only"
+                                    value={editAmount}
+                                    onChange={(e) => setEditAmount(e.target.value)}
+                                    className={input}
+                                  />
+                                  <textarea
+                                    placeholder="Product text from invoice (optional)"
+                                    value={editProducts}
+                                    onChange={(e) => setEditProducts(e.target.value)}
+                                    className={input}
+                                    rows={2}
+                                  />
+                                </>
+                              )}
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditId(null)}
+                                  className="py-2 rounded-lg border font-bold"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={editSaving}
+                                  onClick={() => saveEdit(id)}
+                                  className="py-2 rounded-lg bg-[#2596be] text-white font-bold disabled:opacity-60"
+                                >
+                                  {editSaving ? 'Saving…' : 'Save sale'}
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}

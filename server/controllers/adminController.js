@@ -598,11 +598,36 @@ export const updateVisit = async (req, res) => {
   try {
     const visit = await Visit.findById(req.params.id);
     if (!visit) return res.status(404).json({ message: 'Visit not found' });
-    const { amount, outcome, notes, shopName } = req.body;
-    if (amount !== undefined) visit.amount = Number(amount) || 0;
+    const { amount, outcome, notes, shopName, lineItems, products, paymentType } = req.body;
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      const items = lineItems.map((li) => ({
+        skuId: li.skuId,
+        productName: li.productName || li.name,
+        category: li.category || '',
+        size: li.size || '',
+        unit: li.unit || 'pc',
+        quantity: Number(li.quantity) || 0,
+        unitPrice: Number(li.unitPrice) || 0,
+        lineTotal: Number(li.lineTotal) || 0,
+      }));
+      visit.lineItems = items;
+      visit.amount = items.reduce((s, i) => s + (i.lineTotal || 0), 0);
+      visit.products = items
+        .map((i) => `${i.productName} x${i.quantity} (${i.unit}) GHS ${i.lineTotal}`)
+        .join('; ');
+      if (!visit.outcome || visit.outcome === 'No Order') visit.outcome = 'Order Placed';
+    } else {
+      if (amount !== undefined) visit.amount = Number(amount) || 0;
+      if (products !== undefined) visit.products = products;
+    }
     if (outcome) visit.outcome = outcome;
     if (notes !== undefined) visit.notes = notes;
     if (shopName) visit.shopName = shopName;
+    if (paymentType) visit.paymentType = paymentType;
+    const noteTag = ' [Sale details completed by admin]';
+    if (!String(visit.notes || '').includes(noteTag)) {
+      visit.notes = (visit.notes || '') + noteTag;
+    }
     await visit.save();
     res.json(visit);
   } catch (error) {
