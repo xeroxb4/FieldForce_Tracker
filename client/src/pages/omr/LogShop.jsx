@@ -292,6 +292,12 @@ export default function LogShop() {
   const cardCls = dark
     ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
     : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
+  /** Button chips — native <select> ignores background on many phones */
+  const pillOn = 'bg-[#117ea6] text-white border-[#117ea6] font-bold shadow-sm';
+  const pillOff = dark
+    ? 'bg-slate-800 text-slate-200 border-slate-600 font-medium'
+    : 'bg-white text-slate-700 border-slate-200 font-medium';
+  const pillBase = 'px-3 py-2.5 rounded-xl text-sm border transition';
 
   return (
     <div>
@@ -344,30 +350,21 @@ export default function LogShop() {
           </div>
         </div>
 
-        {/* Outcome */}
+        {/* Outcome — buttons so colour shows on mobile */}
         <div>
           <label className={labelCls}>Outcome *</label>
-          <select
-            value={form.outcome}
-            onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
-            className={`${inputCls} ${
-              form.outcome === 'Order Placed'
-                ? (dark
-                    ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
-                    : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
-                : form.outcome === 'No Order'
-                ? (dark
-                    ? 'border-2 border-amber-500 bg-amber-500/20 text-amber-100 font-semibold'
-                    : 'border-2 border-amber-500 bg-amber-50 text-amber-950 font-semibold')
-                : ''
-            }`}
-          >
+          <div className="flex flex-wrap gap-2">
             {(extraCoverage ? EXTRA_OUTCOMES : OUTCOMES).map((o) => (
-              <option key={o} value={o}>
+              <button
+                key={o}
+                type="button"
+                onClick={() => setForm({ ...form, outcome: o, noOrderReason: '' })}
+                className={`${pillBase} ${form.outcome === o ? pillOn : pillOff}`}
+              >
                 {o}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         {/* No Order reason */}
@@ -397,55 +394,48 @@ export default function LogShop() {
           <div className={cardCls}>
             <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>Add products</div>
 
-            {/* 1. Category */}
+            {/* 1. Category chips */}
             <div>
               <label className={labelXs}>Category</label>
-              <select
-                value={pickCategory}
-                onChange={(e) => {
-                  setPickCategory(e.target.value);
-                  setPickProductId('');
-                  setPickUnit('pc');
-                }}
-                className={`${inputSm} ${
-                  pickCategory
-                    ? (dark
-                        ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
-                        : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
-                    : ''
-                }`}
-              >
-                <option value="">Select category...</option>
+              <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setPickCategory(c);
+                      setPickProductId('');
+                      setPickUnit('pc');
+                    }}
+                    className={`${pillBase} ${pickCategory === c ? pillOn : pillOff}`}
+                  >
                     {c}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            {/* 2. Product */}
+            {/* 2. Product list chips */}
             {pickCategory && (
               <div>
                 <label className={labelXs}>Product</label>
-                <select
-                  value={pickProductId}
-                  onChange={(e) => setPickProductId(e.target.value)}
-                  className={`${inputSm} ${
-                    pickProductId
-                      ? (dark
-                          ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
-                          : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
-                      : ''
-                  }`}
-                >
-                  <option value="">Select product...</option>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-slate-200 dark:border-slate-600 p-2">
                   {productList.map((p) => (
-                    <option key={p._id} value={p._id}>
+                    <button
+                      key={p._id}
+                      type="button"
+                      onClick={() => setPickProductId(p._id)}
+                      className={`w-full text-left ${pillBase} ${
+                        String(pickProductId) === String(p._id) ? pillOn : pillOff
+                      }`}
+                    >
                       {p.name} ({p.size})
-                    </option>
+                    </button>
                   ))}
-                </select>
+                  {!productList.length && (
+                    <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>No products in this category</p>
+                  )}
+                </div>
               </div>
             )}
 
