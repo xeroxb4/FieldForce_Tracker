@@ -87,6 +87,7 @@ export function printOrderInvoice(opts = {}) {
     ? `<tr><th>Description</th><th class="num">Qty</th><th class="num">Amount</th></tr>`
     : `<tr><th>Description</th><th class="num">Unit cost</th><th class="num">Qty</th><th class="num">Amount</th></tr>`;
 
+  const logoUrl = (typeof window !== "undefined" ? window.location.origin : "") + "/nivea-logo.webp";
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -111,12 +112,11 @@ export function printOrderInvoice(opts = {}) {
       gap: 12px;
       margin-bottom: 28px;
     }
-    .logo {
-      width: 48px; height: 48px;
+    .logo-img {
+      width: 56px; height: 56px;
       border-radius: 50%;
-      border: 3px solid #2596be;
-      display: flex; align-items: center; justify-content: center;
-      color: #2596be; font-weight: 800; font-size: 14px;
+      object-fit: cover;
+      display: block;
     }
     .brand h1 {
       margin: 0;
@@ -236,10 +236,10 @@ export function printOrderInvoice(opts = {}) {
 </head>
 <body>
   <div class="brand">
-    <div class="logo">FF</div>
+    <img class="logo-img" src="${logoUrl}" alt="Nivea" />
     <div>
       <h1>INVOICE</h1>
-      <div class="sub">FieldForce Tracker · Tax inclusive</div>
+      <div class="sub">Nivea FieldForce · Tax inclusive</div>
     </div>
   </div>
 

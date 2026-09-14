@@ -59,6 +59,7 @@ export default function LogShop() {
   const [loading, setLoading] = useState(false);
   const [offlinePending, setOfflinePending] = useState(queueCount());
   const [invoicePreview, setInvoicePreview] = useState(null);
+  const [invoiceBeforeSave, setInvoiceBeforeSave] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -162,6 +163,26 @@ export default function LogShop() {
     distanceMeters: ctx.distanceMeters,
   });
 
+  const buildInvoiceData = () => ({
+    shopName: form.shopName || ctx.shopName,
+    contactName: form.contactName || ctx.contactName,
+    contactPhone: form.contactPhone || ctx.contactPhone,
+    repName: user?.fullName,
+    territory: user?.territory,
+    distributor: user?.distributor,
+    date: new Date().toLocaleDateString(),
+    lines: cart.map((c) => ({
+      productName: c.productName || c.name,
+      unit: c.unit,
+      qty: c.qty || c.quantity,
+      unitPrice: c.unitPrice,
+      lineTotal: c.lineTotal || c.total,
+    })),
+    paymentType: form.paymentType,
+    creditDays: form.creditDurationWeeks === '2' ? 14 : 7,
+    total: cartTotal,
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.shopName.trim()) {
@@ -183,37 +204,21 @@ export default function LogShop() {
       }
     }
 
+    // Order Placed → show invoice first (print), then complete visit
+    if (form.outcome === 'Order Placed' && cart.length > 0 && !invoiceBeforeSave && !window.__ffSkipInvoice) {
+      setInvoicePreview(buildInvoiceData());
+      setInvoiceBeforeSave(true);
+      return;
+    }
+
     setLoading(true);
     setStatus(null);
+    setInvoiceBeforeSave(false);
 
     const finishOk = (msg) => {
-      const shouldPrint =
-        form.outcome === 'Order Placed' && cart.length > 0 && form.paymentType !== undefined;
-      if (shouldPrint) {
-        const doPrint = window.confirm(
-          'Print invoice? (Cancel if no printer — visit is already saved.)'
-        );
-        if (doPrint) {
-          setInvoicePreview({
-            shopName: form.shopName || ctx.shopName,
-            contactName: form.contactName || ctx.contactName,
-            repName: user?.fullName,
-            territory: user?.territory,
-            date: new Date().toLocaleDateString(),
-            lines: cart.map((c) => ({
-              productName: c.productName || c.name,
-              unit: c.unit,
-              qty: c.qty || c.quantity,
-              lineTotal: c.lineTotal || c.total,
-            })),
-            paymentType: form.paymentType,
-            creditDays: form.creditDurationWeeks === '2' ? 14 : 7,
-            total: cartTotal,
-          });
-        }
-      }
       setStatus({ type: 'success', msg });
       setCart([]);
+      setInvoicePreview(null);
       setOfflinePending(queueCount());
       if (fromBeat) setTimeout(() => navigate('/omr/beats'), 1200);
       setLoading(false);
@@ -295,7 +300,23 @@ export default function LogShop() {
 
   return (
     <div>
-      <InvoicePreview open={!!invoicePreview} invoice={invoicePreview} onClose={() => setInvoicePreview(null)} />
+      <InvoicePreview
+        open={!!invoicePreview}
+        invoice={invoicePreview}
+        pendingComplete={invoiceBeforeSave}
+        onClose={() => {
+          setInvoicePreview(null);
+          setInvoiceBeforeSave(false);
+        }}
+        onConfirmComplete={() => {
+          setInvoiceBeforeSave(false);
+          setInvoicePreview(null);
+          window.__ffSkipInvoice = true;
+          const formEl = document.getElementById('log-shop-form');
+          if (formEl) formEl.requestSubmit();
+          setTimeout(() => { window.__ffSkipInvoice = false; }, 800);
+        }}
+      />
       <div className="flex items-center justify-between mb-1">
         <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
           {fromBeat ? 'Service Outlet' : 'Log Shop'}
@@ -313,7 +334,7 @@ export default function LogShop() {
         )}
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="log-shop-form" onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={labelCls}>Shop Name *</label>
           <input
