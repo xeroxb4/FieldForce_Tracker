@@ -481,7 +481,7 @@ export default function LogShop() {
               <button
                 type="button"
                 onClick={addProductLine}
-                className="w-full bg-slate-100 text-slate-800 text-sm font-medium py-2.5 rounded-xl border border-slate-200"
+                className="w-full bg-[#117ea6] text-white text-sm font-bold py-2.5 rounded-xl border border-[#117ea6] shadow-sm"
               >
                 + Add to order
               </button>
