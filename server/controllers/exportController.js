@@ -58,7 +58,9 @@ function dayNum(dateStr) {
 }
 
 async function buildOmrRow(omr, startDate, endDate) {
-  const visits = await Visit.find({
+  const trainingUsers = await User.find({ $or: [{ isTraining: true }, { username: 'trainer' }] }).select('_id');
+    const trainingIds = trainingUsers.map((u) => u._id);
+    const visits = await Visit.find({
     userId: omr._id,
     date: { $gte: startDate, $lte: endDate },
   });
@@ -445,6 +447,8 @@ export const exportProductivityXlsx = async (req, res) => {
     }
 
     const omrs = await User.find({ role: 'omr', isActive: { $ne: false } }).lean();
+    const trainingUsers = await User.find({ $or: [{ isTraining: true }, { username: 'trainer' }] }).select('_id');
+    const trainingIds = trainingUsers.map((u) => u._id);
     const visits = await Visit.find({
       date: { $gte: startDate, $lte: endDate },
     }).lean();
@@ -664,5 +668,249 @@ export const exportProductivityXlsx = async (req, res) => {
   } catch (error) {
     console.error('Productivity export error:', error);
     res.status(500).json({ message: 'Failed to export productivity report' });
+  }
+};
+
+
+/** Full outlet history + SKU lines for every OMR visit in range */
+export const exportOmrOutletHistoryXlsx = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required (YYYY-MM-DD)' });
+    }
+
+    const trainingUsers = await User.find({
+      $or: [{ isTraining: true }, { username: 'trainer' }, { username: 'trainerm' }],
+    }).select('_id');
+    const trainingIds = trainingUsers.map((u) => u._id);
+
+    const filter = {
+      date: { $gte: startDate, $lte: endDate },
+      distributor: { $not: /training/i },
+      repName: { $not: /training demo/i },
+    };
+    if (trainingIds.length) {
+      filter.userId = { $nin: trainingIds };
+    }
+
+    const visits = await Visit.find(filter).sort({ date: 1, repName: 1, shopName: 1 });
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'FieldForce Tracker';
+    wb.created = new Date();
+
+    // Sheet 1 — one row per visit / outlet
+    const wsVisit = wb.addWorksheet('Outlet Visits');
+    wsVisit.addRow([
+      'Date',
+      'OMR',
+      'Distributor',
+      'Territory',
+      'Outlet / Shop',
+      'Contact',
+      'Phone',
+      'Outcome',
+      'No Order Reason',
+      'Payment',
+      'Total Amount (GHS)',
+      'SKU Count',
+      'Products Summary',
+      'Extra Coverage',
+      'Notes',
+    ]);
+    wsVisit.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsVisit.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF117EA6' },
+    };
+
+    for (const v of visits) {
+      const skuCount = Array.isArray(v.lineItems) ? v.lineItems.length : lineCount(v);
+      wsVisit.addRow([
+        v.date,
+        v.repName || '',
+        v.distributor || '',
+        v.territory || '',
+        v.shopName || '',
+        v.contactName || '',
+        v.contactPhone || '',
+        v.outcome || '',
+        v.noOrderReason || '',
+        v.paymentType || '',
+        Number(v.amount) || 0,
+        skuCount,
+        v.products || '',
+        v.extraCoverage ? 'Yes' : 'No',
+        v.notes || '',
+      ]);
+    }
+    wsVisit.columns.forEach((c) => {
+      c.width = 16;
+    });
+    wsVisit.getColumn(5).width = 28;
+    wsVisit.getColumn(13).width = 40;
+
+    // Sheet 2 — one row per purchased SKU
+    const wsSku = wb.addWorksheet('Purchased SKUs');
+    wsSku.addRow([
+      'Date',
+      'OMR',
+      'Distributor',
+      'Territory',
+      'Outlet / Shop',
+      'Outcome',
+      'Payment',
+      'Product / SKU',
+      'Category',
+      'Size',
+      'Unit',
+      'Quantity',
+      'Unit Price (GHS)',
+      'Line Total (GHS)',
+      'Visit Total (GHS)',
+    ]);
+    wsSku.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsSku.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF117EA6' },
+    };
+
+    for (const v of visits) {
+      const items = Array.isArray(v.lineItems) ? v.lineItems : [];
+      if (items.length > 0) {
+        for (const li of items) {
+          wsSku.addRow([
+            v.date,
+            v.repName || '',
+            v.distributor || '',
+            v.territory || '',
+            v.shopName || '',
+            v.outcome || '',
+            v.paymentType || '',
+            li.productName || li.name || '',
+            li.category || '',
+            li.size || '',
+            li.unit || 'pc',
+            Number(li.quantity) || 0,
+            Number(li.unitPrice) || 0,
+            Number(li.lineTotal) || 0,
+            Number(v.amount) || 0,
+          ]);
+        }
+      } else if ((Number(v.amount) || 0) > 0 || v.outcome === 'Order Placed') {
+        // Order with amount but no structured lines — still list visit
+        wsSku.addRow([
+          v.date,
+          v.repName || '',
+          v.distributor || '',
+          v.territory || '',
+          v.shopName || '',
+          v.outcome || '',
+          v.paymentType || '',
+          v.products || '(no SKU lines recorded)',
+          '',
+          '',
+          '',
+          '',
+          '',
+          Number(v.amount) || 0,
+          Number(v.amount) || 0,
+        ]);
+      }
+    }
+    wsSku.columns.forEach((c) => {
+      c.width = 14;
+    });
+    wsSku.getColumn(5).width = 28;
+    wsSku.getColumn(8).width = 36;
+
+    // Sheet 3 — outlet summary
+    const wsSum = wb.addWorksheet('By Outlet');
+    wsSum.addRow([
+      'Outlet / Shop',
+      'OMR',
+      'Distributor',
+      'Visits',
+      'Orders',
+      'Total Sales (GHS)',
+      'First Visit',
+      'Last Visit',
+    ]);
+    wsSum.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsSum.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF117EA6' },
+    };
+
+    const byOutlet = new Map();
+    for (const v of visits) {
+      const key = `${v.shopName || '—'}||${v.repName || ''}`;
+      if (!byOutlet.has(key)) {
+        byOutlet.set(key, {
+          shop: v.shopName || '—',
+          omr: v.repName || '',
+          dist: v.distributor || '',
+          visits: 0,
+          orders: 0,
+          sales: 0,
+          first: v.date,
+          last: v.date,
+        });
+      }
+      const row = byOutlet.get(key);
+      row.visits += 1;
+      if (v.outcome === 'Order Placed' || (Number(v.amount) || 0) > 0) row.orders += 1;
+      row.sales += Number(v.amount) || 0;
+      if (v.date < row.first) row.first = v.date;
+      if (v.date > row.last) row.last = v.date;
+    }
+    const sorted = [...byOutlet.values()].sort((a, b) => b.sales - a.sales);
+    for (const r of sorted) {
+      wsSum.addRow([
+        r.shop,
+        r.omr,
+        r.dist,
+        r.visits,
+        r.orders,
+        Math.round(r.sales * 100) / 100,
+        r.first,
+        r.last,
+      ]);
+    }
+    wsSum.columns.forEach((c) => {
+      c.width = 16;
+    });
+    wsSum.getColumn(1).width = 28;
+
+    const meta = wb.addWorksheet('Export Info');
+    meta.addRow(['FieldForce — Full outlet & SKU history']);
+    meta.addRow(['Start Date', startDate]);
+    meta.addRow(['End Date', endDate]);
+    meta.addRow(['Generated', new Date().toISOString()]);
+    meta.addRow(['Visit rows', visits.length]);
+    meta.addRow([]);
+    meta.addRow(['Sheets']);
+    meta.addRow(['Outlet Visits', 'One row per shop visit']);
+    meta.addRow(['Purchased SKUs', 'One row per product line on orders']);
+    meta.addRow(['By Outlet', 'Totals per outlet for the period']);
+
+    const buffer = await wb.xlsx.writeBuffer();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=OMR_Outlet_SKU_History_${startDate}_to_${endDate}.xlsx`
+    );
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Outlet history export error:', error);
+    res.status(500).json({ message: 'Failed to export outlet history' });
   }
 };

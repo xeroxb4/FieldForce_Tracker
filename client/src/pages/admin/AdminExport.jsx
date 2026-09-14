@@ -88,6 +88,11 @@ export default function AdminExport() {
           `/admin/export/omr?startDate=${startDate}&endDate=${endDate}`,
           `OMR_Export_${startDate}_to_${endDate}.xlsx`
         );
+      } else if (type === 'outletHistory') {
+        await downloadXlsx(
+          `/admin/export/outlet-history?startDate=${startDate}&endDate=${endDate}`,
+          `OMR_Outlet_SKU_History_${startDate}_to_${endDate}.xlsx`
+        );
       } else {
         await downloadXlsx(
           `/admin/export/merch?startDate=${startDate}&endDate=${endDate}`,
@@ -174,7 +179,17 @@ export default function AdminExport() {
           onClick={() => run('omr')}
           className="w-full py-3 rounded-xl border border-[#2596be] text-[#2596be] font-bold text-sm disabled:opacity-60"
         >
-          {loading === 'omr' ? 'Preparing…' : 'Download OMR detail export'}
+          {loading === 'omr' ? 'Preparing…' : 'Download OMR KPI / summary export'}
+        </button>
+        <button
+          type="button"
+          disabled={!!loading}
+          onClick={() => run('outletHistory')}
+          className="w-full py-3 rounded-xl bg-[#117ea6] text-white font-bold text-sm disabled:opacity-60"
+        >
+          {loading === 'outletHistory'
+            ? 'Preparing…'
+            : 'Download full outlet & SKU history'}
         </button>
         <button
           type="button"
@@ -187,6 +202,14 @@ export default function AdminExport() {
       </div>
 
       <div className={`rounded-2xl border p-4 text-sm ${card}`}>
+        <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
+          Full outlet &amp; SKU history includes
+        </div>
+        <ul className={`list-disc pl-4 space-y-1 mb-4 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <li><strong>Outlet Visits</strong> — every shop visit in the date range (OMR, outcome, amount)</li>
+          <li><strong>Purchased SKUs</strong> — each product line (qty, unit, unit price, line total)</li>
+          <li><strong>By Outlet</strong> — totals per shop for the period</li>
+        </ul>
         <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
           Productivity workbook includes
         </div>
