@@ -1,6 +1,8 @@
 /**
- * Create a TRAINING OMR account (and sample outlets) so demos don't touch live data.
- * Run: node seedTrainingUser.js
+ * Training merchandiser account (isolated from live reports).
+ * Run: node seedTrainingMerch.js
+ *
+ * Login: trainerm / Train@FF2026  (role: Merchandiser)
  */
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
@@ -10,24 +12,25 @@ import Outlet from './models/Outlet.js';
 dotenv.config();
 
 const TRAINING = {
-  username: 'trainer',
-  password: 'Train@FF2026',
-  fullName: 'Training Demo OMR',
-  role: 'omr',
+  username: 'trainerm',
+  password: 'Train@FF2026', // plain — User pre-save hashes once
+  fullName: 'Training Demo Merchandiser',
+  role: 'merchandiser',
   territory: 'Training Zone',
   distributor: 'TRAINING (not live)',
 };
 
+// Mon–Sat style sample outlets for merch beats
 const SAMPLE_OUTLETS = [
-  { name: 'TRAINING Shop Alpha', day: 1 },
-  { name: 'TRAINING Shop Beta', day: 1 },
-  { name: 'TRAINING Shop Gamma', day: 2 },
-  { name: 'TRAINING AVC Demo - AVC (Silver)', day: 3, avc: true, tier: 'Silver' },
+  { name: 'TRAINING Merch Store 1', day: 1 },
+  { name: 'TRAINING Merch Store 2', day: 2 },
+  { name: 'TRAINING Merch Store 3', day: 3 },
+  { name: 'TRAINING Merch Store 4', day: 6 }, // Saturday
 ];
 
 async function main() {
   if (!process.env.MONGODB_URI) {
-    console.error('Missing MONGODB_URI in .env');
+    console.error('Missing MONGODB_URI');
     process.exit(1);
   }
   await mongoose.connect(process.env.MONGODB_URI);
@@ -40,24 +43,21 @@ async function main() {
       isActive: true,
       isTraining: true,
     });
-    console.log('Created user:', TRAINING.username);
+    console.log('Created:', TRAINING.username);
   } else {
-    user.password = TRAINING.password; // plain — pre-save hashes once
+    user.password = TRAINING.password;
     user.fullName = TRAINING.fullName;
-    user.role = 'omr';
+    user.role = 'merchandiser';
     user.territory = TRAINING.territory;
     user.distributor = TRAINING.distributor;
     user.isActive = true;
     user.isTraining = true;
     await user.save();
-    console.log('Updated user:', TRAINING.username);
+    console.log('Updated:', TRAINING.username);
   }
 
   for (const s of SAMPLE_OUTLETS) {
-    const existing = await Outlet.findOne({
-      name: s.name,
-      assignedTo: user._id,
-    });
+    const existing = await Outlet.findOne({ name: s.name, assignedTo: user._id });
     if (existing) {
       console.log('Outlet exists:', s.name);
       continue;
@@ -76,24 +76,20 @@ async function main() {
       isActive: true,
       assignedTo: user._id,
       userId: user._id,
-      createdBy: 'seed-training',
-      approvedBy: 'seed-training',
+      createdBy: 'seed-training-merch',
+      approvedBy: 'seed-training-merch',
       approvedAt: new Date(),
       assignedDays: [s.day],
-      avcEnrolled: !!s.avc,
-      avcTier: s.tier || '',
     });
-    console.log('Created outlet:', s.name, 'day', s.day);
+    console.log('Created outlet:', s.name);
   }
 
-  console.log('\n========== TRAINING LOGIN ==========');
+  console.log('\n========== TRAINING MERCHANDISER ==========');
   console.log('URL:      https://field-force-tracker.vercel.app');
-  console.log('Role:     OMR');
-  console.log('Username: trainer');
+  console.log('Role:     Merchandiser');
+  console.log('Username: trainerm');
   console.log('Password: Train@FF2026');
-  console.log('Note:     Distributor = TRAINING (not live)');
-  console.log('          Use only TRAINING Shop* outlets');
-  console.log('====================================\n');
+  console.log('==========================================\n');
   process.exit(0);
 }
 

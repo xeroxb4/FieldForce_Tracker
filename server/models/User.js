@@ -49,6 +49,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    isTraining: { type: Boolean, default: false, index: true },
     isActive: {
       type: Boolean,
       default: true,

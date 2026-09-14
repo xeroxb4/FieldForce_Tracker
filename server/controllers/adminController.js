@@ -7,15 +7,54 @@ import Outlet from '../models/Outlet.js';
 import Target from '../models/Target.js';
 
 // @desc    Get all users
+
+/** Hide training / demo data from live reports */
+async function getTrainingUserIds() {
+  const users = await User.find({
+    $or: [
+      { isTraining: true },
+      { username: 'trainer' },
+      { distributor: /training/i },
+      { fullName: /training demo/i },
+    ],
+  }).select('_id');
+  return users.map((u) => u._id);
+}
+
+function applyTrainingVisitExclude(filter, trainingIds) {
+  if (trainingIds?.length) {
+    filter.userId = filter.userId
+      ? filter.userId
+      : { $nin: trainingIds };
+    if (filter.userId && !filter.userId.$nin && trainingIds.length) {
+      // if specific userId set, leave it
+    }
+  }
+  // also exclude by distributor label
+  if (!filter.distributor) {
+    filter.distributor = { $not: /training/i };
+  }
+  if (!filter.repName) {
+    filter.repName = { $not: /training demo/i };
+  }
+  return filter;
+}
+
 export const getUsers = async (req, res) => {
   try {
-    const { role } = req.query;
+    const { role, includeTraining } = req.query;
     const filter = {};
     if (role) filter.role = role;
+    // Hide training accounts from live admin lists unless explicitly requested
+    if (includeTraining !== '1') {
+      filter.isTraining = { $ne: true };
+      filter.username = { $ne: 'trainer' };
+      filter.distributor = { $not: /training/i };
+    }
     const users = await User.find(filter).select('-password').sort({ role: 1, fullName: 1 });
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch users' });
+    res.status(500).json({ message: 'Failed to load users' });
   }
 };
 
@@ -108,6 +147,14 @@ export const getVisitsReport = async (req, res) => {
     if (distributor && distributor !== 'All') {
       filter.distributor = new RegExp(String(distributor).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     }
+    const trainingIds = await getTrainingUserIds();
+    if (trainingIds.length) {
+      filter.userId = { $nin: trainingIds };
+    }
+    filter.$and = (filter.$and || []).concat([
+      { distributor: { $not: /training/i } },
+      { repName: { $not: /training demo/i } },
+    ]);
     const visits = await Visit.find(filter)
       .populate('userId', 'fullName username distributor territory')
       .sort({ date: -1, createdAt: -1 })
@@ -396,7 +443,7 @@ export const getDashboardStats = async (req, res) => {
       sumAmount(dayStr),
       sumAmount(weekStr),
       sumAmount(monthStr),
-      User.countDocuments({ role: 'omr', isActive: true }),
+      User.countDocuments({ role: 'omr', isActive: true, isTraining: { $ne: true }, username: { $ne: 'trainer' } }),
       User.countDocuments({ role: 'merchandiser', isActive: true }),
       Outlet.countDocuments({ isActive: true, status: 'approved' }),
       Outlet.countDocuments({ isActive: true, avcEnrolled: true }),
@@ -488,7 +535,7 @@ export const getUnvisitedToday = async (req, res) => {
     })();
     const date = new Date().toISOString().slice(0, 10);
 
-    const omrs = await User.find({ role: 'omr', isActive: { $ne: false } }).select('fullName username territory distributor');
+    const omrs = await User.find({ role: 'omr', isActive: { $ne: false }, isTraining: { $ne: true }, username: { $ne: 'trainer' } }).select('fullName username territory distributor');
     const visits = await Visit.find({ date, outletId: { $ne: null } }).select('outletId userId');
     const visitedByUser = {};
     visits.forEach((v) => {
@@ -537,6 +584,14 @@ export const getOutletSalesHistory = async (req, res) => {
       if (startDate) filter.date.$gte = startDate;
       if (endDate) filter.date.$lte = endDate;
     }
+    const trainingIds = await getTrainingUserIds();
+    if (trainingIds.length) {
+      filter.userId = { ...(typeof filter.userId === 'object' ? filter.userId : {}), $nin: trainingIds };
+    }
+    filter.$and = (filter.$and || []).concat([
+      { distributor: { $not: /training/i } },
+      { repName: { $not: /training demo/i } },
+    ]);
     const visits = await Visit.find(filter)
       .sort({ date: -1, createdAt: -1 })
       .limit(500)
