@@ -352,9 +352,13 @@ export default function LogShop() {
             onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
             className={`${inputCls} ${
               form.outcome === 'Order Placed'
-                ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                ? (dark
+                    ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
+                    : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
                 : form.outcome === 'No Order'
-                ? (dark ? 'bg-amber-600/30 text-amber-200 border-amber-500 font-semibold' : 'bg-amber-50 text-amber-900 border-amber-400 font-semibold')
+                ? (dark
+                    ? 'border-2 border-amber-500 bg-amber-500/20 text-amber-100 font-semibold'
+                    : 'border-2 border-amber-500 bg-amber-50 text-amber-950 font-semibold')
                 : ''
             }`}
           >
@@ -405,7 +409,9 @@ export default function LogShop() {
                 }}
                 className={`${inputSm} ${
                   pickCategory
-                    ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                    ? (dark
+                        ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
+                        : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
                     : ''
                 }`}
               >
@@ -427,7 +433,9 @@ export default function LogShop() {
                   onChange={(e) => setPickProductId(e.target.value)}
                   className={`${inputSm} ${
                     pickProductId
-                      ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                      ? (dark
+                          ? 'border-2 border-[#117ea6] bg-[#117ea6]/25 text-white font-bold'
+                          : 'border-2 border-[#117ea6] bg-[#e7f4f9] text-slate-900 font-bold')
                       : ''
                   }`}
                 >
@@ -512,7 +520,7 @@ export default function LogShop() {
                   onClick={() => setForm({ ...form, paymentType: 'cash' })}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
                     form.paymentType === 'cash'
-                      ? 'bg-[#2596be] text-white border-[#2596be] shadow-md'
+                      ? 'bg-[#117ea6] text-white border-[#117ea6] shadow-md'
                       : dark
                       ? 'bg-slate-800 text-slate-300 border-slate-600'
                       : 'bg-white text-slate-600 border-slate-200'
@@ -525,7 +533,7 @@ export default function LogShop() {
                   onClick={() => setForm({ ...form, paymentType: 'credit' })}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
                     form.paymentType === 'credit'
-                      ? 'bg-[#2596be] text-white border-[#2596be] shadow-md'
+                      ? 'bg-[#117ea6] text-white border-[#117ea6] shadow-md'
                       : dark
                       ? 'bg-slate-800 text-slate-300 border-slate-600'
                       : 'bg-white text-slate-600 border-slate-200'
