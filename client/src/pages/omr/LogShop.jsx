@@ -19,7 +19,7 @@ const NO_ORDER_REASONS = [
   'Owner not available',
   'I have a supplier',
   'High price',
-  'Previous Customer with payment issues',
+  'Customer has payment issues',
   'Shop closed',
   'Not interested',
   'Stock still available',
@@ -350,7 +350,13 @@ export default function LogShop() {
           <select
             value={form.outcome}
             onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
-            className={inputCls}
+            className={`${inputCls} ${
+              form.outcome === 'Order Placed'
+                ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                : form.outcome === 'No Order'
+                ? (dark ? 'bg-amber-600/30 text-amber-200 border-amber-500 font-semibold' : 'bg-amber-50 text-amber-900 border-amber-400 font-semibold')
+                : ''
+            }`}
           >
             {(extraCoverage ? EXTRA_OUTCOMES : OUTCOMES).map((o) => (
               <option key={o} value={o}>
@@ -397,7 +403,11 @@ export default function LogShop() {
                   setPickProductId('');
                   setPickUnit('pc');
                 }}
-                className={inputSm}
+                className={`${inputSm} ${
+                  pickCategory
+                    ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                    : ''
+                }`}
               >
                 <option value="">Select category...</option>
                 {CATEGORIES.map((c) => (
@@ -415,7 +425,11 @@ export default function LogShop() {
                 <select
                   value={pickProductId}
                   onChange={(e) => setPickProductId(e.target.value)}
-                  className={inputSm}
+                  className={`${inputSm} ${
+                    pickProductId
+                      ? 'bg-[#2596be] text-white border-[#2596be] font-bold'
+                      : ''
+                  }`}
                 >
                   <option value="">Select product...</option>
                   {productList.map((p) => (
@@ -496,9 +510,11 @@ export default function LogShop() {
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, paymentType: 'cash' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
                     form.paymentType === 'cash'
-                      ? 'bg-navy text-white border-navy'
+                      ? 'bg-[#2596be] text-white border-[#2596be] shadow-md'
+                      : dark
+                      ? 'bg-slate-800 text-slate-300 border-slate-600'
                       : 'bg-white text-slate-600 border-slate-200'
                   }`}
                 >
@@ -507,9 +523,11 @@ export default function LogShop() {
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, paymentType: 'credit' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border ${
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
                     form.paymentType === 'credit'
-                      ? 'bg-navy text-white border-navy'
+                      ? 'bg-[#2596be] text-white border-[#2596be] shadow-md'
+                      : dark
+                      ? 'bg-slate-800 text-slate-300 border-slate-600'
                       : 'bg-white text-slate-600 border-slate-200'
                   }`}
                 >
