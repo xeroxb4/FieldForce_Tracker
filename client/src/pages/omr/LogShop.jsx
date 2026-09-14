@@ -292,12 +292,6 @@ export default function LogShop() {
   const cardCls = dark
     ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
     : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
-  /** Button chips — native <select> ignores background on many phones */
-  const pillOn = 'bg-[#117ea6] text-white border-[#117ea6] font-bold shadow-sm';
-  const pillOff = dark
-    ? 'bg-slate-800 text-slate-200 border-slate-600 font-medium'
-    : 'bg-white text-slate-700 border-slate-200 font-medium';
-  const pillBase = 'px-3 py-2.5 rounded-xl text-sm border transition';
 
   return (
     <div>
@@ -350,21 +344,20 @@ export default function LogShop() {
           </div>
         </div>
 
-        {/* Outcome — buttons so colour shows on mobile */}
+        {/* Outcome */}
         <div>
           <label className={labelCls}>Outcome *</label>
-          <div className="flex flex-wrap gap-2">
+          <select
+            value={form.outcome}
+            onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
+            className={inputCls}
+          >
             {(extraCoverage ? EXTRA_OUTCOMES : OUTCOMES).map((o) => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setForm({ ...form, outcome: o, noOrderReason: '' })}
-                className={`${pillBase} ${form.outcome === o ? pillOn : pillOff}`}
-              >
+              <option key={o} value={o}>
                 {o}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         {/* No Order reason */}
@@ -394,48 +387,43 @@ export default function LogShop() {
           <div className={cardCls}>
             <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>Add products</div>
 
-            {/* 1. Category chips */}
+            {/* 1. Category */}
             <div>
               <label className={labelXs}>Category</label>
-              <div className="flex flex-wrap gap-2">
+              <select
+                value={pickCategory}
+                onChange={(e) => {
+                  setPickCategory(e.target.value);
+                  setPickProductId('');
+                  setPickUnit('pc');
+                }}
+                className={inputSm}
+              >
+                <option value="">Select category...</option>
                 {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => {
-                      setPickCategory(c);
-                      setPickProductId('');
-                      setPickUnit('pc');
-                    }}
-                    className={`${pillBase} ${pickCategory === c ? pillOn : pillOff}`}
-                  >
+                  <option key={c} value={c}>
                     {c}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
-            {/* 2. Product list chips */}
+            {/* 2. Product */}
             {pickCategory && (
               <div>
                 <label className={labelXs}>Product</label>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-slate-200 dark:border-slate-600 p-2">
+                <select
+                  value={pickProductId}
+                  onChange={(e) => setPickProductId(e.target.value)}
+                  className={inputSm}
+                >
+                  <option value="">Select product...</option>
                   {productList.map((p) => (
-                    <button
-                      key={p._id}
-                      type="button"
-                      onClick={() => setPickProductId(p._id)}
-                      className={`w-full text-left ${pillBase} ${
-                        String(pickProductId) === String(p._id) ? pillOn : pillOff
-                      }`}
-                    >
+                    <option key={p._id} value={p._id}>
                       {p.name} ({p.size})
-                    </button>
+                    </option>
                   ))}
-                  {!productList.length && (
-                    <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>No products in this category</p>
-                  )}
-                </div>
+                </select>
               </div>
             )}
 
