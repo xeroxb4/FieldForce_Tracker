@@ -37,6 +37,11 @@ export default function AdminOutletSales() {
   const [editOutcome, setEditOutcome] = useState('Order Placed');
   const [editProducts, setEditProducts] = useState('');
   const [editPayment, setEditPayment] = useState('cash');
+  const [editLines, setEditLines] = useState([]);
+  const [productsCatalog, setProductsCatalog] = useState([]);
+  const [pickProduct, setPickProduct] = useState('');
+  const [pickQty, setPickQty] = useState(1);
+  const [pickUnit, setPickUnit] = useState('pc');
   const [saving, setSaving] = useState(false);
 
   const load = () => {
@@ -50,6 +55,13 @@ export default function AdminOutletSales() {
 
   useEffect(() => {
     load();
+    api
+      .get('/admin/products')
+      .then((r) => {
+        const d = r.data;
+        setProductsCatalog(Array.isArray(d) ? d : d?.products || []);
+      })
+      .catch(() => {});
   }, []);
 
   const deleteVisit = async (visitId) => {
@@ -85,23 +97,71 @@ export default function AdminOutletSales() {
     setEditAmount(String(h.amount ?? ''));
     setEditOutcome(h.outcome || 'Order Placed');
     setEditPayment(h.paymentType || 'cash');
-    const prod =
-      (h.lineItems || [])
-        .map((li) => `${li.productName || li.name} x${li.quantity} (${li.unit || 'pc'})`)
-        .join('; ') || '';
-    setEditProducts(prod);
+    const lines = (h.lineItems || []).map((li) => ({
+      skuId: li.skuId,
+      productName: li.productName || li.name,
+      category: li.category || '',
+      size: li.size || '',
+      unit: li.unit || 'pc',
+      quantity: Number(li.quantity) || 0,
+      unitPrice: Number(li.unitPrice) || 0,
+      lineTotal: Number(li.lineTotal) || 0,
+    }));
+    setEditLines(lines);
+    setEditProducts(
+      lines.map((li) => `${li.productName} x${li.quantity} (${li.unit})`).join('; ')
+    );
+    setPickProduct('');
+    setPickQty(1);
+    setPickUnit('pc');
+  };
+
+  const addEditSku = () => {
+    const prod = productsCatalog.find((p) => String(p._id) === String(pickProduct));
+    if (!prod) return alert('Select a product');
+    const q = Number(pickQty) || 0;
+    if (q <= 0) return alert('Quantity must be > 0');
+    let up = Number(prod.pricePc || prod.price || prod.unitPrice || 0);
+    if (pickUnit === 'pack') up = Number(prod.pricePack || prod.packPrice || up);
+    if (pickUnit === 'carton') up = Number(prod.priceCarton || prod.cartonPrice || up);
+    const lineTotal = Math.round(up * q * 100) / 100;
+    setEditLines((prev) => [
+      ...prev,
+      {
+        skuId: prod._id,
+        productName: prod.name || prod.productName,
+        category: prod.category || '',
+        size: prod.size || '',
+        unit: pickUnit,
+        quantity: q,
+        unitPrice: up,
+        lineTotal,
+      },
+    ]);
+  };
+
+  const removeEditSku = (idx) => {
+    setEditLines((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const saveEdit = async () => {
     if (!editVisit?._id) return;
     setSaving(true);
     try {
-      await api.put(`/admin/visits/${editVisit._id}`, {
-        amount: Number(editAmount) || 0,
-        outcome: editOutcome,
-        paymentType: editPayment,
-        products: editProducts,
-      });
+      const body =
+        editLines.length > 0
+          ? {
+              lineItems: editLines,
+              outcome: editOutcome,
+              paymentType: editPayment,
+            }
+          : {
+              amount: Number(editAmount) || 0,
+              outcome: editOutcome,
+              paymentType: editPayment,
+              products: editProducts,
+            };
+      await api.put(`/admin/visits/${editVisit._id}`, body);
       setEditVisit(null);
       const { data } = await api.get('/admin/outlet-sales-history');
       setOmrs(data?.omrs || []);
@@ -475,17 +535,98 @@ export default function AdminOutletSales() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold opacity-70">Products (text)</label>
-              <textarea
-                rows={3}
-                value={editProducts}
-                onChange={(e) => setEditProducts(e.target.value)}
-                placeholder="e.g. Dry Impact x12 (pc); Cocoa lotion x1 (carton)"
-                className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
-                  dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
-                }`}
-              />
+              <label className="text-xs font-bold opacity-70">SKUs on this order</label>
+              {editLines.length === 0 ? (
+                <p className="text-xs opacity-60 mt-1">No SKU lines — use amount only, or add products below.</p>
+              ) : (
+                <ul className="mt-1 space-y-1 max-h-36 overflow-y-auto">
+                  {editLines.map((li, idx) => (
+                    <li
+                      key={idx}
+                      className={`flex justify-between gap-2 text-xs rounded-lg px-2 py-1.5 ${
+                        dark ? 'bg-slate-800' : 'bg-slate-50'
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        {li.productName} × {li.quantity} {li.unit}
+                        <span className="opacity-60"> · GHS {Number(li.lineTotal).toFixed(2)}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeEditSku(idx)}
+                        className="text-red-500 font-bold shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-2 space-y-1.5">
+                <select
+                  value={pickProduct}
+                  onChange={(e) => setPickProduct(e.target.value)}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm ${
+                    dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                  }`}
+                >
+                  <option value="">Add product…</option>
+                  {productsCatalog.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name || p.productName}
+                    </option>
+                  ))}
+                </select>
+                <div className="grid grid-cols-3 gap-1">
+                  <select
+                    value={pickUnit}
+                    onChange={(e) => setPickUnit(e.target.value)}
+                    className={`rounded-xl border px-2 py-2 text-sm ${
+                      dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                    }`}
+                  >
+                    <option value="pc">PC</option>
+                    <option value="pack">Pack</option>
+                    <option value="carton">Carton</option>
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={pickQty}
+                    onChange={(e) => setPickQty(e.target.value)}
+                    className={`rounded-xl border px-2 py-2 text-sm ${
+                      dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={addEditSku}
+                    className="rounded-xl bg-[#117ea6]/20 text-[#117ea6] font-bold text-sm"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+              {editLines.length === 0 && (
+                <div className="mt-2">
+                  <label className="text-xs font-bold opacity-70">Or products as text</label>
+                  <textarea
+                    rows={2}
+                    value={editProducts}
+                    onChange={(e) => setEditProducts(e.target.value)}
+                    className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
+                      dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                    }`}
+                  />
+                </div>
+              )}
             </div>
+            {editLines.length > 0 && (
+              <div className="text-sm font-extrabold text-[#117ea6]">
+                Lines total: GHS{' '}
+                {editLines.reduce((s, l) => s + (Number(l.lineTotal) || 0), 0).toFixed(2)}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
