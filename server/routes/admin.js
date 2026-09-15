@@ -95,4 +95,6 @@ router.get('/avc-photos', getAdminAvcGallery);
 router.delete('/avc-photos/:id', deleteAvcPhoto);
 router.get('/export/merch', exportMerchXlsx);
 
+router.get('/attendance', getAdminAttendanceByDate);
+
 export default router;
