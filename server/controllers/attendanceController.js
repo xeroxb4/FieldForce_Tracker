@@ -131,3 +131,89 @@ export const checkOut = async (req, res) => {
     res.status(500).json({ message: 'Failed to check out' });
   }
 };
+
+
+// @desc    Admin: attendance / check-ins for a given day
+// @route   GET /api/admin/attendance?date=YYYY-MM-DD&role=omr|merchandiser
+export const getAdminAttendanceByDate = async (req, res) => {
+  try {
+    const date = req.query.date || new Date().toISOString().slice(0, 10);
+    const { role } = req.query;
+
+    const filter = { date, status: 'present' };
+    if (role === 'omr' || role === 'merchandiser') {
+      filter.role = role;
+    } else {
+      filter.role = { $in: ['omr', 'merchandiser'] };
+    }
+
+    // Exclude training accounts by name pattern
+    const records = await Attendance.find(filter)
+      .populate('userId', 'fullName username distributor territory isTraining')
+      .sort({ checkedInAt: 1 });
+
+    const list = records
+      .filter((r) => {
+        const u = r.userId;
+        if (u?.isTraining) return false;
+        if (/training/i.test(r.fullName || '')) return false;
+        if (u?.username === 'trainer' || u?.username === 'trainerm') return false;
+        return true;
+      })
+      .map((r) => ({
+        _id: r._id,
+        userId: r.userId?._id || r.userId,
+        fullName: r.fullName || r.userId?.fullName,
+        username: r.userId?.username || '',
+        role: r.role,
+        distributor: r.userId?.distributor || '',
+        territory: r.userId?.territory || '',
+        date: r.date,
+        status: r.status,
+        checkedInAt: r.checkedInAt,
+        checkedOutAt: r.checkedOutAt || null,
+        location: r.location || null,
+        checkOutLocation: r.checkOutLocation || null,
+        notes: r.notes || '',
+      }));
+
+    // Also list who has NOT checked in (active non-training reps)
+    const User = (await import('../models/User.js')).default;
+    const roleFilter =
+      role === 'omr' || role === 'merchandiser'
+        ? { role }
+        : { role: { $in: ['omr', 'merchandiser'] } };
+    const allReps = await User.find({
+      ...roleFilter,
+      isActive: { $ne: false },
+      isTraining: { $ne: true },
+      username: { $nin: ['trainer', 'trainerm'] },
+    }).select('fullName username role distributor territory');
+
+    const presentIds = new Set(list.map((x) => String(x.userId)));
+    const absent = allReps
+      .filter((u) => !presentIds.has(String(u._id)))
+      .map((u) => ({
+        userId: u._id,
+        fullName: u.fullName,
+        username: u.username,
+        role: u.role,
+        distributor: u.distributor || '',
+        territory: u.territory || '',
+        status: 'absent',
+        checkedInAt: null,
+        checkedOutAt: null,
+      }));
+
+    res.json({
+      date,
+      presentCount: list.length,
+      absentCount: absent.length,
+      present: list,
+      absent,
+    });
+  } catch (error) {
+    console.error('Admin attendance error:', error);
+    res.status(500).json({ message: 'Failed to load attendance' });
+  }
+};

@@ -1,3 +1,4 @@
+import AdminAttendance from './pages/admin/AdminAttendance';
 import DeferredSales from './pages/omr/DeferredSales';
 import AdminEnterSale from './pages/admin/AdminEnterSale';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="products" element={<AdminProducts />} />
         <Route path="notifications" element={<AdminNotifications />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="attendance" element={<AdminAttendance />} />
         <Route path="enter-sale" element={<AdminEnterSale />} />
         <Route path="export" element={<AdminExport />} />
         <Route path="avc-photos" element={<AdminAvcGallery />} />
