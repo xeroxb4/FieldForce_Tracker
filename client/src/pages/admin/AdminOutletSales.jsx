@@ -32,6 +32,12 @@ export default function AdminOutletSales() {
   const [selectedOmr, setSelectedOmr] = useState(null);
   const [selectedOutlet, setSelectedOutlet] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [editVisit, setEditVisit] = useState(null); // visit being edited
+  const [editAmount, setEditAmount] = useState('');
+  const [editOutcome, setEditOutcome] = useState('Order Placed');
+  const [editProducts, setEditProducts] = useState('');
+  const [editPayment, setEditPayment] = useState('cash');
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -52,13 +58,63 @@ export default function AdminOutletSales() {
     setBusyId(visitId);
     try {
       await api.delete(`/admin/visits/${visitId}`);
-      load();
-      setSelectedOutlet(null);
-      setStep('customers');
+      // refresh and stay on history if possible
+      const { data } = await api.get('/admin/outlet-sales-history');
+      setOmrs(data?.omrs || []);
+      const omr = (data?.omrs || []).find((o) => o.omrName === selectedOmr?.omrName);
+      setSelectedOmr(omr || null);
+      const out = omr?.outlets?.find(
+        (x) => (x.outletId || x.shopName) === (selectedOutlet?.outletId || selectedOutlet?.shopName)
+      );
+      if (out) {
+        setSelectedOutlet(out);
+        setStep('history');
+      } else {
+        setSelectedOutlet(null);
+        setStep(omr ? 'customers' : 'omrs');
+      }
     } catch (err) {
       alert(err.response?.data?.message || 'Delete failed');
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const startEdit = (h) => {
+    setEditVisit(h);
+    setEditAmount(String(h.amount ?? ''));
+    setEditOutcome(h.outcome || 'Order Placed');
+    setEditPayment(h.paymentType || 'cash');
+    const prod =
+      (h.lineItems || [])
+        .map((li) => `${li.productName || li.name} x${li.quantity} (${li.unit || 'pc'})`)
+        .join('; ') || '';
+    setEditProducts(prod);
+  };
+
+  const saveEdit = async () => {
+    if (!editVisit?._id) return;
+    setSaving(true);
+    try {
+      await api.put(`/admin/visits/${editVisit._id}`, {
+        amount: Number(editAmount) || 0,
+        outcome: editOutcome,
+        paymentType: editPayment,
+        products: editProducts,
+      });
+      setEditVisit(null);
+      const { data } = await api.get('/admin/outlet-sales-history');
+      setOmrs(data?.omrs || []);
+      const omr = (data?.omrs || []).find((o) => o.omrName === selectedOmr?.omrName);
+      setSelectedOmr(omr || null);
+      const out = omr?.outlets?.find(
+        (x) => (x.outletId || x.shopName) === (selectedOutlet?.outletId || selectedOutlet?.shopName)
+      );
+      if (out) setSelectedOutlet(out);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -323,14 +379,23 @@ export default function AdminOutletSales() {
                     <div className="text-right">
                       <div className="text-sm font-extrabold text-[#117ea6]">{fmtMoney(h.amount)}</div>
                       {h._id && (
-                        <button
-                          type="button"
-                          disabled={busyId === h._id}
-                          onClick={() => deleteVisit(h._id)}
-                          className="text-[10px] font-bold text-red-500 mt-1"
-                        >
-                          {busyId === h._id ? '…' : 'Delete'}
-                        </button>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(h)}
+                            className="text-[10px] font-bold text-[#117ea6]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busyId === h._id}
+                            onClick={() => deleteVisit(h._id)}
+                            className="text-[10px] font-bold text-red-500"
+                          >
+                            {busyId === h._id ? '…' : 'Delete'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -351,6 +416,97 @@ export default function AdminOutletSales() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Edit visit modal */}
+      {editVisit && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3">
+          <div
+            className={`w-full max-w-md rounded-2xl p-4 space-y-3 shadow-xl ${
+              dark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-extrabold">Edit visit · {editVisit.date}</h3>
+              <button type="button" className="text-sm font-bold opacity-60" onClick={() => setEditVisit(null)}>
+                Close
+              </button>
+            </div>
+            <div>
+              <label className="text-xs font-bold opacity-70">Outcome</label>
+              <select
+                value={editOutcome}
+                onChange={(e) => setEditOutcome(e.target.value)}
+                className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
+                  dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                }`}
+              >
+                <option value="Order Placed">Order Placed</option>
+                <option value="No Order">No Order</option>
+                <option value="Shop Closed">Shop Closed</option>
+                <option value="Follow Up">Follow Up</option>
+                <option value="Extra Coverage">Extra Coverage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold opacity-70">Amount (GHS)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
+                  dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                }`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold opacity-70">Payment</label>
+              <select
+                value={editPayment}
+                onChange={(e) => setEditPayment(e.target.value)}
+                className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
+                  dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                }`}
+              >
+                <option value="cash">Cash</option>
+                <option value="credit">Credit</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold opacity-70">Products (text)</label>
+              <textarea
+                rows={3}
+                value={editProducts}
+                onChange={(e) => setEditProducts(e.target.value)}
+                placeholder="e.g. Dry Impact x12 (pc); Cocoa lotion x1 (carton)"
+                className={`w-full mt-1 rounded-xl border px-3 py-2 text-sm ${
+                  dark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'
+                }`}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditVisit(null)}
+                className={`py-2.5 rounded-xl font-bold text-sm border ${
+                  dark ? 'border-slate-600' : 'border-slate-300'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={saveEdit}
+                className="py-2.5 rounded-xl font-bold text-sm bg-[#117ea6] text-white disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
