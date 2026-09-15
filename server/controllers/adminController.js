@@ -188,6 +188,8 @@ export const getMerchReport = async (req, res) => {
     const filter = {};
     if (date) filter.date = date;
     else if (startDate && endDate) filter.date = { $gte: startDate, $lte: endDate };
+    const trainingIds = await getTrainingUserIds();
+    if (trainingIds.length) filter.userId = { $nin: trainingIds };
     const visits = await MerchVisit.find(filter).sort({ date: -1 });
     res.json(visits);
   } catch (error) {
@@ -630,7 +632,58 @@ export const getOutletSalesHistory = async (req, res) => {
       });
     }
 
-    res.json({ outlets: Object.values(byOutlet) });
+    const outlets = Object.values(byOutlet);
+
+    // Group by OMR for hierarchical UI: OMR → customers → history
+    const byOmr = {};
+    for (const o of outlets) {
+      // Prefer most recent history rep, else first
+      const reps = {};
+      for (const h of o.history || []) {
+        const rn = h.rep || 'Unknown';
+        if (!reps[rn]) reps[rn] = { sales: 0, visits: 0 };
+        reps[rn].visits += 1;
+        reps[rn].sales += h.amount || 0;
+      }
+      // Assign outlet to each rep who visited (or primary if only one)
+      const repNames = Object.keys(reps);
+      if (!repNames.length) {
+        const rn = 'Unknown';
+        if (!byOmr[rn]) {
+          byOmr[rn] = {
+            omrName: rn,
+            outlets: [],
+            totalSales: 0,
+            totalOrders: 0,
+            customerCount: 0,
+          };
+        }
+        byOmr[rn].outlets.push(o);
+        byOmr[rn].totalSales += o.totalSales || 0;
+        byOmr[rn].totalOrders += o.orders || 0;
+        byOmr[rn].customerCount += 1;
+      } else {
+        // Primary = highest sales on this outlet
+        const primary = repNames.sort((a, b) => reps[b].sales - reps[a].sales)[0];
+        if (!byOmr[primary]) {
+          byOmr[primary] = {
+            omrName: primary,
+            outlets: [],
+            totalSales: 0,
+            totalOrders: 0,
+            customerCount: 0,
+          };
+        }
+        byOmr[primary].outlets.push(o);
+        byOmr[primary].totalSales += o.totalSales || 0;
+        byOmr[primary].totalOrders += o.orders || 0;
+        byOmr[primary].customerCount += 1;
+      }
+    }
+
+    const omrs = Object.values(byOmr).sort((a, b) => b.totalSales - a.totalSales);
+
+    res.json({ outlets, omrs });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to load outlet sales history' });
