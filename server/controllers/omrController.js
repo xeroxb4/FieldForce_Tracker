@@ -22,7 +22,7 @@ const NO_ORDER_REASONS = [
   'Owner not available',
   'I have a supplier',
   'High price',
-  'Previous Customer with payment issues',
+  'Customer has payment issues',
   'Shop closed',
   'Not interested',
   'Stock still available',
@@ -141,7 +141,7 @@ export const createVisit = async (req, res) => {
       physicalSaleDate,
     } = req.body;
 
-    if (!shopName) {
+    if (!shopName && !outletId) {
       return res.status(400).json({ message: 'Shop name is required' });
     }
 
@@ -156,6 +156,11 @@ export const createVisit = async (req, res) => {
       }
     }
 
+    let resolvedShopName = (shopName || '').trim();
+    let resolvedContactName = contactName || '';
+    let resolvedContactPhone = contactPhone || '';
+    let outletDoc = null;
+
     if (outletId) {
       if (!location?.lat || !location?.lng) {
         return res.status(400).json({
@@ -163,13 +168,20 @@ export const createVisit = async (req, res) => {
           code: 'GPS_REQUIRED',
         });
       }
-      const outlet = await Outlet.findById(outletId);
-      if (outlet?.location) {
+      outletDoc = await Outlet.findById(outletId);
+      if (!outletDoc) {
+        return res.status(404).json({ message: 'Outlet not found' });
+      }
+      // Always persist stable label from master outlet (displayName preferred)
+      resolvedShopName = outletDoc.displayName || outletDoc.name || resolvedShopName;
+      if (!resolvedContactName) resolvedContactName = outletDoc.contactName || '';
+      if (!resolvedContactPhone) resolvedContactPhone = outletDoc.contactPhone || '';
+      if (outletDoc?.location) {
         const dist = haversineMeters(
           location.lat,
           location.lng,
-          outlet.location.lat,
-          outlet.location.lng
+          outletDoc.location.lat,
+          outletDoc.location.lng
         );
         if (dist > MAX_DISTANCE_M) {
           return res.status(400).json({
@@ -181,6 +193,9 @@ export const createVisit = async (req, res) => {
       }
     }
 
+    if (!resolvedShopName) {
+      return res.status(400).json({ message: 'Shop name is required' });
+    }
 
     const visitDate = date || new Date().toISOString().slice(0, 10);
     const jsDay = new Date(visitDate + 'T12:00:00').getDay(); // 0 Sun .. 6 Sat
@@ -236,8 +251,8 @@ export const createVisit = async (req, res) => {
         userId: req.user._id,
         repName: req.user.fullName,
         outletId: outletId || undefined,
-        customerName: contactName || shopName,
-        shopName,
+        customerName: resolvedContactName || resolvedShopName,
+        shopName: resolvedShopName,
         amount: totalAmount,
         amountPaid: 0,
         balance: totalAmount,
@@ -258,10 +273,10 @@ export const createVisit = async (req, res) => {
       userId: req.user._id,
       repName: req.user.fullName,
       date: visitDate,
-      shopName,
+      shopName: resolvedShopName,
       outletId: outletId || undefined,
-      contactName: contactName || '',
-      contactPhone: contactPhone || '',
+      contactName: resolvedContactName,
+      contactPhone: resolvedContactPhone,
       territory: req.user.territory,
       distributor: req.user.distributor,
       outcome: finalOutcome,
@@ -514,7 +529,7 @@ export const completeDeferredSale = async (req, res) => {
       return res.status(400).json({ message: 'Enter amount or product lines' });
     }
 
-    const finalShop = shopName || coverage?.shopName || outlet?.displayName || outlet?.name;
+    const finalShop = outlet?.displayName || outlet?.name || shopName || coverage?.shopName;
     const sale = await Visit.create({
       userId: req.user._id,
       repName: req.user.fullName,

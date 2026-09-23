@@ -846,12 +846,28 @@ export const exportOmrOutletHistoryXlsx = async (req, res) => {
       fgColor: { argb: 'FF117EA6' },
     };
 
+    // Prefer grouping by outletId so AVC rename / name variants stay one customer
+    const outletIds = [
+      ...new Set(visits.map((v) => (v.outletId ? String(v.outletId) : '')).filter(Boolean)),
+    ];
+    let outletLabel = {};
+    if (outletIds.length) {
+      const Outlet = (await import('../models/Outlet.js')).default;
+      const odocs = await Outlet.find({ _id: { $in: outletIds } }).select('name displayName');
+      for (const o of odocs) {
+        outletLabel[String(o._id)] = o.displayName || o.name || '';
+      }
+    }
+
     const byOutlet = new Map();
     for (const v of visits) {
-      const key = `${v.shopName || '—'}||${v.repName || ''}`;
+      const oid = v.outletId ? String(v.outletId) : '';
+      const key = oid
+        ? `id:${oid}||${v.repName || ''}`
+        : `name:${(v.shopName || '—').toLowerCase()}||${v.repName || ''}`;
       if (!byOutlet.has(key)) {
         byOutlet.set(key, {
-          shop: v.shopName || '—',
+          shop: (oid && outletLabel[oid]) || v.shopName || '—',
           omr: v.repName || '',
           dist: v.distributor || '',
           visits: 0,
@@ -867,6 +883,8 @@ export const exportOmrOutletHistoryXlsx = async (req, res) => {
       row.sales += Number(v.amount) || 0;
       if (v.date < row.first) row.first = v.date;
       if (v.date > row.last) row.last = v.date;
+      // Keep label as master displayName when we have outletId
+      if (oid && outletLabel[oid]) row.shop = outletLabel[oid];
     }
     const sorted = [...byOutlet.values()].sort((a, b) => b.sales - a.sales);
     for (const r of sorted) {

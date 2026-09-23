@@ -601,12 +601,24 @@ export const getOutletSalesHistory = async (req, res) => {
       .lean();
 
     const byOutlet = {};
+    const idList = [
+      ...new Set(visits.map((v) => (v.outletId ? String(v.outletId) : '')).filter(Boolean)),
+    ];
+    let labelById = {};
+    if (idList.length) {
+      const odocs = await Outlet.find({ _id: { $in: idList } }).select('name displayName');
+      for (const o of odocs) {
+        labelById[String(o._id)] = o.displayName || o.name || '';
+      }
+    }
     for (const v of visits) {
       const key = String(v.outletId || v.shopName);
+      const label =
+        (v.outletId && labelById[String(v.outletId)]) || v.shopName || '—';
       if (!byOutlet[key]) {
         byOutlet[key] = {
           outletId: v.outletId,
-          shopName: v.shopName,
+          shopName: label,
           visits: 0,
           orders: 0,
           totalSales: 0,
@@ -615,6 +627,7 @@ export const getOutletSalesHistory = async (req, res) => {
         };
       }
       const row = byOutlet[key];
+      row.shopName = label;
       row.visits += 1;
       if (v.outcome === 'Order Placed' || (v.amount || 0) > 0) {
         row.orders += 1;
