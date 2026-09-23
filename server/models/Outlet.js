@@ -62,6 +62,22 @@ const outletSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    /** Mini-wholesaler | Sub-wholesaler — derived from monthly capacity */
+    channelType: {
+      type: String,
+      enum: ['', 'Mini-wholesaler', 'Sub-wholesaler'],
+      default: '',
+    },
+    /** e.g. under_10000, from_10000 */
+    monthlyCapacityBand: {
+      type: String,
+      default: '',
+    },
+    /** numeric lower bound of selected band for rules */
+    monthlyCapacityMin: {
+      type: Number,
+      default: 0,
+    },
     // AVC Program
     avcEnrolled: {
       type: Boolean,
@@ -113,15 +129,41 @@ const outletSchema = new mongoose.Schema(
 outletSchema.index({ userId: 1, status: 1 });
 outletSchema.index({ assignedTo: 1, status: 1 });
 
-// Auto-build displayName
+// Auto-build displayName + channel from capacity when min provided
 outletSchema.pre('save', function (next) {
+  if (this.monthlyCapacityMin != null && this.monthlyCapacityMin !== undefined) {
+    this.channelType =
+      Number(this.monthlyCapacityMin) >= 10000 ? 'Sub-wholesaler' : 'Mini-wholesaler';
+  }
+  const parts = [this.name];
   if (this.avcEnrolled && this.avcTier) {
-    this.displayName = `${this.name} - AVC (${this.avcTier})`;
+    parts[0] = `${this.name} - AVC (${this.avcTier})`;
     this.avcTarget = AVC_TARGETS[this.avcTier] || 0;
   } else {
-    this.displayName = this.name;
-    this.avcTier = '';
-    this.avcTarget = 0;
+    this.avcTier = this.avcEnrolled ? this.avcTier : '';
+    if (!this.avcEnrolled) {
+      this.avcTier = '';
+      this.avcTarget = 0;
+    }
+  }
+  if (this.channelType) parts.push(this.channelType);
+  if (this.monthlyCapacityBand) {
+    const bandLabel = {
+      under_2000: 'Under 2,000',
+      '2000_3999': '2,000–3,999',
+      '4000_5999': '4,000–5,999',
+      '6000_9999': '6,000–9,999',
+      '10000_12499': '10,000–12,499',
+      '12500_plus': '12,500+',
+      under_10000: 'Under 10,000',
+      from_10000: '10,000+',
+    };
+    parts.push(bandLabel[this.monthlyCapacityBand] || this.monthlyCapacityBand);
+  }
+  this.displayName = parts.filter(Boolean).join(' · ');
+  if (this.avcEnrolled && this.avcTier && !String(this.displayName).includes('AVC')) {
+    this.displayName = `${this.name} - AVC (${this.avcTier})` +
+      (this.channelType ? ` · ${this.channelType}` : '');
   }
   next();
 });

@@ -20,9 +20,21 @@ function applyAvc(body) {
   };
 }
 
+/** Single split: Mini-wholesaler < 10000, Sub-wholesaler >= 10000 */
+export function classifyFromCapacity(monthlyCapacityMin) {
+  const min = Number(monthlyCapacityMin) || 0;
+  const channelType = min >= 10000 ? 'Sub-wholesaler' : 'Mini-wholesaler';
+  let suggestedAvcTier = '';
+  if (min >= 12500) suggestedAvcTier = 'Gold';
+  else if (min >= 10000) suggestedAvcTier = 'Silver';
+  else if (min >= 5000) suggestedAvcTier = 'Bronze';
+  return { channelType, suggestedAvcTier, monthlyCapacityMin: min };
+}
+
+
 export const createOutlet = async (req, res) => {
   try {
-    const { name, contactName, contactPhone, address, lat, lng, notes, locationVerified } = req.body;
+    const { name, contactName, contactPhone, address, lat, lng, notes, locationVerified, monthlyCapacityBand, monthlyCapacityMin, channelType } = req.body;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Outlet name is required' });
@@ -36,6 +48,9 @@ export const createOutlet = async (req, res) => {
 
     const avc = applyAvc(req.body);
     if (avc.error) return res.status(400).json({ message: avc.error });
+
+    const capMin = monthlyCapacityMin != null ? Number(monthlyCapacityMin) : 0;
+    const classified = classifyFromCapacity(capMin);
 
     const outlet = await Outlet.create({
       userId: req.user._id,
@@ -51,6 +66,9 @@ export const createOutlet = async (req, res) => {
       locationVerified: !!locationVerified,
       status: 'pending',
       notes: notes || '',
+      channelType: channelType || classified.channelType,
+      monthlyCapacityBand: monthlyCapacityBand || '',
+      monthlyCapacityMin: capMin,
       avcEnrolled: avc.avcEnrolled,
       avcTier: avc.avcTier,
       avcTarget: avc.avcTarget,
@@ -167,6 +185,21 @@ export const updateOutlet = async (req, res) => {
     if (photo !== undefined) outlet.photo = photo || '';
     if (lat !== undefined && lng !== undefined) {
       outlet.location = { lat: Number(lat), lng: Number(lng) };
+    }
+    if (req.body.monthlyCapacityMin !== undefined || req.body.monthlyCapacityBand !== undefined) {
+      const capMin =
+        req.body.monthlyCapacityMin != null
+          ? Number(req.body.monthlyCapacityMin)
+          : outlet.monthlyCapacityMin || 0;
+      const classified = classifyFromCapacity(capMin);
+      outlet.monthlyCapacityMin = capMin;
+      if (req.body.monthlyCapacityBand !== undefined) {
+        outlet.monthlyCapacityBand = req.body.monthlyCapacityBand || '';
+      }
+      outlet.channelType = classified.channelType;
+    }
+    if (req.body.channelType !== undefined && req.body.monthlyCapacityMin === undefined) {
+      outlet.channelType = req.body.channelType || outlet.channelType;
     }
     if (req.body.avcEnrolled !== undefined) {
       const avc = applyAvc(req.body);
