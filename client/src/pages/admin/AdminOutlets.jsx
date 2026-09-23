@@ -34,6 +34,7 @@ export default function AdminOutlets() {
   const [filterRole, setFilterRole] = useState('all'); // all | omr | merchandiser
   const [filterRep, setFilterRep] = useState('');
   const [filterDist, setFilterDist] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -72,6 +73,7 @@ export default function AdminOutlets() {
   }, [reps, filterRole, filterDist]);
 
   const filteredOutlets = useMemo(() => {
+    const q = searchName.trim().toLowerCase();
     return outlets.filter((o) => {
       const repId = o.assignedTo?._id || o.assignedTo;
       const rep = reps.find((r) => r._id === repId);
@@ -82,9 +84,24 @@ export default function AdminOutlets() {
         const dist = (rep?.distributor || o.distributor || '').toLowerCase();
         if (!dist.includes(filterDist.toLowerCase())) return false;
       }
+      if (q) {
+        const hay = [
+          o.name,
+          o.displayName,
+          o.contactName,
+          o.contactPhone,
+          o.address,
+          o.territory,
+          o.channelType,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [outlets, reps, filterRole, filterRep, filterDist]);
+  }, [outlets, reps, filterRole, filterRep, filterDist, searchName]);
 
   const openEdit = (o) => {
     setEditing({
@@ -156,7 +173,7 @@ export default function AdminOutlets() {
         Outlets & Beats
       </h2>
       <p className={`text-sm mb-4 font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-        Filter by role, rep, and distributor. Edit beat days & AVC.
+        Search by name, or filter by role, rep, and distributor. Edit beat days & AVC.
       </p>
 
       {status && (
@@ -168,6 +185,19 @@ export default function AdminOutlets() {
           {status.msg}
         </div>
       )}
+
+      <div className="mb-3">
+        <label className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+          Search outlet by name
+        </label>
+        <input
+          type="search"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          placeholder="Type shop name, phone, or contact…"
+          className={`mt-1 ${inputCls}`}
+        />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
         <div>
