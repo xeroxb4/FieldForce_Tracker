@@ -932,3 +932,155 @@ export const exportOmrOutletHistoryXlsx = async (req, res) => {
     res.status(500).json({ message: 'Failed to export outlet history' });
   }
 };
+
+
+/** Full OMR outlet universe — master list, not visits/sales */
+const DAY_NAMES = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
+
+export const exportOmrOutletUniverseXlsx = async (req, res) => {
+  try {
+    const omrs = await User.find({ role: 'omr', isActive: { $ne: false } })
+      .select('fullName username distributor territory')
+      .lean();
+    const omrIds = omrs.map((u) => u._id);
+    const omrById = Object.fromEntries(omrs.map((u) => [String(u._id), u]));
+
+    const outlets = await Outlet.find({
+      isActive: { $ne: false },
+      $or: [
+        { assignedTo: { $in: omrIds } },
+        { userId: { $in: omrIds } },
+      ],
+    })
+      .sort({ name: 1 })
+      .lean();
+
+    // Prefer OMR role only: skip if assigned user is merchandiser
+    const merchIds = new Set(
+      (
+        await User.find({ role: 'merchandiser' }).select('_id').lean()
+      ).map((u) => String(u._id))
+    );
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'FieldForce';
+    const ws = wb.addWorksheet('All OMR Outlets');
+    ws.addRow([
+      'OMR',
+      'OMR Username',
+      'Distributor',
+      'Territory (OMR)',
+      'Outlet Name',
+      'Display Name',
+      'Channel',
+      'Capacity Band',
+      'AVC',
+      'AVC Tier',
+      'Contact',
+      'Phone',
+      'Address',
+      'Outlet Territory',
+      'Beat Days',
+      'Status',
+      'GPS Lat',
+      'GPS Lng',
+      'Location Verified',
+      'Outlet ID',
+    ]);
+    ws.getRow(1).font = { bold: true };
+
+    const wsByOmr = wb.addWorksheet('Summary by OMR');
+    wsByOmr.addRow(['OMR', 'Distributor', 'Territory', 'Total Outlets', 'Approved', 'Pending', 'With Beat Days']);
+    wsByOmr.getRow(1).font = { bold: true };
+
+    const counts = {};
+
+    let rows = 0;
+    for (const o of outlets) {
+      const aid = o.assignedTo ? String(o.assignedTo) : '';
+      const uid = o.userId ? String(o.userId) : '';
+      if ((aid && merchIds.has(aid)) || (!aid && uid && merchIds.has(uid))) continue;
+
+      const omr = omrById[aid] || omrById[uid];
+      if (!omr) continue; // unassigned or unknown
+
+      const days = (o.assignedDays || [])
+        .map((d) => DAY_NAMES[d] || d)
+        .join(', ');
+
+      ws.addRow([
+        omr.fullName || '',
+        omr.username || '',
+        omr.distributor || o.distributor || '',
+        omr.territory || '',
+        o.name || '',
+        o.displayName || o.name || '',
+        o.channelType || '',
+        o.monthlyCapacityBand || '',
+        o.avcEnrolled ? 'Yes' : 'No',
+        o.avcTier || '',
+        o.contactName || '',
+        o.contactPhone || '',
+        o.address || '',
+        o.territory || '',
+        days,
+        o.status || '',
+        o.location?.lat ?? '',
+        o.location?.lng ?? '',
+        o.locationVerified ? 'Yes' : 'No',
+        String(o._id),
+      ]);
+      rows++;
+
+      const key = String(omr._id);
+      if (!counts[key]) {
+        counts[key] = {
+          name: omr.fullName,
+          dist: omr.distributor || '',
+          terr: omr.territory || '',
+          total: 0,
+          approved: 0,
+          pending: 0,
+          withBeat: 0,
+        };
+      }
+      counts[key].total += 1;
+      if (o.status === 'approved') counts[key].approved += 1;
+      if (o.status === 'pending') counts[key].pending += 1;
+      if ((o.assignedDays || []).length) counts[key].withBeat += 1;
+    }
+
+    for (const c of Object.values(counts).sort((a, b) => a.name.localeCompare(b.name))) {
+      wsByOmr.addRow([c.name, c.dist, c.terr, c.total, c.approved, c.pending, c.withBeat]);
+    }
+
+    ws.columns.forEach((col) => {
+      col.width = 14;
+    });
+    ws.getColumn(1).width = 22;
+    ws.getColumn(5).width = 28;
+    ws.getColumn(6).width = 32;
+
+    const meta = wb.addWorksheet('Export Info');
+    meta.addRow(['FieldForce — OMR outlet universe']);
+    meta.addRow(['Description', 'Full master list of outlets assigned to OMRs (not visit/sales based)']);
+    meta.addRow(['Generated', new Date().toISOString()]);
+    meta.addRow(['Outlet rows', rows]);
+    meta.addRow(['OMRs', Object.keys(counts).length]);
+
+    const buffer = await wb.xlsx.writeBuffer();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=OMR_Outlet_Universe.xlsx'
+    );
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Outlet universe export error:', error);
+    res.status(500).json({ message: 'Failed to export OMR outlet list' });
+  }
+};

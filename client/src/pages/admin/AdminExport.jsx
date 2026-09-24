@@ -93,6 +93,11 @@ export default function AdminExport() {
           `/admin/export/outlet-history?startDate=${startDate}&endDate=${endDate}`,
           `OMR_Outlet_SKU_History_${startDate}_to_${endDate}.xlsx`
         );
+      } else if (type === 'outletUniverse') {
+        await downloadXlsx(
+          `/admin/export/outlet-universe`,
+          `OMR_Outlet_Universe.xlsx`
+        );
       } else {
         await downloadXlsx(
           `/admin/export/merch?startDate=${startDate}&endDate=${endDate}`,
@@ -190,6 +195,16 @@ export default function AdminExport() {
           {loading === 'outletHistory'
             ? 'Preparing…'
             : 'Download full outlet & SKU history'}
+        </button>
+        <button
+          type="button"
+          disabled={!!loading}
+          onClick={() => run('outletUniverse')}
+          className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm disabled:opacity-60"
+        >
+          {loading === 'outletUniverse'
+            ? 'Preparing…'
+            : 'Download all OMR outlets (full list + beats)'}
         </button>
         <button
           type="button"
