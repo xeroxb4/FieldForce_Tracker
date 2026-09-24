@@ -15,6 +15,7 @@ import {
   updateOutletFull,
   removeOutlet,
   getDashboardStats,
+  getOmrPerformanceRanking,
   deactivateUser,
   getUnvisitedToday,
   getOutletSalesHistory,
@@ -52,6 +53,7 @@ router.use(protect);
 router.use(restrictTo('admin'));
 
 router.get('/dashboard', getDashboardStats);
+router.get('/performance-ranking', getOmrPerformanceRanking);
 router.get('/unvisited-today', getUnvisitedToday);
 router.get('/outlet-sales-history', getOutletSalesHistory);
 router.delete('/visits/:id', deleteVisit);

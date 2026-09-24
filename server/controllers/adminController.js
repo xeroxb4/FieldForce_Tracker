@@ -5,6 +5,7 @@ import WrapUp from '../models/WrapUp.js';
 import MerchVisit from '../models/MerchVisit.js';
 import Outlet from '../models/Outlet.js';
 import Target from '../models/Target.js';
+import Attendance from '../models/Attendance.js';
 
 // @desc    Get all users
 
@@ -880,5 +881,324 @@ export const adminListOmrOutlets = async (req, res) => {
     res.json(outlets);
   } catch (error) {
     res.status(500).json({ message: 'Failed to load outlets' });
+  }
+};
+
+
+/**
+ * Top 3 / bottom 3 OMR performance (month-to-date by default)
+ * Query: ?startDate=&endDate=  (defaults to current month)
+ */
+export const getOmrPerformanceRanking = async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .slice(0, 10);
+    const defaultEnd = now.toISOString().slice(0, 10);
+    const startDate = req.query.startDate || defaultStart;
+    const endDate = req.query.endDate || defaultEnd;
+
+    const trainingIds = await getTrainingUserIds();
+    const omrs = await User.find({
+      role: 'omr',
+      isActive: { $ne: false },
+      isTraining: { $ne: true },
+      username: { $ne: 'trainer' },
+      _id: { $nin: trainingIds },
+      distributor: { $not: /training/i },
+    })
+      .select('fullName username distributor territory')
+      .lean();
+
+    if (!omrs.length) {
+      return res.json({
+        period: { startDate, endDate },
+        top3: [],
+        bottom3: [],
+        teamAvg: null,
+        note: 'No active OMRs found',
+      });
+    }
+
+    const omrIds = omrs.map((u) => u._id);
+    const visitFilter = {
+      userId: { $in: omrIds },
+      date: { $gte: startDate, $lte: endDate },
+    };
+
+    const visits = await Visit.find(visitFilter).lean();
+    const attendances = await Attendance.find({
+      userId: { $in: omrIds },
+      date: { $gte: startDate, $lte: endDate },
+    })
+      .select('userId date')
+      .lean();
+
+    const outlets = await Outlet.find({
+      $or: [{ assignedTo: { $in: omrIds } }, { userId: { $in: omrIds } }],
+      status: 'approved',
+      isActive: { $ne: false },
+    })
+      .select('assignedTo userId assignedDays')
+      .lean();
+
+    const attDays = {};
+    for (const a of attendances) {
+      const k = String(a.userId);
+      attDays[k] = (attDays[k] || 0) + 1;
+    }
+
+    const outletCount = {};
+    for (const o of outlets) {
+      const id = String(o.assignedTo || o.userId);
+      outletCount[id] = (outletCount[id] || 0) + 1;
+    }
+
+    const byUser = {};
+    for (const u of omrs) {
+      byUser[String(u._id)] = {
+        omrId: u._id,
+        name: u.fullName,
+        username: u.username,
+        distributor: u.distributor || '',
+        territory: u.territory || '',
+        sales: 0,
+        orders: 0,
+        visits: 0,
+        productive: 0,
+        noOrder: 0,
+        lines: 0,
+        uniqueShops: new Set(),
+        attendanceDays: attDays[String(u._id)] || 0,
+        outletsAssigned: outletCount[String(u._id)] || 0,
+      };
+    }
+
+    for (const v of visits) {
+      const id = String(v.userId);
+      if (!byUser[id]) continue;
+      const row = byUser[id];
+      row.visits += 1;
+      if (v.shopName) row.uniqueShops.add(String(v.shopName).toLowerCase());
+      const productive =
+        v.outcome === 'Order Placed' &&
+        ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
+      if (productive) {
+        row.productive += 1;
+        row.orders += 1;
+        row.sales += Number(v.amount) || 0;
+        if (Array.isArray(v.lineItems) && v.lineItems.length) {
+          row.lines += v.lineItems.length;
+        } else {
+          row.lines += 1;
+        }
+      } else if (v.outcome === 'No Order' || v.outcome === 'Follow Up') {
+        row.noOrder += 1;
+      }
+    }
+
+    const ranked = Object.values(byUser).map((r) => {
+      const hitRate = r.visits > 0 ? (r.productive / r.visits) * 100 : 0;
+      const lppc = r.productive > 0 ? r.lines / r.productive : 0;
+      const avgOrder = r.orders > 0 ? r.sales / r.orders : 0;
+      const shopsServed = r.uniqueShops.size;
+      return {
+        omrId: r.omrId,
+        name: r.name,
+        username: r.username,
+        distributor: r.distributor,
+        territory: r.territory,
+        sales: Math.round(r.sales * 100) / 100,
+        orders: r.orders,
+        visits: r.visits,
+        productiveCalls: r.productive,
+        noOrderVisits: r.noOrder,
+        hitRatePct: Math.round(hitRate * 10) / 10,
+        lppc: Math.round(lppc * 100) / 100,
+        avgOrderValue: Math.round(avgOrder * 100) / 100,
+        shopsServed,
+        attendanceDays: r.attendanceDays,
+        outletsAssigned: r.outletsAssigned,
+        salesPerVisit: r.visits > 0 ? Math.round((r.sales / r.visits) * 100) / 100 : 0,
+      };
+    });
+
+    // Rank by sales; if tie, productive calls then hit rate
+    ranked.sort((a, b) => {
+      if (b.sales !== a.sales) return b.sales - a.sales;
+      if (b.productiveCalls !== a.productiveCalls) return b.productiveCalls - a.productiveCalls;
+      return b.hitRatePct - a.hitRatePct;
+    });
+
+    const withActivity = ranked.filter((r) => r.visits > 0 || r.sales > 0);
+    const pool = withActivity.length >= 3 ? withActivity : ranked;
+
+    const teamSales = pool.reduce((s, r) => s + r.sales, 0);
+    const teamVisits = pool.reduce((s, r) => s + r.visits, 0);
+    const teamProd = pool.reduce((s, r) => s + r.productiveCalls, 0);
+    const n = pool.length || 1;
+    const teamAvg = {
+      sales: Math.round((teamSales / n) * 100) / 100,
+      visits: Math.round((teamVisits / n) * 10) / 10,
+      productiveCalls: Math.round((teamProd / n) * 10) / 10,
+      hitRatePct:
+        teamVisits > 0 ? Math.round((teamProd / teamVisits) * 1000) / 10 : 0,
+      omrCount: ranked.length,
+      activeOmrCount: withActivity.length,
+    };
+
+    function explainTop(r) {
+      const reasons = [];
+      if (r.sales >= teamAvg.sales * 1.25) {
+        reasons.push(
+          `Sales GHS ${r.sales.toLocaleString()} are well above team average GHS ${teamAvg.sales.toLocaleString()} (${Math.round((r.sales / (teamAvg.sales || 1)) * 100)}% of average).`
+        );
+      } else if (r.sales > teamAvg.sales) {
+        reasons.push(
+          `Sales GHS ${r.sales.toLocaleString()} exceed team average GHS ${teamAvg.sales.toLocaleString()}.`
+        );
+      } else {
+        reasons.push(`Period sales: GHS ${r.sales.toLocaleString()} (${r.orders} orders).`);
+      }
+      if (r.hitRatePct >= teamAvg.hitRatePct + 10) {
+        reasons.push(
+          `Strong conversion: hit rate ${r.hitRatePct}% vs team ${teamAvg.hitRatePct}% (productive calls ÷ visits).`
+        );
+      } else if (r.hitRatePct >= 50) {
+        reasons.push(`Solid hit rate of ${r.hitRatePct}% (${r.productiveCalls} productive of ${r.visits} visits).`);
+      }
+      if (r.avgOrderValue >= teamAvg.sales / Math.max(teamAvg.productiveCalls, 1) * 0.9 && r.orders > 0) {
+        reasons.push(`Average order value GHS ${r.avgOrderValue.toLocaleString()} supports higher revenue per productive call.`);
+      }
+      if (r.lppc >= 2) {
+        reasons.push(`Good basket depth: LPPC ${r.lppc} (lines per productive call).`);
+      }
+      if (r.shopsServed >= 8) {
+        reasons.push(`Broad coverage: ${r.shopsServed} different outlets served in the period.`);
+      }
+      if (r.attendanceDays >= 5) {
+        reasons.push(`Consistent presence: checked in ${r.attendanceDays} day(s) in the period.`);
+      }
+      if (r.outletsAssigned > 0 && r.shopsServed > 0) {
+        const pct = Math.round((r.shopsServed / r.outletsAssigned) * 100);
+        if (pct >= 40) {
+          reasons.push(
+            `Working a meaningful share of the book: ${r.shopsServed} of ${r.outletsAssigned} assigned outlets touched (${pct}%).`
+          );
+        }
+      }
+      if (!reasons.length) {
+        reasons.push('Ranked high on combined sales volume for this period.');
+      }
+      return reasons;
+    }
+
+    function explainBottom(r) {
+      const reasons = [];
+      if (r.visits === 0 && r.sales === 0) {
+        reasons.push('No visits or sales recorded in this period — activity gap is the main driver.');
+        if (r.attendanceDays === 0) {
+          reasons.push('No attendance check-ins in the period.');
+        }
+        if (r.outletsAssigned > 0) {
+          reasons.push(
+            `${r.outletsAssigned} outlets are assigned but none were logged as visited in this window.`
+          );
+        }
+        return reasons;
+      }
+      if (r.sales < teamAvg.sales * 0.5) {
+        reasons.push(
+          `Sales GHS ${r.sales.toLocaleString()} are far below team average GHS ${teamAvg.sales.toLocaleString()}.`
+        );
+      } else if (r.sales < teamAvg.sales) {
+        reasons.push(
+          `Sales GHS ${r.sales.toLocaleString()} are below team average GHS ${teamAvg.sales.toLocaleString()}.`
+        );
+      }
+      if (r.hitRatePct + 10 < teamAvg.hitRatePct && r.visits > 0) {
+        reasons.push(
+          `Weaker conversion: hit rate ${r.hitRatePct}% vs team ${teamAvg.hitRatePct}% — many visits without orders.`
+        );
+      }
+      if (r.noOrderVisits >= r.productiveCalls && r.visits > 0) {
+        reasons.push(
+          `High no-order load: ${r.noOrderVisits} no-order/follow-up vs ${r.productiveCalls} productive calls.`
+        );
+      }
+      if (r.avgOrderValue > 0 && r.avgOrderValue < 500 && r.orders > 0) {
+        reasons.push(`Lower drop size: average order GHS ${r.avgOrderValue.toLocaleString()}.`);
+      }
+      if (r.lppc > 0 && r.lppc < 1.5) {
+        reasons.push(`Shallow baskets: LPPC ${r.lppc} — few lines per productive call.`);
+      }
+      if (r.shopsServed > 0 && r.outletsAssigned > 0) {
+        const pct = Math.round((r.shopsServed / r.outletsAssigned) * 100);
+        if (pct < 25) {
+          reasons.push(
+            `Limited book coverage: only ${r.shopsServed} of ${r.outletsAssigned} assigned outlets served (${pct}%).`
+          );
+        }
+      }
+      if (r.attendanceDays <= 2 && r.visits > 0) {
+        reasons.push(`Few check-in days (${r.attendanceDays}) may indicate irregular field presence.`);
+      }
+      if (!reasons.length) {
+        reasons.push('Lower relative sales volume versus peers in this period.');
+      }
+      return reasons;
+    }
+
+    const top3 = pool.slice(0, 3).map((r, i) => ({
+      rank: i + 1,
+      ...r,
+      uniqueShops: undefined,
+      analysis: explainTop(r),
+    }));
+
+    // Bottom 3 among those with least sales (prefer active pool, then full list)
+    const bottomPool = [...pool].sort((a, b) => {
+      if (a.sales !== b.sales) return a.sales - b.sales;
+      if (a.visits !== b.visits) return a.visits - b.visits;
+      return a.hitRatePct - b.hitRatePct;
+    });
+    // Avoid duplicating names already in top3 when team is small
+    const topNames = new Set(top3.map((t) => t.name));
+    const bottom3 = [];
+    for (const r of bottomPool) {
+      if (topNames.has(r.name) && pool.length <= 3) continue;
+      if (topNames.has(r.name) && pool.length > 3) continue;
+      bottom3.push({
+        rank: bottom3.length + 1,
+        ...r,
+        analysis: explainBottom(r),
+      });
+      if (bottom3.length >= 3) break;
+    }
+    // If team very small, still show bottom from sorted list
+    if (bottom3.length < 3) {
+      for (const r of bottomPool) {
+        if (bottom3.find((b) => b.name === r.name)) continue;
+        bottom3.push({
+          rank: bottom3.length + 1,
+          ...r,
+          analysis: explainBottom(r),
+        });
+        if (bottom3.length >= 3) break;
+      }
+    }
+
+    res.json({
+      period: { startDate, endDate },
+      rankingMetric: 'Month/period sales (GHS), then productive calls, then hit rate',
+      teamAvg,
+      top3,
+      bottom3,
+      allRanked: ranked.map((r, i) => ({ rank: i + 1, name: r.name, sales: r.sales, visits: r.visits, hitRatePct: r.hitRatePct })),
+    });
+  } catch (error) {
+    console.error('OMR performance ranking error:', error);
+    res.status(500).json({ message: 'Failed to load OMR performance ranking' });
   }
 };
