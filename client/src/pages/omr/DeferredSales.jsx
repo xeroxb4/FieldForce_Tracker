@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+
+function flattenProducts(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.products)) return data.products;
+  // Grouped: { Lotion: [...], 'Roll-on': [...], ... }
+  return Object.values(data)
+    .filter((v) => Array.isArray(v))
+    .flat();
+}
 
 export default function DeferredSales() {
   const { dark } = useTheme();
@@ -10,11 +20,25 @@ export default function DeferredSales() {
   const [active, setActive] = useState(null);
   const [lines, setLines] = useState([]);
   const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('');
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState(1);
   const [unit, setUnit] = useState('pc');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+
+  const categories = useMemo(() => {
+    const set = new Set();
+    products.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return [...set].sort();
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (!category) return products;
+    return products.filter((p) => p.category === category);
+  }, [products, category]);
 
   const load = () => {
     setLoading(true);
@@ -27,16 +51,23 @@ export default function DeferredSales() {
 
   useEffect(() => {
     load();
-    api.get('/omr/products').then((r) => {
-      const d = r.data;
-      setProducts(Array.isArray(d) ? d : d?.products || []);
-    }).catch(() => {});
+    api
+      .get('/omr/products')
+      .then((r) => setProducts(flattenProducts(r.data)))
+      .catch(() => setProducts([]));
   }, []);
 
   const addLine = () => {
     const prod = products.find((p) => String(p._id) === String(productId));
-    if (!prod) return;
+    if (!prod) {
+      setMsg('Select a product first');
+      return;
+    }
     const q = Number(qty) || 0;
+    if (q < 1) {
+      setMsg('Enter quantity');
+      return;
+    }
     let up = Number(prod.pricePc || prod.price || 0);
     if (unit === 'pack') up = Number(prod.pricePack || up);
     if (unit === 'carton') up = Number(prod.priceCarton || up);
@@ -45,12 +76,14 @@ export default function DeferredSales() {
       {
         productName: prod.name || prod.productName,
         skuId: prod._id,
+        category: prod.category || '',
         unit,
         quantity: q,
         unitPrice: up,
         lineTotal: Math.round(up * q * 100) / 100,
       },
     ]);
+    setMsg('');
   };
 
   const save = async (row) => {
@@ -88,13 +121,24 @@ export default function DeferredSales() {
       <div>
         <h1 className={`text-lg font-extrabold ${label}`}>Deferred sales</h1>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Extra coverage done off-beat — enter the sale on the outlet&apos;s beat day (KPIs count today).
+          Extra coverage done off-beat — enter the sale on the outlet&apos;s beat day (KPIs count
+          today).
         </p>
       </div>
-      {msg && <p className="text-sm text-emerald-500 font-medium">{msg}</p>}
+      {msg && (
+        <p
+          className={`text-sm font-medium ${
+            msg.includes('saved') || msg.includes('Sale') ? 'text-emerald-500' : 'text-amber-500'
+          }`}
+        >
+          {msg}
+        </p>
+      )}
       {loading && <p className="text-sm text-slate-500">Loading…</p>}
       {!loading && !list.length && (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>No pending deferred sales.</p>
+        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          No pending deferred sales.
+        </p>
       )}
       {list.map((row) => (
         <div key={row._id} className={`rounded-2xl border p-3 ${card}`}>
@@ -104,9 +148,30 @@ export default function DeferredSales() {
           </div>
           {active === row._id ? (
             <div className="mt-2 space-y-2">
-              <select value={productId} onChange={(e) => setProductId(e.target.value)} className={input}>
-                <option value="">Product…</option>
-                {products.map((p) => (
+              <select
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setProductId('');
+                }}
+                className={input}
+              >
+                <option value="">All categories</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+                className={input}
+              >
+                <option value="">
+                  {products.length ? 'Select product…' : 'No products loaded'}
+                </option>
+                {filteredProducts.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name || p.productName}
                   </option>
@@ -118,23 +183,33 @@ export default function DeferredSales() {
                   <option value="pack">Pack</option>
                   <option value="carton">Carton</option>
                 </select>
-                <input type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} className={input} />
-                <button type="button" onClick={addLine} className="rounded-xl bg-[#2596be]/20 text-[#2596be] font-bold text-sm">
+                <input
+                  type="number"
+                  min={1}
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                  className={input}
+                />
+                <button
+                  type="button"
+                  onClick={addLine}
+                  className="rounded-xl bg-[#117ea6] text-white font-bold text-sm"
+                >
                   Add
                 </button>
               </div>
               {lines.map((l, i) => (
-                <div key={i} className="text-xs flex justify-between">
+                <div key={i} className="text-xs flex justify-between gap-2">
                   <span>
-                    {l.productName} × {l.quantity}
+                    {l.productName} × {l.quantity} ({l.unit})
                   </span>
-                  <span>GHS {l.lineTotal}</span>
+                  <span className="font-bold">GHS {l.lineTotal}</span>
                 </div>
               ))}
               {!lines.length && (
                 <input
                   type="number"
-                  placeholder="Total GHS"
+                  placeholder="Or enter total GHS only"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className={input}
@@ -144,7 +219,7 @@ export default function DeferredSales() {
                 type="button"
                 disabled={saving}
                 onClick={() => save(row)}
-                className="w-full py-2.5 rounded-xl bg-[#2596be] text-white font-bold text-sm"
+                className="w-full py-2.5 rounded-xl bg-[#2596be] text-white font-bold text-sm disabled:opacity-60"
               >
                 {saving ? 'Saving…' : 'Save sale for today (KPIs)'}
               </button>
@@ -156,6 +231,9 @@ export default function DeferredSales() {
                 setActive(row._id);
                 setLines([]);
                 setAmount('');
+                setProductId('');
+                setCategory('');
+                setMsg('');
               }}
               className="mt-2 w-full py-2 rounded-xl bg-amber-500/20 text-amber-600 font-bold text-xs"
             >
