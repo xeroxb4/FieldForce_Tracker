@@ -3,17 +3,18 @@
 export function LineChart({
   series = [],
   labels = [],
-  height = 260,
+  height = 240,
   dark,
   normalize = false,
-  maxLabels = 7,
+  maxLabels = 8,
 }) {
-  const w = 400;
+  // Wide viewBox so the plot uses the full card width (not a small centered strip)
+  const w = 640;
   const h = height;
-  const padL = 48;
-  const padR = 16;
-  const padT = 20;
-  const padB = 44;
+  const padL = 44;
+  const padR = 10;
+  const padT = 16;
+  const padB = 36;
   const colors = ['#2596be', '#f43f5e', '#10b981', '#f59e0b', '#a78bfa'];
 
   const prepared = series.map((s) => {
@@ -44,13 +45,18 @@ export function LineChart({
   };
 
   return (
-    <div className="w-full max-w-full overflow-hidden">
+    <div className="w-full">
+      {/*
+        width 100% + no max-height: avoids letterboxing that left huge empty side margins
+      */}
       <svg
         viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-auto max-h-[280px]"
-        preserveAspectRatio="xMidYMid meet"
+        width="100%"
+        height={height}
+        className="block w-full"
+        preserveAspectRatio="none"
+        style={{ minHeight: height }}
       >
-        {/* grid + Y labels */}
         {yTicks.map((t) => {
           const y = yAt(t * max);
           return (
@@ -67,7 +73,7 @@ export function LineChart({
                 x={padL - 6}
                 y={y + 3}
                 textAnchor="end"
-                fontSize="9"
+                fontSize="11"
                 fill={dark ? '#94a3b8' : '#64748b'}
                 fontWeight="600"
               >
@@ -77,15 +83,14 @@ export function LineChart({
           );
         })}
 
-        {/* Y axis title */}
         <text
-          x={12}
+          x={14}
           y={h / 2}
           textAnchor="middle"
-          fontSize="9"
+          fontSize="10"
           fill={dark ? '#64748b' : '#94a3b8'}
           fontWeight="700"
-          transform={`rotate(-90 12 ${h / 2})`}
+          transform={`rotate(-90 14 ${h / 2})`}
         >
           {normalize ? 'Scaled 0–100' : 'Value'}
         </text>
@@ -95,13 +100,13 @@ export function LineChart({
             <polyline
               fill="none"
               stroke={colors[si % colors.length]}
-              strokeWidth="2.2"
+              strokeWidth="2.5"
               strokeLinejoin="round"
               strokeLinecap="round"
               points={points(s.drawn)}
             />
             {s.drawn.map((v, i) => {
-              if (labels.length > 12 && i % labelStep !== 0 && i !== s.drawn.length - 1) {
+              if (labels.length > 14 && i % labelStep !== 0 && i !== s.drawn.length - 1) {
                 return null;
               }
               return (
@@ -109,7 +114,7 @@ export function LineChart({
                   key={i}
                   cx={xAt(i)}
                   cy={yAt(v)}
-                  r="2.5"
+                  r="3"
                   fill={colors[si % colors.length]}
                 />
               );
@@ -126,9 +131,9 @@ export function LineChart({
             <text
               key={i}
               x={xAt(i)}
-              y={h - 14}
+              y={h - 12}
               textAnchor="middle"
-              fontSize="8"
+              fontSize="10"
               fill={dark ? '#94a3b8' : '#64748b'}
               fontWeight="600"
             >
@@ -138,7 +143,7 @@ export function LineChart({
         })}
       </svg>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 px-1">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
         {series.map((s, i) => (
           <div key={i} className="flex items-center gap-1.5 text-[11px] font-semibold">
             <span
@@ -151,8 +156,7 @@ export function LineChart({
       </div>
       {normalize && (
         <p className={`text-[10px] mt-1.5 leading-snug ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-          Y-axis is scaled 0–100 per line (each metric vs its own max) so sales and hit rate are
-          readable together. Excel download has the real numbers.
+          Y-axis scaled 0–100 per line (each metric vs its own max). Excel download has real values.
         </p>
       )}
     </div>
