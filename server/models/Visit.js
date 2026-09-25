@@ -47,6 +47,7 @@ const visitSchema = new mongoose.Schema(
         'Not Interested',
         'Follow Up',
         'Other',
+        'Extra Coverage',
       ],
       default: 'No Order',
     },

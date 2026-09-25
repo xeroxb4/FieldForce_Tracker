@@ -304,7 +304,13 @@ export const createVisit = async (req, res) => {
     res.status(201).json(visit);
   } catch (error) {
     console.error('Create visit error:', error);
-    res.status(500).json({ message: 'Failed to log visit' });
+    const msg =
+      error?.errors
+        ? Object.values(error.errors)
+            .map((e) => e.message)
+            .join('; ')
+        : error?.message || 'Failed to log visit';
+    res.status(500).json({ message: msg });
   }
 };
 
