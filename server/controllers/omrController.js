@@ -265,9 +265,19 @@ export const createVisit = async (req, res) => {
     }
 
     const finalOutcome = isExtra ? 'Extra Coverage' : (outcome || 'No Order');
+    // Extra coverage: visit itself carries 0 sales for that day; order lines held for beat day
+    const hasDeferredOrder = isExtra && (items.length > 0 || totalAmount > 0);
     const finalAmount = isExtra ? 0 : totalAmount;
     const finalItems = isExtra ? [] : items;
     const finalProducts = isExtra ? '' : productsStr;
+
+    let scheduledKpiDate = '';
+    let deferredStatus = 'none';
+    if (isExtra) {
+      deferredStatus = hasDeferredOrder ? 'scheduled' : 'pending_capture';
+      const days = outletDoc?.assignedDays || [];
+      scheduledKpiDate = nextBeatDate(days, visitDate);
+    }
 
     const visit = await Visit.create({
       userId: req.user._id,
@@ -280,25 +290,35 @@ export const createVisit = async (req, res) => {
       territory: req.user.territory,
       distributor: req.user.distributor,
       outcome: finalOutcome,
-      noOrderReason: finalOutcome === 'No Order' ? noOrderReason || '' : (isExtra ? 'Off-beat extra coverage — sale deferred to beat day' : ''),
+      noOrderReason:
+        finalOutcome === 'No Order'
+          ? noOrderReason || ''
+          : isExtra
+          ? 'Off-beat extra coverage — sale scheduled for beat day'
+          : '',
       products: finalProducts,
       lineItems: finalItems,
       amount: finalAmount,
       paymentType: !isExtra && outcome === 'Order Placed' ? paymentType || 'cash' : '',
       creditDurationWeeks:
-        outcome === 'Order Placed' && paymentType === 'credit'
+        !isExtra && outcome === 'Order Placed' && paymentType === 'credit'
           ? Number(creditDurationWeeks)
           : null,
-      creditId,
+      creditId: isExtra ? undefined : creditId,
       notes: notes || '',
       location: location || undefined,
       outletLocation: outletLocation || undefined,
       distanceMeters: distM != null ? Number(distM) : undefined,
       syncedFromOffline: !!syncedFromOffline,
       extraCoverage: isExtra,
-      deferredSalePending: isExtra ? true : !!deferredSalePending,
+      deferredSalePending: isExtra,
       physicalSaleDate: isExtra ? visitDate : (physicalSaleDate || ''),
-      outcome: isExtra ? 'Extra Coverage' : outcome,
+      scheduledKpiDate: isExtra ? scheduledKpiDate : '',
+      deferredStatus: isExtra ? deferredStatus : 'none',
+      deferredLineItems: isExtra && hasDeferredOrder ? items : [],
+      deferredAmount: isExtra && hasDeferredOrder ? totalAmount : 0,
+      deferredProducts: isExtra && hasDeferredOrder ? productsStr : '',
+      deferredPaymentType: isExtra && hasDeferredOrder ? paymentType || 'cash' : '',
     });
 
     res.status(201).json(visit);
@@ -316,6 +336,7 @@ export const createVisit = async (req, res) => {
 
 export const getTodayVisits = async (req, res) => {
   try {
+    await processScheduledDeferredSales(req.user._id);
     const today = req.query.date || new Date().toISOString().slice(0, 10);
     const visits = await Visit.find({ userId: req.user._id, date: today }).sort({ createdAt: 1 });
     res.json(visits);
@@ -460,25 +481,162 @@ export const getMonthSummary = async (req, res) => {
 };
 
 
+
+/** Next calendar date (YYYY-MM-DD) on or after fromDate whose weekday is in assignedDays (1=Mon..7=Sun) */
+function nextBeatDate(assignedDays, fromDateStr) {
+  const days = (assignedDays || []).map(Number).filter((d) => d >= 1 && d <= 7);
+  if (!days.length) {
+    // no beat days → next calendar day
+    const d = new Date(fromDateStr + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+  const start = new Date(fromDateStr + 'T12:00:00');
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const js = d.getDay(); // 0 Sun
+    const beat = js === 0 ? 7 : js;
+    if (days.includes(beat)) return d.toISOString().slice(0, 10);
+  }
+  const d = new Date(start);
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function todayBeatNum() {
+  const js = new Date(todayStr() + 'T12:00:00').getDay();
+  return js === 0 ? 7 : js;
+}
+
+/**
+ * Auto-post scheduled deferred sales whose scheduledKpiDate <= today
+ * (and today is that outlet beat day when assignedDays set).
+ */
+async function processScheduledDeferredSales(userId) {
+  const today = todayStr();
+  const filter = {
+    deferredStatus: 'scheduled',
+    deferredSalePending: true,
+    scheduledKpiDate: { $lte: today },
+  };
+  if (userId) filter.userId = userId;
+
+  const pending = await Visit.find(filter).limit(100);
+  const posted = [];
+
+  for (const coverage of pending) {
+    try {
+      let outlet = coverage.outletId ? await Outlet.findById(coverage.outletId) : null;
+      const days = (outlet?.assignedDays || []).map(Number);
+      const beat = todayBeatNum();
+      // Only post on a valid beat day for the outlet (or any day if no days set)
+      if (days.length && !days.includes(beat)) continue;
+      // Prefer exact scheduled day; allow if scheduled date passed and today is a beat day
+      if (coverage.scheduledKpiDate && coverage.scheduledKpiDate > today) continue;
+
+      const items = coverage.deferredLineItems || [];
+      const totalAmount =
+        Number(coverage.deferredAmount) ||
+        items.reduce((s, i) => s + (Number(i.lineTotal) || 0), 0);
+      if (totalAmount <= 0 && !items.length) continue;
+
+      const finalShop =
+        outlet?.displayName || outlet?.name || coverage.shopName;
+
+      const sale = await Visit.create({
+        userId: coverage.userId,
+        repName: coverage.repName,
+        date: today,
+        shopName: finalShop,
+        outletId: coverage.outletId || undefined,
+        contactName: coverage.contactName || '',
+        contactPhone: coverage.contactPhone || '',
+        territory: coverage.territory || '',
+        distributor: coverage.distributor || '',
+        outcome: 'Order Placed',
+        products: coverage.deferredProducts || '',
+        lineItems: items,
+        amount: totalAmount,
+        paymentType: coverage.deferredPaymentType || 'cash',
+        notes: `Auto deferred sale (physical ${coverage.physicalSaleDate || coverage.date}; KPI ${today})`,
+        extraCoverage: false,
+        deferredSalePending: false,
+        deferredStatus: 'posted',
+        physicalSaleDate: coverage.physicalSaleDate || coverage.date || '',
+        scheduledKpiDate: coverage.scheduledKpiDate || today,
+      });
+
+      coverage.deferredSalePending = false;
+      coverage.deferredStatus = 'posted';
+      coverage.notes =
+        (coverage.notes || '') + ` [Auto-posted KPI sale ${today} id=${sale._id}]`;
+      await coverage.save();
+      posted.push(sale);
+    } catch (e) {
+      console.error('processScheduledDeferredSales item error', e.message);
+    }
+  }
+  return posted;
+}
+
+
 /** List outlets with deferred sale pending (physical sale off-beat, enter KPI sale today) */
 export const getDeferredSales = async (req, res) => {
   try {
+    await processScheduledDeferredSales(req.user._id);
+
     const pending = await Visit.find({
       userId: req.user._id,
       deferredSalePending: true,
       extraCoverage: true,
+      deferredStatus: { $in: ['pending_capture', 'scheduled'] },
     })
       .sort({ date: -1 })
-      .limit(50);
-    res.json(pending);
+      .limit(50)
+      .lean();
+
+    const DAY = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
+    const today = todayStr();
+    const todayBeat = todayBeatNum();
+
+    const outletIds = [...new Set(pending.map((v) => v.outletId).filter(Boolean))];
+    const outlets = await Outlet.find({ _id: { $in: outletIds } })
+      .select('name displayName assignedDays')
+      .lean();
+    const omap = Object.fromEntries(outlets.map((o) => [String(o._id), o]));
+
+    const rows = pending.map((v) => {
+      const o = v.outletId ? omap[String(v.outletId)] : null;
+      const days = (o?.assignedDays || []).map(Number);
+      const isBeatDay = !days.length || days.includes(Number(todayBeat));
+      return {
+        ...v,
+        assignedDays: days,
+        beatDayLabels: days.map((d) => DAY[d] || d).join(', ') || 'Any day',
+        isBeatDayToday: isBeatDay,
+        todayBeatLabel: DAY[todayBeat] || String(todayBeat),
+        scheduledKpiDate: v.scheduledKpiDate || '',
+        deferredStatus: v.deferredStatus || 'pending_capture',
+        heldAmount: v.deferredAmount || 0,
+        heldLines: (v.deferredLineItems || []).length,
+      };
+    });
+
+    res.json(rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to load deferred sales' });
   }
 };
 
 /**
- * On the outlet's real beat day, enter the sale that was done physically off-beat.
- * KPI date = today (beat day). Marks deferred visit complete.
+ * Capture or update the held order on an extra-coverage visit (any day).
+ * KPI auto-posts on scheduledKpiDate / beat day — OMR does not need a second Start Visit.
  */
 export const completeDeferredSale = async (req, res) => {
   try {
@@ -490,28 +648,19 @@ export const completeDeferredSale = async (req, res) => {
       amount,
       products,
       paymentType = 'cash',
-      creditDurationWeeks,
       notes,
     } = req.body;
 
-    const today = new Date().toISOString().slice(0, 10);
-    const jsDay = new Date(today + 'T12:00:00').getDay();
-    const beatDay = jsDay === 0 ? 7 : jsDay;
-
-    let outlet = outletId ? await Outlet.findById(outletId) : null;
     let coverage = coverageVisitId ? await Visit.findById(coverageVisitId) : null;
-    if (coverage && !outlet && coverage.outletId) {
-      outlet = await Outlet.findById(coverage.outletId);
+    if (!coverage || String(coverage.userId) !== String(req.user._id)) {
+      return res.status(404).json({ message: 'Coverage visit not found' });
     }
 
-    if (outlet?.assignedDays?.length) {
-      if (!outlet.assignedDays.map(Number).includes(Number(beatDay))) {
-        return res.status(400).json({
-          message: 'You can only enter this deferred sale on the outlet\'s beat day (for correct KPIs).',
-          code: 'NOT_BEAT_DAY',
-        });
-      }
-    }
+    let outlet = outletId
+      ? await Outlet.findById(outletId)
+      : coverage.outletId
+      ? await Outlet.findById(coverage.outletId)
+      : null;
 
     let items = [];
     let totalAmount = Number(amount) || 0;
@@ -535,39 +684,39 @@ export const completeDeferredSale = async (req, res) => {
       return res.status(400).json({ message: 'Enter amount or product lines' });
     }
 
-    const finalShop = outlet?.displayName || outlet?.name || shopName || coverage?.shopName;
-    const sale = await Visit.create({
-      userId: req.user._id,
-      repName: req.user.fullName,
-      date: today,
-      shopName: finalShop,
-      outletId: outlet?._id || coverage?.outletId,
-      contactName: coverage?.contactName || outlet?.contactName || '',
-      contactPhone: coverage?.contactPhone || outlet?.contactPhone || '',
-      territory: req.user.territory || '',
-      distributor: req.user.distributor || '',
-      outcome: 'Order Placed',
-      products: productsStr,
-      lineItems: items,
-      amount: totalAmount,
-      paymentType,
-      notes:
-        (notes || '') +
-        ` [Deferred sale: physical service ${coverage?.physicalSaleDate || coverage?.date || 'earlier'}; KPI date ${today}]`,
-      extraCoverage: false,
-      deferredSalePending: false,
-      physicalSaleDate: coverage?.physicalSaleDate || coverage?.date || '',
+    const visitDate = coverage.date || todayStr();
+    const scheduledKpiDate =
+      coverage.scheduledKpiDate || nextBeatDate(outlet?.assignedDays || [], visitDate);
+
+    coverage.deferredLineItems = items;
+    coverage.deferredAmount = totalAmount;
+    coverage.deferredProducts = productsStr;
+    coverage.deferredPaymentType = paymentType || 'cash';
+    coverage.deferredStatus = 'scheduled';
+    coverage.deferredSalePending = true;
+    coverage.scheduledKpiDate = scheduledKpiDate;
+    coverage.physicalSaleDate = coverage.physicalSaleDate || coverage.date;
+    if (notes) coverage.notes = (coverage.notes || '') + ' ' + notes;
+    await coverage.save();
+
+    // If today is already the KPI day, post immediately
+    const posted = await processScheduledDeferredSales(req.user._id);
+    const justPosted = posted.find(
+      (s) => String(s.outletId) === String(coverage.outletId) && s.date === todayStr()
+    );
+
+    res.status(201).json({
+      message: justPosted
+        ? 'Sale posted for KPIs today (beat day).'
+        : `Order saved in the cloud. KPIs will count on ${scheduledKpiDate}. No second Start Visit needed that day.`,
+      scheduledKpiDate,
+      posted: !!justPosted,
+      coverage,
+      sale: justPosted || null,
     });
-
-    if (coverage) {
-      coverage.deferredSalePending = false;
-      coverage.notes = (coverage.notes || '') + ` [Sale entered on ${today}]`;
-      await coverage.save();
-    }
-
-    res.status(201).json(sale);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Failed to complete deferred sale' });
+    res.status(500).json({ message: error.message || 'Failed to complete deferred sale' });
   }
 };
+

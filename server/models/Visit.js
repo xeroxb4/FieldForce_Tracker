@@ -38,6 +38,18 @@ const visitSchema = new mongoose.Schema(
     /** Physical sale done off-beat; KPI sale not yet entered on beat day */
     deferredSalePending: { type: Boolean, default: false, index: true },
     physicalSaleDate: { type: String, default: '' },
+    /** When set, order lines are held until this date then auto-posted for KPIs */
+    scheduledKpiDate: { type: String, default: '', index: true },
+    deferredStatus: {
+      type: String,
+      enum: ['none', 'pending_capture', 'scheduled', 'posted'],
+      default: 'none',
+      index: true,
+    },
+    deferredLineItems: [lineItemSchema],
+    deferredAmount: { type: Number, default: 0 },
+    deferredProducts: { type: String, default: '' },
+    deferredPaymentType: { type: String, enum: ['cash', 'credit', ''], default: '' },
     outcome: {
       type: String,
       enum: [

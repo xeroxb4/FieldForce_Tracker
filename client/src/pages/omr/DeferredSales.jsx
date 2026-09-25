@@ -6,7 +6,6 @@ function flattenProducts(data) {
   if (!data) return [];
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.products)) return data.products;
-  // Grouped: { Lotion: [...], 'Roll-on': [...], ... }
   return Object.values(data)
     .filter((v) => Array.isArray(v))
     .flat();
@@ -28,10 +27,7 @@ export default function DeferredSales() {
   const [msg, setMsg] = useState('');
 
   const categories = useMemo(() => {
-    const set = new Set();
-    products.forEach((p) => {
-      if (p.category) set.add(p.category);
-    });
+    const set = new Set(products.map((p) => p.category).filter(Boolean));
     return [...set].sort();
   }, [products]);
 
@@ -90,7 +86,7 @@ export default function DeferredSales() {
     setSaving(true);
     setMsg('');
     try {
-      await api.post('/omr/deferred-sales/complete', {
+      const { data } = await api.post('/omr/deferred-sales/complete', {
         coverageVisitId: row._id,
         outletId: row.outletId,
         shopName: row.shopName,
@@ -98,7 +94,7 @@ export default function DeferredSales() {
         amount: lines.length ? undefined : Number(amount) || 0,
         paymentType: 'cash',
       });
-      setMsg('Sale saved on today (beat day) for KPIs.');
+      setMsg(data?.message || 'Saved.');
       setActive(null);
       setLines([]);
       setAmount('');
@@ -121,14 +117,27 @@ export default function DeferredSales() {
       <div>
         <h1 className={`text-lg font-extrabold ${label}`}>Deferred sales</h1>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Extra coverage done off-beat — enter the sale on the outlet&apos;s beat day (KPIs count
-          today).
+          Enter the order once (even off-beat). Cloud holds it and posts KPIs on the outlet beat
+          day — no second Start Visit required that day.
         </p>
       </div>
+
+      <div
+        className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${
+          dark ? 'border-slate-600 bg-slate-800 text-slate-300' : 'border-sky-200 bg-sky-50 text-slate-800'
+        }`}
+      >
+        <span className="font-bold">Kofi example:</span> Monday customer calls on Friday → Extra
+        coverage + enter products Friday → scheduled for Monday. On Monday the sale appears in KPIs
+        automatically. Kofi does <b>not</b> need to Start Visit again for that same order.
+      </div>
+
       {msg && (
         <p
           className={`text-sm font-medium ${
-            msg.includes('saved') || msg.includes('Sale') ? 'text-emerald-500' : 'text-amber-500'
+            String(msg).toLowerCase().includes('fail') || String(msg).toLowerCase().includes('cannot')
+              ? 'text-amber-500'
+              : 'text-emerald-500'
           }`}
         >
           {msg}
@@ -143,9 +152,28 @@ export default function DeferredSales() {
       {list.map((row) => (
         <div key={row._id} className={`rounded-2xl border p-3 ${card}`}>
           <div className={`font-bold text-sm ${label}`}>{row.shopName}</div>
-          <div className="text-xs opacity-60">
-            Coverage: {row.date} · physical sale pending KPI entry
+          <div className="text-xs opacity-70 mt-0.5">
+            Coverage: {row.date} · Beat: <b>{row.beatDayLabels || '—'}</b>
+            {row.scheduledKpiDate ? (
+              <>
+                {' '}
+                · KPI date: <b>{row.scheduledKpiDate}</b>
+              </>
+            ) : null}
           </div>
+          {row.deferredStatus === 'scheduled' && (
+            <div className="mt-1 text-xs font-semibold text-emerald-500">
+              Order held in cloud (GHS {row.heldAmount || 0}
+              {row.heldLines ? ` · ${row.heldLines} line(s)` : ''}) — auto-posts on KPI date. No
+              second Start Visit needed.
+            </div>
+          )}
+          {row.deferredStatus === 'pending_capture' && (
+            <div className="mt-1 text-xs font-semibold text-amber-500">
+              Coverage only — enter products below to schedule the sale.
+            </div>
+          )}
+
           {active === row._id ? (
             <div className="mt-2 space-y-2">
               <select
@@ -221,7 +249,7 @@ export default function DeferredSales() {
                 onClick={() => save(row)}
                 className="w-full py-2.5 rounded-xl bg-[#2596be] text-white font-bold text-sm disabled:opacity-60"
               >
-                {saving ? 'Saving…' : 'Save sale for today (KPIs)'}
+                {saving ? 'Saving…' : 'Save order to cloud (schedule KPI day)'}
               </button>
             </div>
           ) : (
@@ -230,14 +258,14 @@ export default function DeferredSales() {
               onClick={() => {
                 setActive(row._id);
                 setLines([]);
-                setAmount('');
+                setAmount(row.deferredAmount ? String(row.deferredAmount) : '');
                 setProductId('');
                 setCategory('');
                 setMsg('');
               }}
               className="mt-2 w-full py-2 rounded-xl bg-amber-500/20 text-amber-600 font-bold text-xs"
             >
-              Enter sale (beat day)
+              {row.deferredStatus === 'scheduled' ? 'Update held order' : 'Enter order (schedule)'}
             </button>
           )}
         </div>

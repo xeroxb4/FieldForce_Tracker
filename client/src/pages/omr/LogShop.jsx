@@ -149,9 +149,11 @@ export default function LogShop() {
     outcome: extraCoverage ? 'Extra Coverage' : form.outcome,
       extraCoverage,
     noOrderReason: form.outcome === 'No Order' ? form.noOrderReason : '',
-    lineItems: form.outcome === 'Order Placed' ? cart : [],
-    amount: form.outcome === 'Order Placed' ? cartTotal : 0,
-    paymentType: form.outcome === 'Order Placed' ? form.paymentType : '',
+    // Extra coverage can carry cart → held in cloud until beat day (scheduled KPI)
+    lineItems: form.outcome === 'Order Placed' || extraCoverage ? cart : [],
+    amount: form.outcome === 'Order Placed' || extraCoverage ? cartTotal : 0,
+    paymentType:
+      form.outcome === 'Order Placed' || extraCoverage ? form.paymentType || 'cash' : '',
     creditDurationWeeks:
       form.outcome === 'Order Placed' && form.paymentType === 'credit'
         ? Number(form.creditDurationWeeks)
@@ -193,7 +195,7 @@ export default function LogShop() {
       setStatus({ type: 'error', msg: 'Select a reason for No Order' });
       return;
     }
-    if (form.outcome === 'Order Placed' && cart.length === 0) {
+    if (form.outcome === 'Order Placed' && cart.length === 0 && !extraCoverage) {
       setStatus({ type: 'error', msg: 'Add at least one product for an order' });
       return;
     }
@@ -404,7 +406,7 @@ export default function LogShop() {
         )}
 
         {/* Order: product picker */}
-        {form.outcome === 'Order Placed' && (
+        {(form.outcome === 'Order Placed' || extraCoverage) && (
           <div className={cardCls}>
             <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>Add products</div>
 
