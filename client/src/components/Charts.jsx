@@ -11,8 +11,8 @@ export function LineChart({
   // Wide viewBox so the plot uses the full card width (not a small centered strip)
   const w = 640;
   const h = height;
-  const padL = 44;
-  const padR = 10;
+  const padL = 48;
+  const padR = 28;
   const padT = 16;
   const padB = 36;
   const colors = ['#2596be', '#f43f5e', '#10b981', '#f59e0b', '#a78bfa'];
@@ -52,10 +52,9 @@ export function LineChart({
       <svg
         viewBox={`0 0 ${w} ${h}`}
         width="100%"
-        height={height}
-        className="block w-full"
-        preserveAspectRatio="none"
-        style={{ minHeight: height }}
+        className="block w-full h-auto"
+        preserveAspectRatio="xMidYMid meet"
+        style={{ maxHeight: height + 40 }}
       >
         {yTicks.map((t) => {
           const y = yAt(t * max);
