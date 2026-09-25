@@ -3,88 +3,130 @@
 export function LineChart({
   series = [],
   labels = [],
-  height = 200,
+  height = 260,
   dark,
   normalize = false,
-  maxLabels = 8,
+  maxLabels = 7,
 }) {
-  const w = 360;
+  const w = 400;
   const h = height;
-  const padL = 36;
-  const padR = 12;
-  const padT = 12;
-  const padB = 36;
+  const padL = 48;
+  const padR = 16;
+  const padT = 20;
+  const padB = 44;
   const colors = ['#2596be', '#f43f5e', '#10b981', '#f59e0b', '#a78bfa'];
 
   const prepared = series.map((s) => {
-    const vals = s.values || [];
+    const vals = (s.values || []).map((v) => Number(v) || 0);
     const max = Math.max(...vals, 1);
     const drawn = normalize ? vals.map((v) => (v / max) * 100) : vals;
-    return { ...s, drawn, rawMax: max };
+    return { ...s, values: vals, drawn, rawMax: max };
   });
 
   const all = prepared.flatMap((s) => s.drawn);
   const max = Math.max(...all, 1);
-  const n = Math.max(labels.length - 1, 1);
+  const nPts = Math.max(labels.length, 1);
+  const n = Math.max(nPts - 1, 1);
 
-  const points = (values) =>
-    values
-      .map((v, i) => {
-        const x = padL + (i / n) * (w - padL - padR);
-        const y = h - padB - (v / max) * (h - padT - padB);
-        return `${x},${y}`;
-      })
-      .join(' ');
+  const xAt = (i) => padL + (i / n) * (w - padL - padR);
+  const yAt = (v) => h - padB - (v / max) * (h - padT - padB);
+
+  const points = (values) => values.map((v, i) => `${xAt(i)},${yAt(v)}`).join(' ');
 
   const labelStep = Math.max(1, Math.ceil(labels.length / maxLabels));
+  const yTicks = [0, 0.25, 0.5, 0.75, 1];
+
+  const formatY = (t) => {
+    if (normalize) return `${Math.round(t * 100)}`;
+    const v = t * max;
+    if (v >= 1000) return `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;
+    return String(Math.round(v));
+  };
 
   return (
-    <div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto">
-        {[0.25, 0.5, 0.75, 1].map((t) => {
-          const y = h - padB - t * (h - padT - padB);
+    <div className="w-full max-w-full overflow-hidden">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full h-auto max-h-[280px]"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* grid + Y labels */}
+        {yTicks.map((t) => {
+          const y = yAt(t * max);
           return (
-            <line
-              key={t}
-              x1={padL}
-              x2={w - padR}
-              y1={y}
-              y2={y}
-              stroke={dark ? '#334155' : '#e2e8f0'}
-              strokeWidth="1"
-            />
+            <g key={t}>
+              <line
+                x1={padL}
+                x2={w - padR}
+                y1={y}
+                y2={y}
+                stroke={dark ? '#334155' : '#e2e8f0'}
+                strokeWidth="1"
+              />
+              <text
+                x={padL - 6}
+                y={y + 3}
+                textAnchor="end"
+                fontSize="9"
+                fill={dark ? '#94a3b8' : '#64748b'}
+                fontWeight="600"
+              >
+                {formatY(t)}
+              </text>
+            </g>
           );
         })}
+
+        {/* Y axis title */}
+        <text
+          x={12}
+          y={h / 2}
+          textAnchor="middle"
+          fontSize="9"
+          fill={dark ? '#64748b' : '#94a3b8'}
+          fontWeight="700"
+          transform={`rotate(-90 12 ${h / 2})`}
+        >
+          {normalize ? 'Scaled 0–100' : 'Value'}
+        </text>
+
         {prepared.map((s, si) => (
           <g key={si}>
             <polyline
               fill="none"
               stroke={colors[si % colors.length]}
-              strokeWidth="2.5"
+              strokeWidth="2.2"
               strokeLinejoin="round"
               strokeLinecap="round"
               points={points(s.drawn)}
             />
             {s.drawn.map((v, i) => {
-              if (labels.length > 14 && i % labelStep !== 0 && i !== s.drawn.length - 1) return null;
-              const x = padL + (i / n) * (w - padL - padR);
-              const y = h - padB - (v / max) * (h - padT - padB);
-              return <circle key={i} cx={x} cy={y} r="2.8" fill={colors[si % colors.length]} />;
+              if (labels.length > 12 && i % labelStep !== 0 && i !== s.drawn.length - 1) {
+                return null;
+              }
+              return (
+                <circle
+                  key={i}
+                  cx={xAt(i)}
+                  cy={yAt(v)}
+                  r="2.5"
+                  fill={colors[si % colors.length]}
+                />
+              );
             })}
           </g>
         ))}
+
         {labels.map((lab, i) => {
           if (i % labelStep !== 0 && i !== labels.length - 1) return null;
-          const x = padL + (i / n) * (w - padL - padR);
+          const raw = String(lab);
           const short =
-            String(lab).length > 6 && labels.length > 10
-              ? String(lab).slice(5) // show MM-DD style if YYYY-MM-DD
-              : lab;
+            raw.length >= 10 && raw.includes('-') ? raw.slice(5) : raw.slice(0, 6);
           return (
             <text
               key={i}
-              x={x}
-              y={h - 10}
+              x={xAt(i)}
+              y={h - 14}
               textAnchor="middle"
               fontSize="8"
               fill={dark ? '#94a3b8' : '#64748b'}
@@ -95,11 +137,12 @@ export function LineChart({
           );
         })}
       </svg>
-      <div className="flex flex-wrap gap-3 mt-1 px-1">
+
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 px-1">
         {series.map((s, i) => (
-          <div key={i} className="flex items-center gap-1.5 text-[10px] font-semibold">
+          <div key={i} className="flex items-center gap-1.5 text-[11px] font-semibold">
             <span
-              className="w-2.5 h-2.5 rounded-full"
+              className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ background: colors[i % colors.length] }}
             />
             <span className={dark ? 'text-slate-300' : 'text-slate-700'}>{s.name}</span>
@@ -107,8 +150,9 @@ export function LineChart({
         ))}
       </div>
       {normalize && (
-        <p className={`text-[10px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-          Each line scaled to its own max so shapes are comparable (sales vs % hit rate).
+        <p className={`text-[10px] mt-1.5 leading-snug ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          Y-axis is scaled 0–100 per line (each metric vs its own max) so sales and hit rate are
+          readable together. Excel download has the real numbers.
         </p>
       )}
     </div>
@@ -145,7 +189,10 @@ export function DonutChart({ slices = [], dark }) {
       <div className="space-y-1">
         {slices.map((sl, i) => (
           <div key={i} className="flex items-center gap-2 text-xs font-semibold">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: colors[i % colors.length] }} />
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ background: colors[i % colors.length] }}
+            />
             <span className={dark ? 'text-slate-300' : 'text-slate-700'}>
               {sl.label}: {sl.value}
             </span>

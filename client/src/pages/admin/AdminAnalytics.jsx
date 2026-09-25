@@ -83,29 +83,46 @@ function RankCard({ row, variant, dark }) {
   );
 }
 
+function apiBase() {
+  // Production: VITE_API_URL already ends with /api
+  const env = import.meta.env.VITE_API_URL;
+  if (env && String(env).trim()) return String(env).replace(/\/$/, '');
+  return '/api';
+}
+
 async function downloadXlsx(pathWithQuery, filename) {
-  const base = import.meta.env.VITE_API_URL || '';
   const token = localStorage.getItem('token');
-  const res = await fetch(`${base}/api${pathWithQuery}`, {
+  const path = pathWithQuery.startsWith('/') ? pathWithQuery : `/${pathWithQuery}`;
+  const url = `${apiBase()}${path}`;
+  const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+  const ct = res.headers.get('content-type') || '';
   if (!res.ok) {
-    let msg = `Export failed (${res.status})`;
-    try {
-      const data = await res.json();
-      msg = data.message || msg;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Export failed (${res.status})`);
+  }
+  if (ct.includes('application/json') || ct.includes('text/html')) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Server returned an error instead of Excel');
   }
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
+  if (blob.size < 1500) {
+    const text = await blob.text();
+    try {
+      const j = JSON.parse(text);
+      throw new Error(j.message || 'Export file invalid');
+    } catch (e) {
+      if (e.message && !e.message.includes('JSON')) throw e;
+      throw new Error('Download is not a valid Excel file. Confirm Render deployed the new API.');
+    }
+  }
   const a = document.createElement('a');
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
 }
 
 export default function AdminAnalytics() {
@@ -157,21 +174,121 @@ export default function AdminAnalytics() {
     value: Math.round(d.total || 0),
   }));
 
-  const insights = [];
-  if ((data?.sales?.today?.amount || 0) === 0) {
-    insights.push({
-      type: 'gap',
-      text: 'No sales recorded today.',
-      action: 'Check OMR attendance and remaining beat outlets.',
+  // Month-to-date / selected-period insights from ranking + trend stats
+  const insights = useMemo(() => {
+    const list = [];
+    const avg = perf?.teamAvg;
+    const top = perf?.top3?.[0];
+    const bottom = perf?.bottom3?.[0];
+    const trend = perf?.dailyTrend;
+    const periodLabel =
+      perf?.period?.startDate && perf?.period?.endDate
+        ? `${perf.period.startDate} → ${perf.period.endDate}`
+        : 'selected period';
+
+    if (avg) {
+      list.push({
+        type: 'ok',
+        text: `MTD team average: GHS ${(avg.sales || 0).toLocaleString()} sales · ${avg.hitRatePct}% hit rate · ${avg.activeOmrCount}/${avg.omrCount} OMRs active (${periodLabel}).`,
+        action:
+          'Use this as the floor: every OMR should aim at or above team average sales and a hit rate ≥ team average.',
+      });
+    }
+
+    if (top) {
+      list.push({
+        type: 'win',
+        text: `Top MTD: ${top.name} — GHS ${(top.sales || 0).toLocaleString()}, hit rate ${top.hitRatePct}%, LPPC ${top.lppc}, ${top.shopsServed} shops served.`,
+        action: `Coach others on ${top.name}'s pattern: higher productive calls, fuller baskets (LPPC), and consistent outlet coverage—not only more visits.`,
+      });
+    }
+
+    if (bottom && (!top || bottom.name !== top.name)) {
+      if ((bottom.visits || 0) === 0 && (bottom.sales || 0) === 0) {
+        list.push({
+          type: 'gap',
+          text: `Lowest MTD: ${bottom.name} has no visits/sales in this period.`,
+          action:
+            'Verify login/attendance, beat assignment, and device access. Set a same-day recovery plan: full beat coverage first, then productive calls.',
+        });
+      } else {
+        list.push({
+          type: 'gap',
+          text: `Lowest MTD: ${bottom.name} — GHS ${(bottom.sales || 0).toLocaleString()}, hit rate ${bottom.hitRatePct}%, ${bottom.noOrderVisits || 0} no-order visits.`,
+          action:
+            'Focus on conversion (order vs no-order reasons), minimum lines per call, and closing credit collections before adding new low-value calls.',
+        });
+      }
+    }
+
+    // Trend-based guidance
+    if (trend?.sales?.length >= 3) {
+      const sales = trend.sales;
+      const hit = trend.hitRatePct || [];
+      const last3 = sales.slice(-3);
+      const first3 = sales.slice(0, 3);
+      const avgLast = last3.reduce((a, b) => a + b, 0) / last3.length;
+      const avgFirst = first3.reduce((a, b) => a + b, 0) / Math.max(first3.length, 1);
+      const avgHit =
+        hit.length > 0 ? hit.reduce((a, b) => a + b, 0) / hit.length : 0;
+
+      if (avgLast < avgFirst * 0.75 && avgFirst > 0) {
+        list.push({
+          type: 'gap',
+          text: 'Sales trend is weaker in recent days versus the start of the period.',
+          action:
+            'Rebalance beats toward high-potential and AVC outlets; review no-order reasons weekly; push Top 10 SKUs on every productive call.',
+        });
+      } else if (avgLast > avgFirst * 1.15 && avgFirst > 0) {
+        list.push({
+          type: 'win',
+          text: 'Sales trend is improving versus the start of the period.',
+          action:
+            'Lock the habits that worked: maintain coverage discipline and replicate top OMR basket mix (LPPC and Top 10) across the team.',
+        });
+      }
+
+      if (avgHit > 0 && avgHit < 40) {
+        list.push({
+          type: 'gap',
+          text: `Period average hit rate is low (~${Math.round(avgHit)}%). Many visits are not converting to orders.`,
+          action:
+            'Train on objection handling and stock/price talking points; require a documented no-order reason; prioritise outlets with purchase capacity / AVC potential.',
+        });
+      } else if (avgHit >= 55) {
+        list.push({
+          type: 'win',
+          text: `Period average hit rate is healthy (~${Math.round(avgHit)}%).`,
+          action:
+            'Shift emphasis to larger drop size and Top 10 penetration while keeping coverage near 100% of daily beats.',
+        });
+      }
+    }
+
+    // Global guidelines (always)
+    list.push({
+      type: 'ok',
+      text: 'Global guideline — coverage first, then conversion, then basket depth.',
+      action:
+        '1) Hit 100% of assigned beat outlets daily. 2) Raise hit rate (fewer empty visits). 3) Grow LPPC and Top 10 lines per order. 4) Protect credit: collect due owings before loading more credit.',
     });
-  }
-  if (data?.omrSalesToday?.[0]) {
-    insights.push({
-      type: 'win',
-      text: `Top OMR today: ${data.omrSalesToday[0].omr}`,
-      action: 'Share route tactics with underperforming OMRs.',
+    list.push({
+      type: 'ok',
+      text: 'Global guideline — manage the book, not only the day.',
+      action:
+        'Review MTD ranking weekly with each OMR. Set one numeric target (sales or hit rate). Pair lowest performers with a top performer for a joint beat day. Track AVC outlets for planogram photos and repeat orders.',
     });
-  }
+
+    if ((data?.sales?.today?.amount || 0) === 0) {
+      list.unshift({
+        type: 'gap',
+        text: 'No sales recorded today (live).',
+        action: 'Check check-ins, GPS issues, and remaining beat outlets before end of day.',
+      });
+    }
+
+    return list;
+  }, [perf, data]);
 
   const downloadAnalysis = async () => {
     setDlLoading(true);
@@ -255,7 +372,7 @@ export default function AdminAnalytics() {
           4 lines: Sales · Orders · Productive calls · Hit rate % (each scaled to its max for shape)
         </p>
         {lineSeries.length && lineLabels.length ? (
-          <LineChart series={lineSeries} labels={lineLabels} dark={dark} normalize height={220} />
+          <LineChart series={lineSeries} labels={lineLabels} dark={dark} normalize height={260} maxLabels={7} />
         ) : (
           <p className="text-sm text-slate-500">
             {perfLoading ? 'Loading trend…' : 'No daily data for this period.'}
@@ -327,9 +444,12 @@ export default function AdminAnalytics() {
       </div>
 
       <div className={`rounded-2xl border-2 p-4 ${card}`}>
-        <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Insights & actions
+        <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          Insights & actions (month-to-date / selected period)
         </h3>
+        <p className={`text-[11px] mb-3 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          Built from ranking, hit rate, and sales trend — plus team-wide guidelines.
+        </p>
         <div className="space-y-2">
           {(insights.length
             ? insights
