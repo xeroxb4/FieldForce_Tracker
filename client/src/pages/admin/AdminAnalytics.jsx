@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { LineChart, DonutChart } from '../../components/Charts';
@@ -35,7 +35,11 @@ function RankCard({ row, variant, dark }) {
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
-          <div className={`text-[10px] font-bold uppercase tracking-wide ${isTop ? 'text-emerald-600' : 'text-amber-700'}`}>
+          <div
+            className={`text-[10px] font-bold uppercase tracking-wide ${
+              isTop ? 'text-emerald-600' : 'text-amber-700'
+            }`}
+          >
             #{row.rank} {isTop ? 'Top performer' : 'Needs attention'}
           </div>
           <div className={`font-extrabold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -49,7 +53,9 @@ function RankCard({ row, variant, dark }) {
           <div className={`text-lg font-black ${isTop ? 'text-emerald-600' : 'text-amber-700'}`}>
             GHS {(row.sales || 0).toLocaleString()}
           </div>
-          <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>period sales</div>
+          <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+            period sales
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-2">
@@ -57,9 +63,12 @@ function RankCard({ row, variant, dark }) {
         <StatLine dark={dark} label="Visits" value={row.visits} />
         <StatLine dark={dark} label="Hit rate" value={`${row.hitRatePct}%`} />
         <StatLine dark={dark} label="LPPC" value={row.lppc} />
-        <StatLine dark={dark} label="Avg order" value={`GHS ${(row.avgOrderValue || 0).toLocaleString()}`} />
+        <StatLine
+          dark={dark}
+          label="Avg order"
+          value={`GHS ${(row.avgOrderValue || 0).toLocaleString()}`}
+        />
         <StatLine dark={dark} label="Shops served" value={row.shopsServed} />
-        <StatLine dark={dark} label="Attendance days" value={row.attendanceDays} />
         <StatLine dark={dark} label="Outlets assigned" value={row.outletsAssigned} />
       </div>
       <div className={`text-xs font-bold mb-1 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -74,6 +83,31 @@ function RankCard({ row, variant, dark }) {
   );
 }
 
+async function downloadXlsx(pathWithQuery, filename) {
+  const base = import.meta.env.VITE_API_URL || '';
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${base}/api${pathWithQuery}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    let msg = `Export failed (${res.status})`;
+    try {
+      const data = await res.json();
+      msg = data.message || msg;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminAnalytics() {
   const { dark } = useTheme();
   const [data, setData] = useState(null);
@@ -83,6 +117,7 @@ export default function AdminAnalytics() {
   const [perf, setPerf] = useState(null);
   const [perfLoading, setPerfLoading] = useState(false);
   const [perfError, setPerfError] = useState('');
+  const [dlLoading, setDlLoading] = useState(false);
 
   useEffect(() => {
     api.get('/admin/dashboard').then((r) => setData(r.data)).catch(() => {});
@@ -104,22 +139,18 @@ export default function AdminAnalytics() {
   }, []);
 
   const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
-  const today = data?.sales?.today?.amount || 0;
-  const week = data?.sales?.week?.amount || 0;
-  const month = data?.sales?.month?.amount || 0;
 
-  const lineLabels = ['Today', 'Week', 'Month'];
-  const lineSeries = [
-    { name: 'Sales', values: [today, week / 7, month / 30] },
-    {
-      name: 'Orders',
-      values: [
-        (data?.sales?.today?.orders || 0) * 50,
-        ((data?.sales?.week?.orders || 0) / 7) * 50,
-        ((data?.sales?.month?.orders || 0) / 30) * 50,
-      ],
-    },
-  ];
+  const lineLabels = perf?.dailyTrend?.labels || [];
+  const lineSeries = useMemo(() => {
+    const t = perf?.dailyTrend;
+    if (!t?.labels?.length) return [];
+    return [
+      { name: 'Sales (GHS)', values: t.sales || [] },
+      { name: 'Orders', values: t.orders || [] },
+      { name: 'Productive calls', values: t.productiveCalls || [] },
+      { name: 'Hit rate %', values: t.hitRatePct || [] },
+    ];
+  }, [perf]);
 
   const distSlices = (data?.distributorMonth || []).map((d) => ({
     label: d.name,
@@ -127,40 +158,34 @@ export default function AdminAnalytics() {
   }));
 
   const insights = [];
-  if (today === 0) {
+  if ((data?.sales?.today?.amount || 0) === 0) {
     insights.push({
       type: 'gap',
       text: 'No sales recorded today.',
       action: 'Check OMR attendance and remaining beat outlets.',
     });
   }
-  if ((data?.counts?.avc || 0) === 0) {
-    insights.push({
-      type: 'gap',
-      text: 'No AVC outlets enrolled.',
-      action: 'Enrol high-potential outlets under Programs → AVC.',
-    });
-  }
   if (data?.omrSalesToday?.[0]) {
-    const top = data.omrSalesToday[0];
     insights.push({
       type: 'win',
-      text: `Top OMR today: ${top.omr}`,
+      text: `Top OMR today: ${data.omrSalesToday[0].omr}`,
       action: 'Share route tactics with underperforming OMRs.',
     });
   }
 
-  const downloadCsv = () => {
-    const rows = [['OMR', 'Distributor', 'Orders', 'Amount']];
-    (data?.omrSalesToday || []).forEach((r) =>
-      rows.push([r.omr, r.distributor, r.orders, r.total])
-    );
-    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'fieldforce-omr-sales-today.csv';
-    a.click();
+  const downloadAnalysis = async () => {
+    setDlLoading(true);
+    setPerfError('');
+    try {
+      await downloadXlsx(
+        `/admin/export/data-analysis?startDate=${startDate}&endDate=${endDate}`,
+        `FieldForce_Data_Analysis_${startDate}_to_${endDate}.xlsx`
+      );
+    } catch (e) {
+      setPerfError(e.message || 'Download failed');
+    } finally {
+      setDlLoading(false);
+    }
   };
 
   return (
@@ -171,64 +196,81 @@ export default function AdminAnalytics() {
             Data Analysis
           </h1>
           <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Performance ranking, charts & insights
+            Daily trends, top/lowest OMRs & exportable analysis
           </p>
         </div>
         <button
           type="button"
-          onClick={downloadCsv}
-          className="text-xs font-bold px-3 py-2 rounded-xl bg-[#2596be] text-white self-start"
+          onClick={downloadAnalysis}
+          disabled={dlLoading}
+          className="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-600 text-white self-start disabled:opacity-60"
         >
-          Download CSV (today)
+          {dlLoading ? 'Preparing Excel…' : 'Download analysis Excel'}
         </button>
+      </div>
+
+      {/* Date + refresh shared */}
+      <div className={`rounded-2xl border-2 p-3 ${card}`}>
+        <div className="flex flex-wrap items-end gap-2">
+          <div>
+            <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              From
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
+            />
+          </div>
+          <div>
+            <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              To
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={loadPerf}
+            disabled={perfLoading}
+            className="text-xs font-bold px-3 py-2 rounded-xl bg-[#117ea6] text-white disabled:opacity-60"
+          >
+            {perfLoading ? 'Loading…' : 'Refresh'}
+          </button>
+        </div>
+        {perfError && <p className="text-sm text-red-500 mt-2">{perfError}</p>}
+      </div>
+
+      {/* Daily 4-line trend */}
+      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+        <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          Sales trend (daily)
+        </h3>
+        <p className={`text-[11px] mb-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          4 lines: Sales · Orders · Productive calls · Hit rate % (each scaled to its max for shape)
+        </p>
+        {lineSeries.length && lineLabels.length ? (
+          <LineChart series={lineSeries} labels={lineLabels} dark={dark} normalize height={220} />
+        ) : (
+          <p className="text-sm text-slate-500">
+            {perfLoading ? 'Loading trend…' : 'No daily data for this period.'}
+          </p>
+        )}
       </div>
 
       {/* Top / Bottom 3 */}
       <div className={`rounded-2xl border-2 p-4 ${card}`}>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-3">
-          <div>
-            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-              OMR performance — Top 3 & Lowest 3
-            </h3>
-            <p className={`text-[11px] mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-              Ranked by period sales (GHS), then productive calls, then hit rate. Training accounts excluded.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <div>
-              <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                From
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
-              />
-            </div>
-            <div>
-              <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                To
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={loadPerf}
-              disabled={perfLoading}
-              className="text-xs font-bold px-3 py-2 rounded-xl bg-[#117ea6] text-white disabled:opacity-60"
-            >
-              {perfLoading ? 'Loading…' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-
-        {perfError && <p className="text-sm text-red-500 mb-2">{perfError}</p>}
+        <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
+          OMR performance — Top 3 & Lowest 3
+        </h3>
+        <p className={`text-[11px] mb-3 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          Ranked by period sales, then productive calls, then hit rate. Training accounts excluded.
+        </p>
 
         {perf?.teamAvg && (
           <div
@@ -236,10 +278,10 @@ export default function AdminAnalytics() {
               dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-700'
             }`}
           >
-            <span className="font-bold">Team average (period):</span> GHS{' '}
-            {(perf.teamAvg.sales || 0).toLocaleString()} sales · {perf.teamAvg.hitRatePct}% hit rate ·{' '}
-            {perf.teamAvg.activeOmrCount}/{perf.teamAvg.omrCount} OMRs with activity ·{' '}
-            {perf.period?.startDate} → {perf.period?.endDate}
+            <span className="font-bold">Team average:</span> GHS{' '}
+            {(perf.teamAvg.sales || 0).toLocaleString()} · {perf.teamAvg.hitRatePct}% hit rate ·{' '}
+            {perf.teamAvg.activeOmrCount}/{perf.teamAvg.omrCount} OMRs active · {perf.period?.startDate}{' '}
+            → {perf.period?.endDate}
           </div>
         )}
 
@@ -274,16 +316,6 @@ export default function AdminAnalytics() {
       </div>
 
       <div className={`rounded-2xl border-2 p-4 ${card}`}>
-        <h3 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Sales trend (line)
-        </h3>
-        <p className={`text-[11px] mb-2 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-          Blue = sales level · Pink = order volume (scaled)
-        </p>
-        <LineChart series={lineSeries} labels={lineLabels} dark={dark} />
-      </div>
-
-      <div className={`rounded-2xl border-2 p-4 ${card}`}>
         <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
           Month mix by distributor
         </h3>
@@ -301,7 +333,7 @@ export default function AdminAnalytics() {
         <div className="space-y-2">
           {(insights.length
             ? insights
-            : [{ type: 'ok', text: 'Metrics stable.', action: 'Export weekly report for review.' }]
+            : [{ type: 'ok', text: 'Metrics stable.', action: 'Export analysis Excel for review.' }]
           ).map((ins, i) => (
             <div
               key={i}

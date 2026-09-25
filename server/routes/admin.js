@@ -30,7 +30,7 @@ import {
   approveOutlet,
   rejectOutlet,
 } from '../controllers/outletController.js';
-import { exportOmrXlsx, exportMerchXlsx, exportProductivityXlsx, exportOmrOutletHistoryXlsx, exportOmrOutletUniverseXlsx } from '../controllers/exportController.js';
+import { exportOmrXlsx, exportMerchXlsx, exportProductivityXlsx, exportOmrOutletHistoryXlsx, exportOmrOutletUniverseXlsx, exportDataAnalysisXlsx } from '../controllers/exportController.js';
 import {
   getAdminAvcGallery,
   deleteAvcPhoto,
@@ -94,6 +94,7 @@ router.put('/notifications/:id/read', markRead);
 router.get('/export/omr', exportOmrXlsx);
 router.get('/export/outlet-history', exportOmrOutletHistoryXlsx);
 router.get('/export/outlet-universe', exportOmrOutletUniverseXlsx);
+router.get('/export/data-analysis', exportDataAnalysisXlsx);
 router.get('/avc-photos', getAdminAvcGallery);
 router.delete('/avc-photos/:id', deleteAvcPhoto);
 router.get('/export/merch', exportMerchXlsx);

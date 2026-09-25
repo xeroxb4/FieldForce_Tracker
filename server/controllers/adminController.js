@@ -1189,12 +1189,52 @@ export const getOmrPerformanceRanking = async (req, res) => {
       }
     }
 
+    // Daily trend for chart (sales, orders, productive calls, hit rate) — no attendance
+    const dayMap = {};
+    const cursor = new Date(startDate + 'T12:00:00');
+    const endD = new Date(endDate + 'T12:00:00');
+    while (cursor <= endD) {
+      const key = cursor.toISOString().slice(0, 10);
+      dayMap[key] = { sales: 0, orders: 0, visits: 0, productive: 0 };
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    for (const v of visits) {
+      const d = v.date;
+      if (!dayMap[d]) continue;
+      dayMap[d].visits += 1;
+      const productive =
+        v.outcome === 'Order Placed' &&
+        ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
+      if (productive) {
+        dayMap[d].productive += 1;
+        dayMap[d].orders += 1;
+        dayMap[d].sales += Number(v.amount) || 0;
+      }
+    }
+    const dailyTrend = {
+      labels: Object.keys(dayMap).sort(),
+      sales: [],
+      orders: [],
+      productiveCalls: [],
+      hitRatePct: [],
+    };
+    for (const d of dailyTrend.labels) {
+      const row = dayMap[d];
+      dailyTrend.sales.push(Math.round(row.sales * 100) / 100);
+      dailyTrend.orders.push(row.orders);
+      dailyTrend.productiveCalls.push(row.productive);
+      dailyTrend.hitRatePct.push(
+        row.visits > 0 ? Math.round((row.productive / row.visits) * 1000) / 10 : 0
+      );
+    }
+
     res.json({
       period: { startDate, endDate },
       rankingMetric: 'Month/period sales (GHS), then productive calls, then hit rate',
       teamAvg,
       top3,
       bottom3,
+      dailyTrend,
       allRanked: ranked.map((r, i) => ({ rank: i + 1, name: r.name, sales: r.sales, visits: r.visits, hitRatePct: r.hitRatePct })),
     });
   } catch (error) {

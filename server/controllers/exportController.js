@@ -1084,3 +1084,328 @@ export const exportOmrOutletUniverseXlsx = async (req, res) => {
     res.status(500).json({ message: 'Failed to export OMR outlet list' });
   }
 };
+
+
+/** Data Analysis pack: ranking + notes + daily trend */
+export const exportDataAnalysisXlsx = async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const defaultEnd = now.toISOString().slice(0, 10);
+    const startDate = req.query.startDate || defaultStart;
+    const endDate = req.query.endDate || defaultEnd;
+
+    // Reuse ranking logic via internal HTTP-less call: duplicate lightweight aggregate
+    const User = (await import('../models/User.js')).default;
+    const Visit = (await import('../models/Visit.js')).default;
+    const Outlet = (await import('../models/Outlet.js')).default;
+    const Attendance = (await import('../models/Attendance.js')).default;
+
+    const training = await User.find({
+      $or: [
+        { isTraining: true },
+        { username: 'trainer' },
+        { distributor: /training/i },
+        { fullName: /training demo/i },
+      ],
+    }).select('_id');
+    const trainingIds = training.map((u) => u._id);
+
+    const omrs = await User.find({
+      role: 'omr',
+      isActive: { $ne: false },
+      isTraining: { $ne: true },
+      username: { $ne: 'trainer' },
+      _id: { $nin: trainingIds },
+      distributor: { $not: /training/i },
+    })
+      .select('fullName username distributor territory')
+      .lean();
+
+    const omrIds = omrs.map((u) => u._id);
+    const visits = await Visit.find({
+      userId: { $in: omrIds },
+      date: { $gte: startDate, $lte: endDate },
+    }).lean();
+
+    const attendances = await Attendance.find({
+      userId: { $in: omrIds },
+      date: { $gte: startDate, $lte: endDate },
+    })
+      .select('userId')
+      .lean();
+    const attDays = {};
+    for (const a of attendances) {
+      const k = String(a.userId);
+      attDays[k] = (attDays[k] || 0) + 1;
+    }
+
+    const outlets = await Outlet.find({
+      $or: [{ assignedTo: { $in: omrIds } }, { userId: { $in: omrIds } }],
+      status: 'approved',
+      isActive: { $ne: false },
+    })
+      .select('assignedTo userId')
+      .lean();
+    const outletCount = {};
+    for (const o of outlets) {
+      const id = String(o.assignedTo || o.userId);
+      outletCount[id] = (outletCount[id] || 0) + 1;
+    }
+
+    const byUser = {};
+    for (const u of omrs) {
+      byUser[String(u._id)] = {
+        name: u.fullName,
+        distributor: u.distributor || '',
+        territory: u.territory || '',
+        sales: 0,
+        orders: 0,
+        visits: 0,
+        productive: 0,
+        noOrder: 0,
+        lines: 0,
+        shops: new Set(),
+        attendanceDays: attDays[String(u._id)] || 0,
+        outletsAssigned: outletCount[String(u._id)] || 0,
+      };
+    }
+    for (const v of visits) {
+      const id = String(v.userId);
+      if (!byUser[id]) continue;
+      const row = byUser[id];
+      row.visits += 1;
+      if (v.shopName) row.shops.add(String(v.shopName).toLowerCase());
+      const productive =
+        v.outcome === 'Order Placed' &&
+        ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
+      if (productive) {
+        row.productive += 1;
+        row.orders += 1;
+        row.sales += Number(v.amount) || 0;
+        if (Array.isArray(v.lineItems) && v.lineItems.length) row.lines += v.lineItems.length;
+        else row.lines += 1;
+      } else if (v.outcome === 'No Order' || v.outcome === 'Follow Up') {
+        row.noOrder += 1;
+      }
+    }
+
+    const ranked = Object.values(byUser)
+      .map((r) => {
+        const hitRate = r.visits > 0 ? (r.productive / r.visits) * 100 : 0;
+        const lppc = r.productive > 0 ? r.lines / r.productive : 0;
+        const avgOrder = r.orders > 0 ? r.sales / r.orders : 0;
+        return {
+          name: r.name,
+          distributor: r.distributor,
+          territory: r.territory,
+          sales: Math.round(r.sales * 100) / 100,
+          orders: r.orders,
+          visits: r.visits,
+          productiveCalls: r.productive,
+          noOrderVisits: r.noOrder,
+          hitRatePct: Math.round(hitRate * 10) / 10,
+          lppc: Math.round(lppc * 100) / 100,
+          avgOrderValue: Math.round(avgOrder * 100) / 100,
+          shopsServed: r.shops.size,
+          attendanceDays: r.attendanceDays,
+          outletsAssigned: r.outletsAssigned,
+        };
+      })
+      .sort((a, b) => {
+        if (b.sales !== a.sales) return b.sales - a.sales;
+        if (b.productiveCalls !== a.productiveCalls) return b.productiveCalls - a.productiveCalls;
+        return b.hitRatePct - a.hitRatePct;
+      });
+
+    const withActivity = ranked.filter((r) => r.visits > 0 || r.sales > 0);
+    const pool = withActivity.length >= 3 ? withActivity : ranked;
+    const n = pool.length || 1;
+    const teamSales = pool.reduce((s, r) => s + r.sales, 0);
+    const teamVisits = pool.reduce((s, r) => s + r.visits, 0);
+    const teamProd = pool.reduce((s, r) => s + r.productiveCalls, 0);
+    const teamAvgSales = teamSales / n;
+    const teamHit = teamVisits > 0 ? (teamProd / teamVisits) * 100 : 0;
+
+    function notesTop(r) {
+      const out = [];
+      if (r.sales >= teamAvgSales * 1.25) {
+        out.push(`Sales well above team avg (GHS ${Math.round(teamAvgSales)}).`);
+      } else if (r.sales > teamAvgSales) {
+        out.push(`Sales above team average.`);
+      }
+      if (r.hitRatePct >= teamHit + 10) out.push(`Hit rate ${r.hitRatePct}% vs team ${Math.round(teamHit * 10) / 10}%.`);
+      if (r.lppc >= 2) out.push(`Strong LPPC ${r.lppc}.`);
+      if (r.shopsServed >= 8) out.push(`${r.shopsServed} shops served.`);
+      if (!out.length) out.push('High relative sales volume.');
+      return out.join(' ');
+    }
+    function notesBottom(r) {
+      const out = [];
+      if (r.visits === 0 && r.sales === 0) {
+        out.push('No visits or sales in period.');
+        return out.join(' ');
+      }
+      if (r.sales < teamAvgSales * 0.5) out.push('Sales far below team average.');
+      else if (r.sales < teamAvgSales) out.push('Sales below team average.');
+      if (r.hitRatePct + 10 < teamHit && r.visits > 0) {
+        out.push(`Weaker hit rate ${r.hitRatePct}% vs team ${Math.round(teamHit * 10) / 10}%.`);
+      }
+      if (r.noOrderVisits >= r.productiveCalls && r.visits > 0) {
+        out.push(`High no-order visits (${r.noOrderVisits}).`);
+      }
+      if (!out.length) out.push('Lower relative sales vs peers.');
+      return out.join(' ');
+    }
+
+    const top3 = pool.slice(0, 3).map((r, i) => ({ rank: i + 1, ...r, analysis: notesTop(r) }));
+    const bottomPool = [...pool].sort((a, b) => a.sales - b.sales || a.visits - b.visits);
+    const topNames = new Set(top3.map((t) => t.name));
+    const bottom3 = [];
+    for (const r of bottomPool) {
+      if (topNames.has(r.name) && pool.length > 3) continue;
+      bottom3.push({ rank: bottom3.length + 1, ...r, analysis: notesBottom(r) });
+      if (bottom3.length >= 3) break;
+    }
+
+    const dayMap = {};
+    const cursor = new Date(startDate + 'T12:00:00');
+    const endD = new Date(endDate + 'T12:00:00');
+    while (cursor <= endD) {
+      const key = cursor.toISOString().slice(0, 10);
+      dayMap[key] = { sales: 0, orders: 0, visits: 0, productive: 0 };
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    for (const v of visits) {
+      if (!dayMap[v.date]) continue;
+      dayMap[v.date].visits += 1;
+      const productive =
+        v.outcome === 'Order Placed' &&
+        ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
+      if (productive) {
+        dayMap[v.date].productive += 1;
+        dayMap[v.date].orders += 1;
+        dayMap[v.date].sales += Number(v.amount) || 0;
+      }
+    }
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'FieldForce';
+
+    const meta = wb.addWorksheet('Export Info');
+    meta.addRow(['FieldForce — Data Analysis pack']);
+    meta.addRow(['Period start', startDate]);
+    meta.addRow(['Period end', endDate]);
+    meta.addRow(['Generated', new Date().toISOString()]);
+    meta.addRow(['Team avg sales', Math.round(teamAvgSales * 100) / 100]);
+    meta.addRow(['Team hit rate %', Math.round(teamHit * 10) / 10]);
+    meta.addRow(['Ranking', 'Sales → productive calls → hit rate']);
+    meta.addRow(['Note', 'Chart lines on screen are shape-scaled; this sheet has raw daily values']);
+
+    const wsTrend = wb.addWorksheet('Daily Trend');
+    wsTrend.addRow(['Date', 'Sales (GHS)', 'Orders', 'Productive calls', 'Hit rate %']);
+    wsTrend.getRow(1).font = { bold: true };
+    for (const d of Object.keys(dayMap).sort()) {
+      const row = dayMap[d];
+      const hit = row.visits > 0 ? Math.round((row.productive / row.visits) * 1000) / 10 : 0;
+      wsTrend.addRow([d, Math.round(row.sales * 100) / 100, row.orders, row.productive, hit]);
+    }
+    wsTrend.getColumn(1).width = 12;
+    wsTrend.getColumn(2).width = 14;
+
+    // Excel chart for daily trend
+    if (wsTrend.rowCount > 1) {
+      const chartEnd = wsTrend.rowCount;
+      try {
+        wsTrend.addChart({
+          type: 'line',
+          name: 'Daily trend',
+          title: { name: 'Sales / Orders / Productive / Hit rate' },
+          series: [
+            {
+              name: 'Sales (GHS)',
+              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
+              values: { formula: `'Daily Trend'!$B$2:$B$${chartEnd}` },
+            },
+            {
+              name: 'Orders',
+              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
+              values: { formula: `'Daily Trend'!$C$2:$C$${chartEnd}` },
+            },
+            {
+              name: 'Productive calls',
+              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
+              values: { formula: `'Daily Trend'!$D$2:$D$${chartEnd}` },
+            },
+            {
+              name: 'Hit rate %',
+              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
+              values: { formula: `'Daily Trend'!$E$2:$E$${chartEnd}` },
+            },
+          ],
+        });
+      } catch (e) {
+        // exceljs chart support varies — data sheet is enough
+        meta.addRow(['Chart note', 'Open Daily Trend in Excel and insert Line chart if chart object missing']);
+      }
+    }
+
+    const wsTop = wb.addWorksheet('Top 3');
+    wsTop.addRow([
+      'Rank', 'OMR', 'Distributor', 'Territory', 'Sales', 'Orders', 'Visits',
+      'Productive', 'Hit %', 'LPPC', 'Avg order', 'Shops', 'Analysis',
+    ]);
+    wsTop.getRow(1).font = { bold: true };
+    for (const r of top3) {
+      wsTop.addRow([
+        r.rank, r.name, r.distributor, r.territory, r.sales, r.orders, r.visits,
+        r.productiveCalls, r.hitRatePct, r.lppc, r.avgOrderValue, r.shopsServed, r.analysis,
+      ]);
+    }
+    wsTop.getColumn(2).width = 22;
+    wsTop.getColumn(13).width = 50;
+
+    const wsBot = wb.addWorksheet('Lowest 3');
+    wsBot.addRow([
+      'Rank', 'OMR', 'Distributor', 'Territory', 'Sales', 'Orders', 'Visits',
+      'Productive', 'Hit %', 'LPPC', 'Avg order', 'Shops', 'Analysis',
+    ]);
+    wsBot.getRow(1).font = { bold: true };
+    for (const r of bottom3) {
+      wsBot.addRow([
+        r.rank, r.name, r.distributor, r.territory, r.sales, r.orders, r.visits,
+        r.productiveCalls, r.hitRatePct, r.lppc, r.avgOrderValue, r.shopsServed, r.analysis,
+      ]);
+    }
+    wsBot.getColumn(2).width = 22;
+    wsBot.getColumn(13).width = 50;
+
+    const wsAll = wb.addWorksheet('All OMR Ranked');
+    wsAll.addRow([
+      'Rank', 'OMR', 'Distributor', 'Territory', 'Sales', 'Orders', 'Visits',
+      'Productive', 'Hit %', 'LPPC', 'Avg order', 'Shops served', 'Outlets assigned',
+    ]);
+    wsAll.getRow(1).font = { bold: true };
+    ranked.forEach((r, i) => {
+      wsAll.addRow([
+        i + 1, r.name, r.distributor, r.territory, r.sales, r.orders, r.visits,
+        r.productiveCalls, r.hitRatePct, r.lppc, r.avgOrderValue, r.shopsServed, r.outletsAssigned,
+      ]);
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=FieldForce_Data_Analysis_${startDate}_to_${endDate}.xlsx`
+    );
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Data analysis export error:', error);
+    res.status(500).json({ message: 'Failed to export data analysis' });
+  }
+};
