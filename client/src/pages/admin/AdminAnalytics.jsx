@@ -169,6 +169,114 @@ export default function AdminAnalytics() {
     ];
   }, [perf]);
 
+  /** Plain-language reading of THIS period's graph (not a legend) */
+  const chartNarrative = useMemo(() => {
+    const tr = perf?.dailyTrend;
+    if (!tr?.labels?.length) return null;
+    const sales = (tr.sales || []).map(Number);
+    const orders = (tr.orders || []).map(Number);
+    const prod = (tr.productiveCalls || []).map(Number);
+    const hit = (tr.hitRatePct || []).map(Number);
+    const labels = tr.labels;
+    const n = sales.length;
+    if (!n) return null;
+
+    const sum = (arr) => arr.reduce((a, b) => a + (b || 0), 0);
+    const avg = (arr) => (arr.length ? sum(arr) / arr.length : 0);
+    const totalSales = sum(sales);
+    const totalOrders = sum(orders);
+    const totalProd = sum(prod);
+    const avgHit = avg(hit.filter((h, i) => (prod[i] || 0) > 0 || (orders[i] || 0) > 0 || h > 0));
+
+    // Peak / quiet days
+    let peakI = 0;
+    let quietI = 0;
+    for (let i = 1; i < n; i++) {
+      if (sales[i] > sales[peakI]) peakI = i;
+      if (sales[i] < sales[quietI]) quietI = i;
+    }
+    const peakDay = labels[peakI];
+    const peakSales = sales[peakI];
+    const quietDay = labels[quietI];
+
+    // Thirds: start / mid / end
+    const third = Math.max(1, Math.floor(n / 3));
+    const startAvg = avg(sales.slice(0, third));
+    const midAvg = avg(sales.slice(third, third * 2));
+    const endAvg = avg(sales.slice(third * 2));
+
+    let arc = '';
+    if (startAvg > midAvg * 1.25 && endAvg > midAvg * 1.15) {
+      arc = 'The month opened strongly, softened in the middle, then recovered toward the end.';
+    } else if (startAvg > endAvg * 1.25 && startAvg > midAvg) {
+      arc = 'Activity was strongest at the start of the period and has been weaker since.';
+    } else if (endAvg > startAvg * 1.2 && endAvg >= midAvg) {
+      arc = 'The period builds upward: later days are stronger than the opening stretch.';
+    } else if (midAvg > startAvg * 1.2 && midAvg > endAvg * 1.1) {
+      arc = 'The strongest stretch sits in the middle of the period; both ends are softer.';
+    } else if (totalSales === 0) {
+      arc = 'No sales are recorded on the daily trend for this date range.';
+    } else {
+      arc = 'Sales move in waves across the period—clusters of stronger days separated by quiet or zero days.';
+    }
+
+    // Zero-day count
+    const zeroDays = sales.filter((s) => s === 0).length;
+
+    // Conversion vs volume
+    let conversionNote = '';
+    if (avgHit > 0 && avgHit < 35) {
+      conversionNote =
+        'Hit rate stays relatively low on many days: visits often do not turn into orders, so volume of calls is not fully converting to sales.';
+    } else if (avgHit >= 50) {
+      conversionNote =
+        'On active days, hit rate is healthier—more visits are converting into orders when the team is in the field.';
+    } else if (avgHit > 0) {
+      conversionNote =
+        'Hit rate is mixed: some days convert well, others show activity without matching order strength.';
+    }
+
+    // Alignment of lines
+    let alignNote = '';
+    const activeDays = sales.map((s, i) => (s > 0 || prod[i] > 0 ? i : -1)).filter((i) => i >= 0);
+    if (activeDays.length >= 3) {
+      let bothUp = 0;
+      for (const i of activeDays) {
+        if (sales[i] > avg(sales) && hit[i] >= avgHit) bothUp += 1;
+      }
+      if (bothUp >= Math.ceil(activeDays.length * 0.4)) {
+        alignNote =
+          'On several stronger days, sales and hit rate rise together—those are high-quality field days (volume + conversion).';
+      } else {
+        alignNote =
+          'Sales peaks and hit-rate peaks do not always line up: some revenue days may rely on fewer larger orders, while other days show visits without full conversion.';
+      }
+    }
+
+    const paragraphs = [
+      arc,
+      `Across the selected range, total sales on the trend are about GHS ${Math.round(totalSales).toLocaleString()} from ${totalOrders} orders (${totalProd} productive calls). Strongest sales day: ${peakDay} (GHS ${Math.round(peakSales).toLocaleString()}). Softest sales day: ${quietDay}.`,
+    ];
+    if (zeroDays > 0) {
+      paragraphs.push(
+        `${zeroDays} day(s) show near-zero sales on the chart—typically non-working days, missing check-ins, or no orders logged.`
+      );
+    }
+    if (conversionNote) paragraphs.push(conversionNote);
+    if (alignNote) paragraphs.push(alignNote);
+    paragraphs.push(
+      'Bottom line: treat upward spikes as days to copy (coverage + conversion + basket size); treat long flat zeros and low hit-rate stretches as coaching and beat-discipline priorities.'
+    );
+
+    return {
+      title: 'What this graph is saying',
+      paragraphs,
+      period: perf?.period
+        ? `${perf.period.startDate} → ${perf.period.endDate}`
+        : '',
+    };
+  }, [perf]);
+
   const distSlices = (data?.distributorMonth || []).map((d) => ({
     label: d.name,
     value: Math.round(d.total || 0),
@@ -377,6 +485,32 @@ export default function AdminAnalytics() {
           <p className="text-sm text-slate-500">
             {perfLoading ? 'Loading trend…' : 'No daily data for this period.'}
           </p>
+        )}
+
+        {chartNarrative && (
+          <div
+            className={`mt-4 rounded-xl border px-3 py-3 text-sm leading-relaxed ${
+              dark
+                ? 'border-slate-600 bg-slate-800/80 text-slate-200'
+                : 'border-[#2596be]/30 bg-sky-50 text-slate-800'
+            }`}
+          >
+            <div className={`font-extrabold text-sm mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
+              {chartNarrative.title}
+              {chartNarrative.period ? (
+                <span className={`font-medium text-[11px] ml-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {chartNarrative.period}
+                </span>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              {chartNarrative.paragraphs.map((p, i) => (
+                <p key={i} className={dark ? 'text-slate-300' : 'text-slate-700'}>
+                  {p}
+                </p>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
