@@ -12,6 +12,8 @@ import beatRoutes from './routes/beats.js';
 import creditRoutes from './routes/credits.js';
 import targetRoutes from './routes/targets.js';
 import incentiveRoutes from './routes/incentives.js';
+import avcPhotoRoutes from './routes/avcPhotos.js';
+import callRoutes from './routes/calls.js';
 
 dotenv.config();
 
@@ -22,7 +24,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
   credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRoutes);
@@ -35,6 +37,8 @@ app.use('/api/beats', beatRoutes);
 app.use('/api/credits', creditRoutes);
 app.use('/api/targets', targetRoutes);
 app.use('/api/incentives', incentiveRoutes);
+app.use('/api/avc-photos', avcPhotoRoutes);
+app.use('/api/calls', callRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'FieldForce Tracker API is running' });

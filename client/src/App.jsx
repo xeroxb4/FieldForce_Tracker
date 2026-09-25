@@ -36,6 +36,7 @@ import AdminAvcGallery from './pages/admin/AdminAvcGallery';
 import AdminOutletSales from './pages/admin/AdminOutletSales';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminNotifications from './pages/admin/AdminNotifications';
+import Softphone from './pages/Softphone';
 import Profile from './pages/Profile';
 
 function PrivateRoute({ children, roles }) {
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="owings" element={<Owings />} />
         <Route path="outlets" element={<Outlets />} />
         <Route path="reports" element={<OMRReports />} />
+        <Route path="softphone" element={<Softphone />} />
       </Route>
 
       <Route path="/merch" element={<PrivateRoute roles={['merchandiser', 'admin']}><MerchLayout /></PrivateRoute>}>
@@ -82,6 +84,7 @@ export default function App() {
         <Route path="sales" element={<AdminSales />} />
         <Route path="distributors" element={<AdminDistributors />} />
         <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="softphone" element={<Softphone />} />
         <Route path="programs" element={<AdminPrograms />} />
         <Route path="promotions" element={<AdminPromotions />} />
         <Route path="settings" element={<AdminSettings />} />

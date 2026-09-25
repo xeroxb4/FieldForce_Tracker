@@ -21,6 +21,7 @@ const NAV = [
   { to: '/admin/reports', label: 'OMR reports', icon: '📋' },
   { to: '/admin/enter-sale', label: 'Enter sale', icon: '✍️' },
   { to: '/admin/export', label: 'Export', icon: '⬇️' },
+  { to: '/admin/softphone', label: 'Softphone', icon: '📞' },
   { to: '/admin/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
