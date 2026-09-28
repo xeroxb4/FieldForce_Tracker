@@ -3,18 +3,59 @@ import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'Just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function typeMeta(type) {
+  if (type === 'outlet_pending') {
+    return {
+      label: 'Outlet approval',
+      accent: '#f59e0b',
+      bg: 'bg-amber-500/15',
+      icon: '🏪',
+    };
+  }
+  if (type === 'outlet_approved' || type === 'approved') {
+    return {
+      label: 'Approved',
+      accent: '#10b981',
+      bg: 'bg-emerald-500/15',
+      icon: '✓',
+    };
+  }
+  return {
+    label: 'System',
+    accent: '#2596be',
+    bg: 'bg-sky-500/15',
+    icon: '🔔',
+  };
+}
+
 export default function AdminNotifications() {
   const { dark } = useTheme();
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const load = () => {
-    api.get('/admin/notifications').then((r) => {
-      setItems(r.data.notifications || []);
-      setUnread(r.data.unread || 0);
-      setTotal(r.data.total ?? (r.data.notifications || []).length);
-    });
+    setLoading(true);
+    api
+      .get('/admin/notifications')
+      .then((r) => {
+        setItems(r.data.notifications || []);
+        setUnread(r.data.unread || 0);
+        setTotal(r.data.total ?? (r.data.notifications || []).length);
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -32,7 +73,7 @@ export default function AdminNotifications() {
   };
 
   const clearRead = async () => {
-    if (!window.confirm('Delete all read notifications? Unread will stay.')) return;
+    if (!window.confirm('Remove all read notifications from the list?')) return;
     try {
       await api.delete('/admin/notifications/read');
       load();
@@ -41,40 +82,48 @@ export default function AdminNotifications() {
     }
   };
 
-  const card = (n) =>
-    n.read
-      ? dark
-        ? 'bg-slate-900 border-slate-700'
-        : 'bg-white border-slate-200'
-      : dark
-      ? 'bg-slate-800 border-[#2596be]'
-      : 'bg-sky-50 border-[#2596be]';
+  const shell = dark
+    ? 'bg-slate-900/80 border-slate-700/80'
+    : 'bg-white border-slate-200/90 shadow-sm';
+  const muted = dark ? 'text-slate-400' : 'text-slate-500';
+  const title = dark ? 'text-white' : 'text-slate-900';
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="max-w-2xl mx-auto space-y-5 px-1">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-            Notifications
-          </h1>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-            {unread} unread
-            {total ? ` · ${total} total` : ''} · outlet approvals and system alerts
+          <p className={`text-[11px] font-bold uppercase tracking-widest ${muted}`}>Admin</p>
+          <h1 className={`text-2xl font-extrabold tracking-tight ${title}`}>Notifications</h1>
+          <p className={`text-sm mt-1 ${muted}`}>
+            {loading ? 'Loading…' : (
+              <>
+                <span className="font-semibold text-[#2596be]">{unread}</span> unread
+                {total > 0 && (
+                  <>
+                    <span className="mx-1.5 opacity-40">·</span>
+                    {total} on file
+                  </>
+                )}
+              </>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={markAll}
-            className="text-xs font-bold px-3 py-2 rounded-xl bg-[#2596be] text-white"
+            className="text-xs font-bold px-4 py-2.5 rounded-full bg-[#117ea6] text-white shadow-md shadow-[#117ea6]/25 hover:brightness-110 transition"
           >
             Mark all read
           </button>
           <button
             type="button"
             onClick={clearRead}
-            className={`text-xs font-bold px-3 py-2 rounded-xl border ${
-              dark ? 'border-slate-600 text-slate-300' : 'border-slate-300 text-slate-700'
+            className={`text-xs font-bold px-4 py-2.5 rounded-full border transition ${
+              dark
+                ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
+                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
             Clear read
@@ -82,53 +131,119 @@ export default function AdminNotifications() {
         </div>
       </div>
 
-      {/* Fixed-height panel so the page does not keep growing */}
-      <div
-        className={`rounded-2xl border-2 overflow-hidden ${
-          dark ? 'border-slate-700 bg-slate-950/50' : 'border-slate-200 bg-slate-50'
-        }`}
-      >
-        <div className="max-h-[min(70vh,560px)] overflow-y-auto overscroll-contain p-2 space-y-2">
-          {items.length === 0 && (
-            <p className="text-sm text-slate-500 p-3">No notifications yet.</p>
+      {/* List panel */}
+      <div className={`rounded-3xl border overflow-hidden ${shell}`}>
+        <div
+          className={`px-4 py-3 border-b flex items-center justify-between ${
+            dark ? 'border-slate-700/80 bg-slate-950/40' : 'border-slate-100 bg-slate-50/80'
+          }`}
+        >
+          <span className={`text-[11px] font-bold uppercase tracking-wide ${muted}`}>
+            Inbox
+          </span>
+          <span className={`text-[11px] ${muted}`}>Scroll · latest {items.length}</span>
+        </div>
+
+        <div className="max-h-[min(68vh,520px)] overflow-y-auto overscroll-contain divide-y divide-slate-700/20 dark:divide-slate-700/50">
+          {loading && (
+            <div className={`p-8 text-center text-sm ${muted}`}>Loading notifications…</div>
           )}
-          {items.map((n) => (
-            <div key={n._id} className={`rounded-xl border-2 p-3 ${card(n)}`}>
-              <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
-                {n.title}
-              </div>
-              <div className={`text-xs mt-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                {n.message}
-              </div>
-              {n.createdAt && (
-                <div className={`text-[10px] mt-1 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {new Date(n.createdAt).toLocaleString()}
-                </div>
-              )}
-              <div className="flex gap-2 mt-2">
-                {!n.read && (
-                  <button
-                    type="button"
-                    onClick={() => mark(n._id)}
-                    className="text-xs font-bold text-[#2596be]"
-                  >
-                    Mark read
-                  </button>
-                )}
-                {n.type === 'outlet_pending' && (
-                  <Link to="/admin/outlets" className="text-xs font-bold text-amber-600">
-                    Review outlets →
-                  </Link>
-                )}
-              </div>
+          {!loading && items.length === 0 && (
+            <div className="p-12 text-center">
+              <div className="text-3xl mb-2 opacity-80">✨</div>
+              <p className={`font-bold ${title}`}>You’re all caught up</p>
+              <p className={`text-sm mt-1 ${muted}`}>
+                New outlet submissions will show up here.
+              </p>
             </div>
-          ))}
+          )}
+          {!loading &&
+            items.map((n) => {
+              const meta = typeMeta(n.type);
+              return (
+                <div
+                  key={n._id}
+                  className={`group flex gap-3 px-4 py-3.5 transition ${
+                    n.read
+                      ? dark
+                        ? 'hover:bg-slate-800/40'
+                        : 'hover:bg-slate-50'
+                      : dark
+                      ? 'bg-[#117ea6]/10 hover:bg-[#117ea6]/15'
+                      : 'bg-sky-50/80 hover:bg-sky-50'
+                  }`}
+                >
+                  {/* Icon */}
+                  <div
+                    className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-base ${meta.bg}`}
+                    style={{ color: meta.accent }}
+                  >
+                    {meta.icon}
+                  </div>
+
+                  {/* Body */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {!n.read && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#2596be] shrink-0" />
+                          )}
+                          <span className={`font-bold text-sm leading-snug ${title}`}>
+                            {n.title}
+                          </span>
+                          <span
+                            className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md"
+                            style={{
+                              color: meta.accent,
+                              background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                            }}
+                          >
+                            {meta.label}
+                          </span>
+                        </div>
+                        <p
+                          className={`text-sm mt-0.5 leading-relaxed ${
+                            dark ? 'text-slate-300' : 'text-slate-600'
+                          }`}
+                        >
+                          {n.message}
+                        </p>
+                      </div>
+                      <time className={`text-[11px] whitespace-nowrap shrink-0 pt-0.5 ${muted}`}>
+                        {timeAgo(n.createdAt)}
+                      </time>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-2">
+                      {!n.read && (
+                        <button
+                          type="button"
+                          onClick={() => mark(n._id)}
+                          className="text-[11px] font-bold text-[#117ea6] hover:underline"
+                        >
+                          Mark read
+                        </button>
+                      )}
+                      {n.type === 'outlet_pending' && (
+                        <Link
+                          to="/admin/outlets"
+                          className="text-[11px] font-bold text-amber-600 hover:underline"
+                        >
+                          Review outlets →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
 
-      <p className={`text-[11px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-        Showing latest {items.length} notifications. Scroll inside the box above. Use “Clear read”
-        to shorten the list.
+      <p className={`text-center text-[11px] ${muted}`}>
+        Tip: Clear read notifications to keep this inbox light. Pending outlet alerts stay useful
+        until you process them under Outlets & Beats.
       </p>
     </div>
   );
