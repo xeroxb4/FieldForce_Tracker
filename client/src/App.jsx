@@ -30,6 +30,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
 import AdminOutlets from './pages/admin/AdminOutlets';
 import AdminTargets from './pages/admin/AdminTargets';
+import AdminTargetSetup from './pages/admin/AdminTargetSetup';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminExport from './pages/admin/AdminExport';
 import AdminAvcGallery from './pages/admin/AdminAvcGallery';
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="outlet-sales" element={<AdminOutletSales />} />
         <Route path="outlets" element={<AdminOutlets />} />
         <Route path="targets" element={<AdminTargets />} />
+        <Route path="target-setup" element={<AdminTargetSetup />} />
         <Route path="users" element={<AdminUsers />} />
       </Route>
 

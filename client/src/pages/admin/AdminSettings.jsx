@@ -8,7 +8,7 @@ const LINKS = [
     desc: 'Add new users: choose role (OMR or Merchandiser), username, password, territory, distributor. You can also edit passwords later.',
   },
   {
-    to: '/admin/targets',
+    to: '/admin/target-setup',
     title: 'OMR monthly targets + planned outlets',
     desc: 'Set sales target (GHS) and how many outlets each OMR should cover this month.',
   },
