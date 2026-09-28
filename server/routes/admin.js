@@ -45,6 +45,7 @@ import {
   listNotifications,
   markRead,
   markAllRead,
+  clearReadNotifications,
 } from '../controllers/notificationController.js';
 
 const router = express.Router();
@@ -89,6 +90,7 @@ router.delete('/products/:id', removeProduct);
 
 router.get('/notifications', listNotifications);
 router.put('/notifications/read-all', markAllRead);
+router.delete('/notifications/read', clearReadNotifications);
 router.put('/notifications/:id/read', markRead);
 
 router.get('/export/omr', exportOmrXlsx);
