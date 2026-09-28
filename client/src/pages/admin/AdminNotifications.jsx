@@ -89,7 +89,7 @@ export default function AdminNotifications() {
   const title = dark ? 'text-white' : 'text-slate-900';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 px-1">
+    <div className="w-full max-w-5xl space-y-5 px-1 sm:px-2">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -144,7 +144,7 @@ export default function AdminNotifications() {
           <span className={`text-[11px] ${muted}`}>Scroll · latest {items.length}</span>
         </div>
 
-        <div className="max-h-[min(68vh,520px)] overflow-y-auto overscroll-contain divide-y divide-slate-700/20 dark:divide-slate-700/50">
+        <div className="max-h-[min(72vh,640px)] overflow-y-auto overscroll-contain divide-y divide-slate-700/20 dark:divide-slate-700/50">
           {loading && (
             <div className={`p-8 text-center text-sm ${muted}`}>Loading notifications…</div>
           )}
