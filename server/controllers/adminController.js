@@ -327,9 +327,49 @@ export const adminAssignOutlet = async (req, res) => {
 export const listTargets = async (req, res) => {
   try {
     const month = req.query.month || new Date().toISOString().slice(0, 7);
-    const targets = await Target.find({ month }).populate('userId', 'fullName username territory distributor');
-    res.json(targets);
+    const startDate = `${month}-01`;
+    const endDate = `${month}-31`;
+
+    const targets = await Target.find({ month })
+      .populate('userId', 'fullName username territory distributor isTraining isActive')
+      .lean();
+
+    // Live sales for the month (exclude training users)
+    const salesAgg = await Visit.aggregate([
+      {
+        $match: {
+          date: { $gte: startDate, $lte: endDate },
+          outcome: 'Order Placed',
+          extraCoverage: { $ne: true },
+        },
+      },
+      { $group: { _id: '$userId', achieved: { $sum: '$amount' } } },
+    ]);
+    const salesMap = Object.fromEntries(
+      salesAgg.map((s) => [String(s._id), s.achieved || 0])
+    );
+
+    const enriched = targets
+      .filter((t) => t.userId && !t.userId.isTraining)
+      .map((t) => {
+        const uid = String(t.userId._id || t.userId);
+        const achieved = Math.round((salesMap[uid] || 0) * 100) / 100;
+        const targetAmount = Number(t.targetAmount) || 0;
+        const percentage =
+          targetAmount > 0
+            ? Math.min(100, Math.round((achieved / targetAmount) * 1000) / 10)
+            : 0;
+        return {
+          ...t,
+          achievedAmount: achieved,
+          percentage,
+        };
+      })
+      .sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
+
+    res.json(enriched);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to list targets' });
   }
 };

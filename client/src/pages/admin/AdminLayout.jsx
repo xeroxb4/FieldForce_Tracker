@@ -9,6 +9,7 @@ import logo from '../../assets/logo.png';
 const NAV = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/admin/sales', label: 'Sales', icon: '💰' },
+  { to: '/admin/targets', label: 'Targets', icon: '🎯' },
   { to: '/admin/distributors', label: 'Distributors', icon: '🏢' },
   { to: '/admin/analytics', label: 'Data Analysis', icon: '📈' },
   { to: '/admin/products', label: 'Products', icon: '🧴' },
