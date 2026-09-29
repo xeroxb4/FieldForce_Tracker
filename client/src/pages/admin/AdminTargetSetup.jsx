@@ -100,7 +100,7 @@ export default function AdminTargetSetup() {
     : 'w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900';
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-4 w-full max-w-none">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
