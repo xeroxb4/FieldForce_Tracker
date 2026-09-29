@@ -1086,6 +1086,101 @@ export const exportOmrOutletUniverseXlsx = async (req, res) => {
 };
 
 
+
+/** Build QuickChart PNG (no native canvas). Returns Buffer or null. */
+async function fetchTrendChartPng(labels, series) {
+  // series: [{ label, data: number[], color }]
+  try {
+    const datasets = series.map((s) => ({
+      label: s.label,
+      data: s.data,
+      borderColor: s.color,
+      backgroundColor: s.color,
+      fill: false,
+      tension: 0.25,
+      pointRadius: 2,
+      borderWidth: 2,
+    }));
+    const chart = {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: 'FieldForce daily trend (normalized 0–100 so all lines are visible)',
+            font: { size: 14 },
+          },
+          legend: { position: 'bottom' },
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 100,
+            title: { display: true, text: 'Index 0–100' },
+          },
+          x: {
+            ticks: { maxRotation: 45, minRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          },
+        },
+      },
+    };
+    const url =
+      'https://quickchart.io/chart?width=960&height=420&devicePixelRatio=2&c=' +
+      encodeURIComponent(JSON.stringify(chart));
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch (e) {
+    console.error('Chart image fetch failed:', e.message);
+    return null;
+  }
+}
+
+function normalizeSeries(values) {
+  const nums = values.map((v) => Number(v) || 0);
+  const max = Math.max(...nums, 0);
+  if (max <= 0) return nums.map(() => 0);
+  return nums.map((v) => Math.round((v / max) * 1000) / 10);
+}
+
+async function fetchTopOmrBarPng(names, sales) {
+  try {
+    const chart = {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [
+          {
+            label: 'Sales (GHS)',
+            data: sales,
+            backgroundColor: '#117ea6',
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          title: { display: true, text: 'OMR sales in period', font: { size: 14 } },
+          legend: { display: false },
+        },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'GHS' } },
+        },
+      },
+    };
+    const url =
+      'https://quickchart.io/chart?width=960&height=360&devicePixelRatio=2&c=' +
+      encodeURIComponent(JSON.stringify(chart));
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch (e) {
+    console.error('Bar chart fetch failed:', e.message);
+    return null;
+  }
+}
+
+
 /** Data Analysis pack: ranking + notes + daily trend */
 export const exportDataAnalysisXlsx = async (req, res) => {
   try {
@@ -1302,52 +1397,107 @@ export const exportDataAnalysisXlsx = async (req, res) => {
     meta.addRow(['Ranking', 'Sales → productive calls → hit rate']);
     meta.addRow(['Note', 'Chart lines on screen are shape-scaled; this sheet has raw daily values']);
 
-    const wsTrend = wb.addWorksheet('Daily Trend');
-    wsTrend.addRow(['Date', 'Sales (GHS)', 'Orders', 'Productive calls', 'Hit rate %']);
+    // Figures only (no embedded chart) — numbers for Excel analysis / pivot
+    const wsTrend = wb.addWorksheet('Daily Figures');
+    wsTrend.addRow(['Date', 'Sales (GHS)', 'Orders', 'Productive calls', 'Visits', 'Hit rate %']);
     wsTrend.getRow(1).font = { bold: true };
+    let sumSales = 0;
+    let sumOrders = 0;
+    let sumProd = 0;
+    let sumVisits = 0;
     for (const d of Object.keys(dayMap).sort()) {
       const row = dayMap[d];
       const hit = row.visits > 0 ? Math.round((row.productive / row.visits) * 1000) / 10 : 0;
-      wsTrend.addRow([d, Math.round(row.sales * 100) / 100, row.orders, row.productive, hit]);
+      const sales = Math.round(row.sales * 100) / 100;
+      sumSales += sales;
+      sumOrders += row.orders;
+      sumProd += row.productive;
+      sumVisits += row.visits;
+      const dataRow = wsTrend.addRow([d, sales, row.orders, row.productive, row.visits, hit]);
+      dataRow.getCell(2).numFmt = '#,##0.00';
+      dataRow.getCell(6).numFmt = '0.0';
     }
-    wsTrend.getColumn(1).width = 12;
+    const tot = wsTrend.addRow([
+      'TOTAL',
+      Math.round(sumSales * 100) / 100,
+      sumOrders,
+      sumProd,
+      sumVisits,
+      sumVisits > 0 ? Math.round((sumProd / sumVisits) * 1000) / 10 : 0,
+    ]);
+    tot.font = { bold: true };
+    tot.getCell(2).numFmt = '#,##0.00';
+    wsTrend.getColumn(1).width = 14;
     wsTrend.getColumn(2).width = 14;
+    wsTrend.getColumn(3).width = 10;
+    wsTrend.getColumn(4).width = 16;
+    wsTrend.getColumn(5).width = 10;
+    wsTrend.getColumn(6).width = 12;
 
-    // Excel chart for daily trend
-    if (wsTrend.rowCount > 1) {
-      const chartEnd = wsTrend.rowCount;
-      try {
-        wsTrend.addChart({
-          type: 'line',
-          name: 'Daily trend',
-          title: { name: 'Sales / Orders / Productive / Hit rate' },
-          series: [
-            {
-              name: 'Sales (GHS)',
-              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
-              values: { formula: `'Daily Trend'!$B$2:$B$${chartEnd}` },
-            },
-            {
-              name: 'Orders',
-              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
-              values: { formula: `'Daily Trend'!$C$2:$C$${chartEnd}` },
-            },
-            {
-              name: 'Productive calls',
-              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
-              values: { formula: `'Daily Trend'!$D$2:$D$${chartEnd}` },
-            },
-            {
-              name: 'Hit rate %',
-              labels: { formula: `'Daily Trend'!$A$2:$A$${chartEnd}` },
-              values: { formula: `'Daily Trend'!$E$2:$E$${chartEnd}` },
-            },
-          ],
-        });
-      } catch (e) {
-        // exceljs chart support varies — data sheet is enough
-        meta.addRow(['Chart note', 'Open Daily Trend in Excel and insert Line chart if chart object missing']);
-      }
+    meta.addRow(['Sheets', 'Daily Figures = numbers; Charts = images of the same trends; Top/Lowest/All = KPI tables']);
+    meta.addRow(['Charts', 'Embedded PNG charts (visible when you open the Charts sheet)']);
+
+    // --- Charts sheet (images Excel always displays) ---
+    const dates = Object.keys(dayMap).sort();
+    const salesArr = dates.map((d) => Math.round(dayMap[d].sales * 100) / 100);
+    const ordersArr = dates.map((d) => dayMap[d].orders);
+    const prodArr = dates.map((d) => dayMap[d].productive);
+    const hitArr = dates.map((d) =>
+      dayMap[d].visits > 0
+        ? Math.round((dayMap[d].productive / dayMap[d].visits) * 1000) / 10
+        : 0
+    );
+    // Short labels for axis (MM-DD)
+    const shortLabels = dates.map((d) => d.slice(5));
+
+    const wsCharts = wb.addWorksheet('Charts');
+    wsCharts.getColumn(1).width = 100;
+    wsCharts.addRow(['FieldForce Data Analysis — charts for the selected period']);
+    wsCharts.getRow(1).font = { bold: true, size: 14 };
+    wsCharts.addRow([`Period: ${startDate} → ${endDate}`]);
+    wsCharts.addRow([
+      'Daily lines are normalized 0–100 so Sales, Orders, Productive and Hit rate can share one chart. Raw numbers are on Daily Figures.',
+    ]);
+    wsCharts.addRow([]);
+
+    const trendPng = await fetchTrendChartPng(shortLabels, [
+      { label: 'Sales', data: normalizeSeries(salesArr), color: '#117ea6' },
+      { label: 'Orders', data: normalizeSeries(ordersArr), color: '#10b981' },
+      { label: 'Productive calls', data: normalizeSeries(prodArr), color: '#f59e0b' },
+      { label: 'Hit rate %', data: normalizeSeries(hitArr), color: '#ef4444' },
+    ]);
+
+    if (trendPng) {
+      const imgId = wb.addImage({
+        buffer: trendPng,
+        extension: 'png',
+      });
+      wsCharts.addImage(imgId, {
+        tl: { col: 0, row: 4 },
+        ext: { width: 920, height: 400 },
+      });
+      wsCharts.addRow([]);
+      wsCharts.getRow(22).values = ['(Daily trend chart above)'];
+    } else {
+      wsCharts.addRow(['Trend chart could not be generated (network). Use Daily Figures sheet.']);
+    }
+
+    // Top OMRs bar chart
+    const topForChart = ranked.slice(0, Math.min(8, ranked.length));
+    const barPng = await fetchTopOmrBarPng(
+      topForChart.map((r) => r.name),
+      topForChart.map((r) => r.sales)
+    );
+    if (barPng) {
+      const imgId2 = wb.addImage({
+        buffer: barPng,
+        extension: 'png',
+      });
+      // Place below trend chart
+      wsCharts.addImage(imgId2, {
+        tl: { col: 0, row: 24 },
+        ext: { width: 920, height: 340 },
+      });
     }
 
     const wsTop = wb.addWorksheet('Top 3');
