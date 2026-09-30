@@ -176,6 +176,7 @@ export default function Beats() {
               outletLocation: outlet.location,
               agentLocation,
               offline: true,
+              fromBeat: true,
               extraCoverage: !!opts.extraCoverage,
             },
           });
@@ -193,8 +194,15 @@ export default function Beats() {
     return <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Loading beats…</p>;
   }
 
-  if (error) {
-    return <p className="text-sm text-red-500">{error}</p>;
+  if (error && !week) {
+    return (
+      <div className="p-4 space-y-2">
+        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-xs text-slate-500">
+          Open Beats once while online so your route is saved on this phone. Then offline visits work.
+        </p>
+      </div>
+    );
   }
 
   const dayData = week?.days?.[selectedDay];
@@ -203,6 +211,11 @@ export default function Beats() {
 
   return (
     <div>
+      {error && week && (
+        <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+          {error}
+        </div>
+      )}
       <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
         Daily Beats
       </h2>
