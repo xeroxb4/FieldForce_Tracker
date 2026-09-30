@@ -139,6 +139,7 @@ export const createVisit = async (req, res) => {
       extraCoverage,
       deferredSalePending,
       physicalSaleDate,
+      offlineId,
     } = req.body;
 
     if (!shopName && !outletId) {
@@ -243,6 +244,120 @@ export const createVisit = async (req, res) => {
 
     let creditId = undefined;
 
+    // visitDate already set above
+    const clientOfflineId = offlineId ? String(offlineId).slice(0, 80) : '';
+
+    // Idempotent: same offline queue item already applied
+    if (clientOfflineId) {
+      const byOffline = await Visit.findOne({
+        userId: req.user._id,
+        offlineId: clientOfflineId,
+      });
+      if (byOffline) {
+        return res.status(200).json({
+          ...byOffline.toObject(),
+          _conflict: 'idempotent',
+          message: 'Already synced from offline queue',
+        });
+      }
+    }
+
+    // Same outlet + same day: resolve vs existing visit (not extra coverage)
+    if (outletId && !extraCoverage) {
+      const existing = await Visit.findOne({
+        userId: req.user._id,
+        outletId,
+        date: visitDate,
+        extraCoverage: { $ne: true },
+      }).sort({ createdAt: -1 });
+
+      if (existing) {
+        const incomingOrder =
+          outcome === 'Order Placed' && (items.length > 0 || Number(totalAmount) > 0);
+
+        // Server already has order → client loses this create (already synced elsewhere)
+        if (existing.outcome === 'Order Placed' && Number(existing.amount) > 0) {
+          return res.status(409).json({
+            code: 'ALREADY_SYNCED',
+            message: 'Visit already has an order on the server for this outlet today',
+            visit: existing,
+          });
+        }
+
+        // Server No Order + offline Order Placed → upgrade existing (call-back style)
+        if (
+          incomingOrder &&
+          (existing.outcome === 'No Order' ||
+            existing.outcome === 'Follow Up' ||
+            existing.outcome === 'Shop Closed')
+        ) {
+          // Use amounts already normalised above in createVisit
+          const mergeItems = items;
+          const mergeAmount = Math.round(Number(totalAmount) * 100) / 100;
+          const mergeProducts = productsStr || '';
+
+          let creditId = existing.creditId;
+          if (paymentType === 'credit' && mergeAmount > 0) {
+            const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
+            const dueDate = addWeeks(visitDate, weeks);
+            const credit = await Credit.create({
+              userId: req.user._id,
+              repName: req.user.fullName,
+              outletId: outletId || undefined,
+              customerName: resolvedContactName || resolvedShopName,
+              shopName: resolvedShopName,
+              amount: mergeAmount,
+              amountPaid: 0,
+              balance: mergeAmount,
+              dueDate,
+              saleDate: visitDate,
+              status: 'pending',
+              notes: notes || `Offline sync credit – ${weeks} week(s)`,
+            });
+            creditId = credit._id;
+          }
+
+          existing.outcome = 'Order Placed';
+          existing.noOrderReason = '';
+          existing.lineItems = mergeItems;
+          existing.products = mergeProducts;
+          existing.amount = mergeAmount;
+          existing.paymentType = paymentType === 'credit' ? 'credit' : 'cash';
+          existing.creditDurationWeeks =
+            paymentType === 'credit' ? Number(creditDurationWeeks) === 2 ? 2 : 1 : null;
+          existing.creditId = creditId || undefined;
+          existing.notes = [existing.notes, notes, 'Merged from offline queue']
+            .filter(Boolean)
+            .join(' | ');
+          existing.syncedFromOffline = true;
+          if (clientOfflineId) existing.offlineId = clientOfflineId;
+          if (location?.lat != null) {
+            existing.location = {
+              lat: Number(location.lat),
+              lng: Number(location.lng),
+              accuracy: location.accuracy,
+            };
+          }
+          await existing.save();
+          return res.status(200).json({
+            ...existing.toObject(),
+            _conflict: 'merged_callback',
+            message: 'Offline order merged into existing no-order visit',
+          });
+        }
+
+        // Duplicate no-order / same outcome → already synced
+        if (!incomingOrder) {
+          return res.status(409).json({
+            code: 'ALREADY_SYNCED',
+            message: 'Visit already logged for this outlet today',
+            visit: existing,
+          });
+        }
+      }
+    }
+
+
     // Create credit/owing if payment is credit
     if (!isExtra && outcome === 'Order Placed' && paymentType === 'credit' && totalAmount > 0) {
       const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
@@ -279,6 +394,7 @@ export const createVisit = async (req, res) => {
       scheduledKpiDate = nextBeatDate(days, visitDate);
     }
 
+
     const visit = await Visit.create({
       userId: req.user._id,
       repName: req.user.fullName,
@@ -310,6 +426,7 @@ export const createVisit = async (req, res) => {
       outletLocation: outletLocation || undefined,
       distanceMeters: distM != null ? Number(distM) : undefined,
       syncedFromOffline: !!syncedFromOffline,
+      offlineId: clientOfflineId || '',
       extraCoverage: isExtra,
       deferredSalePending: isExtra,
       physicalSaleDate: isExtra ? visitDate : (physicalSaleDate || ''),

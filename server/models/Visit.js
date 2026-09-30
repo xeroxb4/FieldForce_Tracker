@@ -97,6 +97,8 @@ const visitSchema = new mongoose.Schema(
     },
     distanceMeters: { type: Number },
     syncedFromOffline: { type: Boolean, default: false },
+    /** Client offline queue id — idempotent sync */
+    offlineId: { type: String, default: '', index: true },
   },
   { timestamps: true }
 );

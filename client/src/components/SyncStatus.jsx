@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { isOnline, queueCount, syncQueue } from '../services/offline';
+import {
+  isOnline,
+  queueCount,
+  conflictCount,
+  syncQueue,
+  getConflicts,
+  clearConflicts,
+} from '../services/offline';
 
 export default function SyncStatus({ className = '' }) {
   const [online, setOnline] = useState(isOnline());
   const [pending, setPending] = useState(queueCount());
+  const [conflicts, setConflicts] = useState(conflictCount());
   const [syncing, setSyncing] = useState(false);
   const [lastMsg, setLastMsg] = useState('');
 
-  const refresh = () => setPending(queueCount());
+  const refresh = () => {
+    setPending(queueCount());
+    setConflicts(conflictCount());
+  };
 
   useEffect(() => {
     const on = () => {
@@ -33,18 +44,35 @@ export default function SyncStatus({ className = '' }) {
   }, []);
 
   const flush = async () => {
-    if (!isOnline() || queueCount() === 0) return;
+    if (!isOnline() || (queueCount() === 0 && conflictCount() === 0)) return;
     setSyncing(true);
     try {
       const r = await syncQueue(api);
-      setLastMsg(r.synced ? `Synced ${r.synced}` : '');
       refresh();
+      const parts = [];
+      if (r.synced) parts.push(`Synced ${r.synced}`);
+      if (r.conflicts) parts.push(`${r.conflicts} conflict(s)`);
+      setLastMsg(parts.join(' · '));
     } finally {
       setSyncing(false);
     }
   };
 
-  if (online && pending === 0 && !syncing) {
+  const showConflicts = () => {
+    const list = getConflicts();
+    if (!list.length) return;
+    const text = list
+      .slice(0, 8)
+      .map((c) => `• ${c.type}: ${c.summary || ''} — ${c.reason}`)
+      .join('\n');
+    const clear = window.confirm(
+      `Sync conflicts (server already had data or item was rejected):\n\n${text}\n\nClear this list?`
+    );
+    if (clear) clearConflicts();
+    refresh();
+  };
+
+  if (online && pending === 0 && !syncing && conflicts === 0) {
     return (
       <span
         className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 ${className}`}
@@ -69,6 +97,19 @@ export default function SyncStatus({ className = '' }) {
     );
   }
 
+  if (conflicts > 0 && pending === 0 && !syncing) {
+    return (
+      <button
+        type="button"
+        onClick={showConflicts}
+        className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-500 text-white ${className}`}
+        title="Tap to view conflicts"
+      >
+        ● {conflicts} conflict{conflicts > 1 ? 's' : ''}
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -76,8 +117,12 @@ export default function SyncStatus({ className = '' }) {
       disabled={syncing}
       className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sky-500 text-white ${className}`}
     >
-      {syncing ? 'Syncing…' : `${pending} pending · tap sync`}
-      {lastMsg ? ` · ${lastMsg}` : ''}
+      {syncing
+        ? 'Syncing…'
+        : pending > 0
+        ? `${pending} pending · tap sync`
+        : lastMsg || 'Sync'}
+      {conflicts > 0 ? ` · ${conflicts}⚠` : ''}
     </button>
   );
 }
