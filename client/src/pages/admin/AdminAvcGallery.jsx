@@ -130,36 +130,54 @@ export default function AdminAvcGallery() {
                 </button>
                 {isOpen && (
                   <div className="px-3 pb-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {list.map((p) => (
-                      <button
-                        key={p._id}
-                        type="button"
-                        onClick={() => setPreview(p)}
-                        className={`rounded-xl border overflow-hidden text-left ${
-                          dark ? 'border-slate-700' : 'border-slate-200'
-                        }`}
-                      >
-                        <img src={p.photo} alt="" className="w-full h-28 object-cover" />
-                        <div className="p-2">
-                          <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
-                            {p.shopName}
+                    {list.flatMap((p) => {
+                      const imgs =
+                        Array.isArray(p.photos) && p.photos.length
+                          ? p.photos
+                          : p.photo
+                          ? [{ photo: p.photo, label: 'Shelf 1' }]
+                          : [];
+                      return imgs.map((img, ii) => (
+                        <button
+                          key={`${p._id}-${img._id || ii}`}
+                          type="button"
+                          onClick={() =>
+                            setPreview({
+                              ...p,
+                              photo: img.photo,
+                              shelfLabel: img.label || `Shelf ${ii + 1}`,
+                            })
+                          }
+                          className={`rounded-xl border overflow-hidden text-left ${
+                            dark ? 'border-slate-700' : 'border-slate-200'
+                          }`}
+                        >
+                          <img src={img.photo} alt="" className="w-full h-28 object-cover" />
+                          <div className="p-2">
+                            <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
+                              {p.shopName}
+                            </div>
+                            <div className="text-[10px] font-semibold text-[#2596be]">
+                              {img.label || `Shelf ${ii + 1}`}
+                              {p.photoCount > 1 ? ` · ${p.photoCount} total` : ''}
+                            </div>
+                            <div className="text-[10px] opacity-60">
+                              {p.periodLabel} · {p.omr}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deletePhoto(p._id);
+                              }}
+                              className="mt-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30"
+                            >
+                              Delete all · retake
+                            </button>
                           </div>
-                          <div className="text-[10px] opacity-60">
-                            {p.periodLabel} · {p.omr}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deletePhoto(p._id);
-                            }}
-                            className="mt-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30"
-                          >
-                            Delete · retake
-                          </button>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ));
+                    })}
                   </div>
                 )}
               </div>
@@ -180,6 +198,9 @@ export default function AdminAvcGallery() {
             <img src={preview.photo} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
             <div className="p-4">
               <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{preview.shopName}</div>
+              {preview.shelfLabel && (
+                <div className="text-xs font-semibold text-[#2596be]">{preview.shelfLabel}</div>
+              )}
               <div className="text-xs opacity-70">
                 {preview.distributor} · AVC {preview.avcTier} · {preview.periodLabel}
               </div>

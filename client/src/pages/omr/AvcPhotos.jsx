@@ -32,7 +32,9 @@ export default function AvcPhotos() {
       .then((r) => setData(r.data))
       .catch((e) => {
         if (!isOnline()) {
-          setError('You are offline. Open AVC when online to see the list, or use queued uploads after sync.');
+          setError(
+            'You are offline. Open AVC when online to see the list, or use queued uploads after sync.'
+          );
         } else {
           setError(e.response?.data?.message || 'Failed to load');
         }
@@ -52,7 +54,9 @@ export default function AvcPhotos() {
         load();
         setInfo('');
       } else {
-        setInfo('Offline mode — photos will be saved on this phone and uploaded when network returns.');
+        setInfo(
+          'Offline mode — photos will be saved on this phone and uploaded when network returns.'
+        );
       }
     };
     window.addEventListener('ff-queue-change', onQ);
@@ -84,7 +88,6 @@ export default function AvcPhotos() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      // Always compress for mobile uploads (timeout / payload size)
       let photo = await compressImage(dataUrl, 0.65, 1280);
       if (typeof photo === 'string' && photo.length > 1_200_000) {
         photo = await compressImage(photo, 0.5, 1024);
@@ -105,7 +108,7 @@ export default function AvcPhotos() {
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
       } catch {
-        /* GPS optional for shelf photo */
+        /* optional */
       }
 
       const payload = { outletId: activeId, photo, lat, lng };
@@ -114,24 +117,32 @@ export default function AvcPhotos() {
         enqueue({ type: 'avc-photo', payload });
         refreshPending();
         setInfo(
-          'Saved offline. When network returns, this photo will upload automatically (watch the status badge).'
+          'Shelf photo saved offline. When network returns it will upload. You can add more shelves after sync or while offline (each queues separately).'
         );
         return;
       }
 
       try {
-        await api.post('/omr/avc-photos', payload, { timeout: 60000 });
-        setInfo('Photo uploaded.');
+        const { data: res } = await api.post('/omr/avc-photos', payload, {
+          timeout: 60000,
+        });
+        setInfo(
+          `Shelf photo added (${res.photoCount || '?'}/${res.maxShelves || 8}). Add another shelf if Nivea is on more shelves.`
+        );
         load();
       } catch (err) {
-        // Network / timeout / server — queue for later
         const status = err.response?.status;
         const msg = err.response?.data?.message;
-        if (!err.response || status >= 500 || err.code === 'ECONNABORTED' || err.message?.includes('Network')) {
+        if (
+          !err.response ||
+          status >= 500 ||
+          err.code === 'ECONNABORTED' ||
+          err.message?.includes('Network')
+        ) {
           enqueue({ type: 'avc-photo', payload });
           refreshPending();
           setInfo(
-            'Upload could not finish (network or server). Photo saved on this phone and will sync when connection is stable.'
+            'Upload could not finish. Photo saved on this phone and will sync when connection is stable.'
           );
         } else {
           setError(msg || 'Upload failed');
@@ -147,8 +158,11 @@ export default function AvcPhotos() {
 
   const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const maxShelves = data?.maxShelves || 8;
 
-  if (loading) return <p className="text-sm text-slate-500 p-4">Loading AVC tasks…</p>;
+  if (loading) {
+    return <p className="text-sm text-slate-500 p-4">Loading AVC tasks…</p>;
+  }
 
   return (
     <div className="space-y-4 pb-6">
@@ -157,7 +171,8 @@ export default function AvcPhotos() {
           AVC shelf photos
         </h1>
         <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Twice a month: capture Nivea shelf / planogram at every AVC outlet.
+          Twice a month. If Nivea is on more than one shelf, add a photo for each shelf (up to{' '}
+          {maxShelves}).
         </p>
       </div>
 
@@ -172,7 +187,11 @@ export default function AvcPhotos() {
         </div>
       )}
       {error && <p className="text-sm font-semibold text-red-500">{error}</p>}
-      {info && <p className={`text-sm font-medium ${dark ? 'text-emerald-400' : 'text-emerald-700'}`}>{info}</p>}
+      {info && (
+        <p className={`text-sm font-medium ${dark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+          {info}
+        </p>
+      )}
 
       {data && (
         <div className={`rounded-2xl border-2 p-3 ${card}`}>
@@ -181,10 +200,12 @@ export default function AvcPhotos() {
               {data.periodLabel} · {data.month}/{data.year}
             </span>
             <span className="text-[#2596be]">
-              {data.done}/{data.required} done
+              {data.done}/{data.required} outlets done
             </span>
           </div>
-          <div className={`mt-2 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+          <div
+            className={`mt-2 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}
+          >
             <div
               className="h-full bg-[#2596be] rounded-full"
               style={{
@@ -205,44 +226,63 @@ export default function AvcPhotos() {
       />
 
       <div className="space-y-3">
-        {(data?.outlets || []).map((o) => (
-          <div key={o._id} className={`rounded-2xl border-2 p-3 ${card}`}>
-            <div className="flex justify-between gap-2 mb-1">
-              <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
-                {o.name}
+        {(data?.outlets || []).map((o) => {
+          const count = o.photoCount || o.photos?.length || 0;
+          const canAdd = count < maxShelves;
+          return (
+            <div key={o._id} className={`rounded-2xl border-2 p-3 ${card}`}>
+              <div className="flex justify-between gap-2 mb-1">
+                <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                  {o.name}
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    o.done
+                      ? 'bg-emerald-500/20 text-emerald-600'
+                      : 'bg-amber-500/20 text-amber-700'
+                  }`}
+                >
+                  {o.done ? `${count} shelf photo(s)` : 'Due'}
+                </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                  o.done ? 'bg-emerald-500/20 text-emerald-600' : 'bg-amber-500/20 text-amber-700'
-                }`}
+              <div className={`text-xs mb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                AVC {o.avcTier || '—'} · {o.distributor || '—'}
+              </div>
+
+              {(o.photos || []).length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+                  {o.photos.map((ph, i) => (
+                    <div key={ph._id || i} className="shrink-0 w-24">
+                      <img
+                        src={ph.photo}
+                        alt={ph.label || `Shelf ${i + 1}`}
+                        className="w-24 h-24 object-cover rounded-xl border border-slate-200 dark:border-slate-600"
+                      />
+                      <div className={`text-[10px] mt-0.5 font-semibold truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {ph.label || `Shelf ${i + 1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={uploading === o._id || !canAdd}
+                onClick={() => pickPhoto(o._id)}
+                className="w-full py-2.5 rounded-xl bg-[#117ea6] text-white text-sm font-bold disabled:opacity-60"
               >
-                {o.done ? 'Done' : 'Due'}
-              </span>
+                {uploading === o._id
+                  ? 'Saving…'
+                  : !canAdd
+                  ? `Max ${maxShelves} shelves reached`
+                  : count === 0
+                  ? 'Take / upload shelf photo'
+                  : `Add another shelf photo (${count}/${maxShelves})`}
+              </button>
             </div>
-            <div className={`text-xs mb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-              AVC {o.avcTier || '—'} · {o.distributor || '—'}
-            </div>
-            {o.photo?.photo && (
-              <img
-                src={o.photo.photo}
-                alt=""
-                className="w-full max-h-40 object-cover rounded-xl mb-2"
-              />
-            )}
-            <button
-              type="button"
-              disabled={uploading === o._id}
-              onClick={() => pickPhoto(o._id)}
-              className="w-full py-2.5 rounded-xl bg-[#117ea6] text-white text-sm font-bold disabled:opacity-60"
-            >
-              {uploading === o._id
-                ? 'Saving…'
-                : o.done
-                ? 'Retake photo'
-                : 'Take / upload shelf photo'}
-            </button>
-          </div>
-        ))}
+          );
+        })}
         {!data?.outlets?.length && (
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             No AVC outlets assigned to you.
