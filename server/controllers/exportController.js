@@ -1460,11 +1460,12 @@ export const exportDataAnalysisXlsx = async (req, res) => {
     ]);
     wsCharts.addRow([]);
 
+    // Match app LineChart colours: Blue Sales, Red Orders, Green Productive, Yellow Hit rate
     const trendPng = await fetchTrendChartPng(shortLabels, [
-      { label: 'Sales', data: normalizeSeries(salesArr), color: '#117ea6' },
-      { label: 'Orders', data: normalizeSeries(ordersArr), color: '#10b981' },
-      { label: 'Productive calls', data: normalizeSeries(prodArr), color: '#f59e0b' },
-      { label: 'Hit rate %', data: normalizeSeries(hitArr), color: '#ef4444' },
+      { label: 'Sales', data: normalizeSeries(salesArr), color: '#2596be' },
+      { label: 'Orders', data: normalizeSeries(ordersArr), color: '#f43f5e' },
+      { label: 'Productive calls', data: normalizeSeries(prodArr), color: '#10b981' },
+      { label: 'Hit rate %', data: normalizeSeries(hitArr), color: '#f59e0b' },
     ]);
 
     if (trendPng) {
