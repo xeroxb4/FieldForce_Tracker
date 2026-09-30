@@ -17,19 +17,43 @@ const getTodayDayNumber = () => {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-async function visitedOutletIdsForUser(userId) {
+/** Map outletId -> { visitId, outcome, amount } for today */
+async function visitStatusToday(userId) {
   const visits = await Visit.find({
     userId,
     date: todayStr(),
     outletId: { $ne: null },
-  }).select('outletId');
-  return new Set(visits.map((v) => String(v.outletId)));
+  })
+    .select('outletId outcome amount')
+    .sort({ createdAt: 1 });
+
+  const map = {};
+  for (const v of visits) {
+    const id = String(v.outletId);
+    const prev = map[id];
+    // Prefer Order Placed over No Order if both exist
+    if (!prev || v.outcome === 'Order Placed') {
+      map[id] = {
+        visitId: v._id,
+        outcome: v.outcome,
+        amount: v.amount || 0,
+      };
+    }
+  }
+  return map;
 }
 
-function attachVisited(outlets, visitedSet) {
+function attachVisited(outlets, statusMap) {
   return outlets.map((o) => {
     const obj = o.toObject ? o.toObject() : { ...o };
-    obj.visitedToday = visitedSet.has(String(o._id));
+    const st = statusMap[String(o._id)];
+    obj.visitedToday = !!st;
+    obj.todayVisitId = st?.visitId || null;
+    obj.todayOutcome = st?.outcome || null;
+    obj.canCallbackOrder =
+      !!st &&
+      st.outcome === 'No Order' &&
+      !(Number(st.amount) > 0);
     return obj;
   });
 }
@@ -44,8 +68,8 @@ export const getTodayBeat = async (req, res) => {
       assignedDays: dayNum,
     }).sort({ name: 1 });
 
-    const visited = await visitedOutletIdsForUser(req.user._id);
-    const list = attachVisited(outlets, visited);
+    const statusMap = await visitStatusToday(req.user._id);
+    const list = attachVisited(outlets, statusMap);
 
     res.json({
       dayNumber: dayNum,
@@ -71,7 +95,7 @@ export const getWeekBeat = async (req, res) => {
       isActive: true,
     }).sort({ name: 1 });
 
-    const visited = await visitedOutletIdsForUser(req.user._id);
+    const statusMap = await visitStatusToday(req.user._id);
 
     const byDay = {};
     for (let d = 1; d <= maxDay; d++) {
@@ -79,7 +103,7 @@ export const getWeekBeat = async (req, res) => {
       byDay[d] = {
         dayNumber: d,
         dayName: DAY_NAMES[d],
-        outlets: attachVisited(dayOutlets, visited),
+        outlets: attachVisited(dayOutlets, statusMap),
       };
     }
 
@@ -87,7 +111,7 @@ export const getWeekBeat = async (req, res) => {
       today: getTodayDayNumber(),
       days: byDay,
       totalOutlets: outlets.length,
-      visitedToday: visited.size,
+      visitedToday: Object.keys(statusMap).length,
     });
   } catch (error) {
     console.error(error);

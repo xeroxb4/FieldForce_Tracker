@@ -334,7 +334,117 @@ export const createVisit = async (req, res) => {
   }
 };
 
+
+/** Same-day call-back: convert today's No Order visit into Order Placed (no second coverage visit) */
+export const callbackOrder = async (req, res) => {
+  try {
+    const visit = await Visit.findById(req.params.id);
+    if (!visit) return res.status(404).json({ message: 'Visit not found' });
+    if (String(visit.userId) !== String(req.user._id) && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not your visit' });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (visit.date !== today) {
+      return res.status(400).json({ message: 'Call-back order only allowed for today\'s visit' });
+    }
+    if (visit.outcome === 'Order Placed' && Number(visit.amount) > 0) {
+      return res.status(400).json({ message: 'This visit already has an order' });
+    }
+    if (visit.outcome !== 'No Order' && visit.outcome !== 'Follow Up' && visit.outcome !== 'Shop Closed') {
+      return res.status(400).json({
+        message: 'Call-back only for visits logged as No Order (or follow-up / closed)',
+      });
+    }
+
+    const {
+      lineItems,
+      products,
+      amount,
+      paymentType,
+      creditDurationWeeks,
+      notes,
+      location,
+    } = req.body;
+
+    const items = Array.isArray(lineItems) ? lineItems : [];
+    if (!items.length && !(Number(amount) > 0)) {
+      return res.status(400).json({ message: 'Add products for the call-back order' });
+    }
+
+    let totalAmount =
+      Number(amount) ||
+      items.reduce((s, li) => s + (Number(li.lineTotal) || Number(li.qty) * Number(li.unitPrice) || 0), 0);
+    totalAmount = Math.round(totalAmount * 100) / 100;
+
+    const productsStr =
+      products ||
+      items
+        .map((li) => `${li.productName || li.name || 'Item'} x${li.qty || 1}`)
+        .join(', ');
+
+    const pay = paymentType === 'credit' ? 'credit' : 'cash';
+    if (pay === 'credit') {
+      const weeks = Number(creditDurationWeeks);
+      if (weeks !== 1 && weeks !== 2) {
+        return res.status(400).json({ message: 'Credit duration must be 1 or 2 weeks' });
+      }
+    }
+
+    let creditId = visit.creditId;
+    if (pay === 'credit' && totalAmount > 0) {
+      const weeks = Number(creditDurationWeeks) === 2 ? 2 : 1;
+      const due = new Date();
+      due.setDate(due.getDate() + weeks * 7);
+      const credit = await Credit.create({
+        userId: req.user._id,
+        repName: req.user.fullName,
+        outletId: visit.outletId || undefined,
+        customerName: visit.contactName || visit.shopName,
+        shopName: visit.shopName,
+        amount: totalAmount,
+        amountPaid: 0,
+        balance: totalAmount,
+        dueDate: due.toISOString().slice(0, 10),
+        saleDate: visit.date,
+        status: 'pending',
+        notes: notes || `Call-back credit sale – ${weeks} week(s)`,
+      });
+      creditId = credit._id;
+    }
+
+    const noteBits = [visit.notes || '', notes || '', 'Call-back order (same day after no order)']
+      .map((s) => String(s).trim())
+      .filter(Boolean);
+    const uniqueNotes = [...new Set(noteBits)].join(' | ');
+
+    visit.outcome = 'Order Placed';
+    visit.noOrderReason = '';
+    visit.lineItems = items;
+    visit.products = productsStr;
+    visit.amount = totalAmount;
+    visit.paymentType = pay;
+    visit.creditDurationWeeks = pay === 'credit' ? Number(creditDurationWeeks) : null;
+    visit.creditId = creditId || undefined;
+    visit.notes = uniqueNotes;
+    if (location?.lat != null && location?.lng != null) {
+      visit.location = {
+        lat: Number(location.lat),
+        lng: Number(location.lng),
+        accuracy: location.accuracy != null ? Number(location.accuracy) : undefined,
+      };
+    }
+    await visit.save();
+
+    res.json({ message: 'Call-back order saved', visit });
+  } catch (error) {
+    console.error('callbackOrder error:', error);
+    res.status(500).json({ message: error.message || 'Failed to save call-back order' });
+  }
+};
+
 export const getTodayVisits = async (req, res) => {
+
   try {
     await processScheduledDeferredSales(req.user._id);
     const today = req.query.date || new Date().toISOString().slice(0, 10);

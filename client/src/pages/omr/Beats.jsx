@@ -90,6 +90,27 @@ export default function Beats() {
         agentLocation: data.agentLocation || agentLocation,
         distanceMeters: data.distanceMeters,
         extraCoverage: !!opts.extraCoverage,
+        callbackVisitId: opts.callbackVisitId || null,
+        fromBeat: true,
+      },
+    });
+  };
+
+  /** Same-day call-back after No Order — no GPS gate (often phone order) */
+  const startCallbackOrder = (outlet) => {
+    if (!outlet.todayVisitId) {
+      setGpsMsg('No visit found to attach the order to.');
+      return;
+    }
+    navigate('/omr/log-shop', {
+      state: {
+        outletId: outlet._id,
+        shopName: outlet.displayName || outlet.name,
+        contactName: outlet.contactName,
+        contactPhone: outlet.contactPhone,
+        outletLocation: outlet.location,
+        fromBeat: true,
+        callbackVisitId: outlet.todayVisitId,
       },
     });
   };
@@ -304,9 +325,22 @@ export default function Beats() {
                 </div>
                 {isTodayBeat ? (
                   o.visitedToday ? (
-                    <span className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                      ✓ Visited
-                    </span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                        ✓ Visited
+                        {o.todayOutcome === 'No Order' ? ' · No order' : ''}
+                        {o.todayOutcome === 'Order Placed' ? ' · Order' : ''}
+                      </span>
+                      {o.canCallbackOrder && (
+                        <button
+                          type="button"
+                          onClick={() => startCallbackOrder(o)}
+                          className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-[#117ea6] text-white border border-[#0e6a8c]"
+                        >
+                          Add order (call-back)
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <button
                       type="button"

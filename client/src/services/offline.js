@@ -127,6 +127,11 @@ export async function syncQueue(api) {
         await api.post(`/credits/${item.payload.id}/collect`, item.payload.body || {});
       } else if (item.type === 'avc-photo') {
         await api.post('/omr/avc-photos', item.payload);
+      } else if (item.type === 'callback-order') {
+        await api.patch(
+          `/omr/visits/${item.payload.visitId}/callback-order`,
+          item.payload.body
+        );
       } else {
         continue;
       }

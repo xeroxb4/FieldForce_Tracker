@@ -35,12 +35,14 @@ export default function LogShop() {
   const ctx = location.state || {};
   const fromBeat = !!ctx.fromBeat && !!ctx.outletId;
   const extraCoverage = !!ctx.extraCoverage;
+  const callbackVisitId = ctx.callbackVisitId || null;
+  const isCallback = !!callbackVisitId;
 
   const [form, setForm] = useState({
     shopName: ctx.shopName || '',
     contactName: ctx.contactName || '',
     contactPhone: ctx.contactPhone || '',
-    outcome: extraCoverage ? 'Extra Coverage' : 'Order Placed',
+    outcome: extraCoverage ? 'Extra Coverage' : 'Order Placed', // callback also Order Placed
     noOrderReason: '',
     paymentType: 'cash',
     creditDurationWeeks: '1',
@@ -195,6 +197,7 @@ export default function LogShop() {
       setStatus({ type: 'error', msg: 'Select a reason for No Order' });
       return;
     }
+    if (isCallback) form.outcome = 'Order Placed';
     if (form.outcome === 'Order Placed' && cart.length === 0 && !extraCoverage) {
       setStatus({ type: 'error', msg: 'Add at least one product for an order' });
       return;
@@ -238,26 +241,85 @@ export default function LogShop() {
       }
 
       try {
-        await api.post('/omr/visits', payload);
-        // Also flush any older queue
-        await syncQueue(api);
-        finishOk(
-          form.paymentType === 'credit'
-            ? 'Visit saved. Credit added to Owings.'
-            : 'Shop visit logged successfully!'
-        );
+        if (isCallback) {
+          const body = {
+            lineItems: payload.lineItems,
+            products: payload.products,
+            amount: payload.amount,
+            paymentType: payload.paymentType,
+            creditDurationWeeks: payload.creditDurationWeeks,
+            notes: payload.notes,
+            location: payload.location,
+          };
+          if (!isOnline()) {
+            enqueue({ type: 'callback-order', payload: { visitId: callbackVisitId, body } });
+            finishOk('Call-back order saved offline. Will sync when online.');
+            return;
+          }
+          await api.patch(`/omr/visits/${callbackVisitId}/callback-order`, body);
+          await syncQueue(api);
+          finishOk(
+            form.paymentType === 'credit'
+              ? 'Call-back order saved. Credit added to Owings.'
+              : 'Call-back order saved on today’s visit.'
+          );
+        } else {
+          await api.post('/omr/visits', payload);
+          await syncQueue(api);
+          finishOk(
+            form.paymentType === 'credit'
+              ? 'Visit saved. Credit added to Owings.'
+              : 'Shop visit logged successfully!'
+          );
+        }
       } catch (err) {
-        // Network error mid-request → queue
         if (!err.response) {
-          enqueue({ type: 'visit', payload: { ...payload, extraCoverage,
-      syncedFromOffline: true } });
-          finishOk('Network issue — saved offline. Will sync when online.');
+          if (isCallback) {
+            enqueue({
+              type: 'callback-order',
+              payload: {
+                visitId: callbackVisitId,
+                body: {
+                  lineItems: payload.lineItems,
+                  products: payload.products,
+                  amount: payload.amount,
+                  paymentType: payload.paymentType,
+                  creditDurationWeeks: payload.creditDurationWeeks,
+                  notes: payload.notes,
+                  location: payload.location,
+                },
+              },
+            });
+            finishOk('Network issue — call-back saved offline.');
+          } else {
+            enqueue({ type: 'visit', payload: { ...payload, extraCoverage, syncedFromOffline: true } });
+            finishOk('Network issue — saved offline. Will sync when online.');
+          }
         } else {
           setStatus({ type: 'error', msg: err.response?.data?.message || 'Failed to log visit' });
           setLoading(false);
         }
       }
     };
+
+    // Call-back (phone order): GPS optional
+    if (isCallback) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) =>
+            send({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+            }),
+          () => send(undefined),
+          { timeout: 6000, maximumAge: 60000 }
+        );
+      } else {
+        send(undefined);
+      }
+      return;
+    }
 
     if (fromBeat || ctx.outletId) {
       if (!navigator.geolocation) {
@@ -321,7 +383,7 @@ export default function LogShop() {
       />
       <div className="flex items-center justify-between mb-1">
         <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {fromBeat ? 'Service Outlet' : 'Log Shop'}
+          {isCallback ? 'Call-back order' : fromBeat ? 'Service Outlet' : 'Log Shop'}
         </h2>
         {!isOnline() && (
           <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
@@ -330,7 +392,11 @@ export default function LogShop() {
         )}
       </div>
       <p className={`text-sm mb-3 font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
-        {fromBeat ? form.shopName : 'Complete the visit details'}
+        {isCallback
+            ? `${form.shopName} · convert today’s No Order into an order`
+            : fromBeat
+            ? form.shopName
+            : 'Complete the visit details'}
         {offlinePending > 0 && (
           <span className="text-amber-600"> · {offlinePending} pending sync</span>
         )}
@@ -371,7 +437,8 @@ export default function LogShop() {
         <div>
           <label className={labelCls}>Outcome *</label>
           <select
-            value={form.outcome}
+            value={isCallback ? 'Order Placed' : form.outcome}
+            disabled={isCallback || extraCoverage}
             onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
             className={inputCls}
           >

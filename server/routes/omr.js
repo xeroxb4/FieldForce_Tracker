@@ -9,6 +9,7 @@ import {
   getProducts,
   getNoOrderReasons,
   createVisit,
+  callbackOrder,
   getTodayVisits,
   getVisits,
   createWrapUp,
@@ -29,6 +30,7 @@ router.patch('/outlets/:id/location', updateOutletGps);
 router.get('/products', getProducts);
 router.get('/no-order-reasons', getNoOrderReasons);
 router.post('/visits', createVisit);
+router.patch('/visits/:id/callback-order', callbackOrder);
 router.get('/deferred-sales', getDeferredSales);
 router.post('/deferred-sales/complete', completeDeferredSale);
 router.get('/visits/today', getTodayVisits);
