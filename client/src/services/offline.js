@@ -125,6 +125,8 @@ export async function syncQueue(api) {
         await api.post('/credits', item.payload);
       } else if (item.type === 'credit-collect') {
         await api.post(`/credits/${item.payload.id}/collect`, item.payload.body || {});
+      } else if (item.type === 'avc-photo') {
+        await api.post('/omr/avc-photos', item.payload);
       } else {
         continue;
       }

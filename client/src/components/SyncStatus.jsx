@@ -61,9 +61,10 @@ export default function SyncStatus({ className = '' }) {
       <button
         type="button"
         onClick={refresh}
-        className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 ${className}`}
+        title="No network — data is saved on this phone and will upload when you are online"
+        className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 border border-amber-600/40 ${className}`}
       >
-        Offline{pending > 0 ? ` · ${pending} pending` : ''}
+        ● Offline{pending > 0 ? ` · ${pending} saved` : ''}
       </button>
     );
   }

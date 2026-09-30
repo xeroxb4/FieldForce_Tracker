@@ -1,6 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import {
+  isOnline,
+  enqueue,
+  syncQueue,
+  queueCount,
+  getQueue,
+} from '../../services/offline';
 
 export default function AvcPhotos() {
   const { dark } = useTheme();
@@ -8,20 +15,54 @@ export default function AvcPhotos() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(null);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [pendingLocal, setPendingLocal] = useState(0);
   const fileRef = useRef(null);
   const [activeId, setActiveId] = useState(null);
+
+  const refreshPending = () => {
+    const q = getQueue().filter((i) => i.type === 'avc-photo');
+    setPendingLocal(q.length);
+  };
 
   const load = () => {
     setLoading(true);
     api
       .get('/omr/avc-photos/tasks')
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.message || 'Failed to load'))
+      .catch((e) => {
+        if (!isOnline()) {
+          setError('You are offline. Open AVC when online to see the list, or use queued uploads after sync.');
+        } else {
+          setError(e.response?.data?.message || 'Failed to load');
+        }
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
+    refreshPending();
+    const onQ = () => refreshPending();
+    const onNet = async () => {
+      if (isOnline()) {
+        setInfo('Back online — syncing saved photos…');
+        await syncQueue(api);
+        refreshPending();
+        load();
+        setInfo('');
+      } else {
+        setInfo('Offline mode — photos will be saved on this phone and uploaded when network returns.');
+      }
+    };
+    window.addEventListener('ff-queue-change', onQ);
+    window.addEventListener('online', onNet);
+    window.addEventListener('offline', onNet);
+    return () => {
+      window.removeEventListener('ff-queue-change', onQ);
+      window.removeEventListener('online', onNet);
+      window.removeEventListener('offline', onNet);
+    };
   }, []);
 
   const pickPhoto = (outletId) => {
@@ -35,6 +76,7 @@ export default function AvcPhotos() {
     if (!file || !activeId) return;
     setUploading(activeId);
     setError('');
+    setInfo('');
     try {
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -42,25 +84,61 @@ export default function AvcPhotos() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      // compress roughly via canvas if huge
-      let photo = dataUrl;
-      if (typeof dataUrl === 'string' && dataUrl.length > 900_000) {
-        photo = await compressImage(dataUrl, 0.7);
+      // Always compress for mobile uploads (timeout / payload size)
+      let photo = await compressImage(dataUrl, 0.65, 1280);
+      if (typeof photo === 'string' && photo.length > 1_200_000) {
+        photo = await compressImage(photo, 0.5, 1024);
       }
-      let lat, lng;
+      if (typeof photo === 'string' && photo.length > 1_800_000) {
+        photo = await compressImage(photo, 0.4, 900);
+      }
+
+      let lat;
+      let lng;
       try {
         const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 })
+          navigator.geolocation.getCurrentPosition(res, rej, {
+            timeout: 8000,
+            maximumAge: 60000,
+          })
         );
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
       } catch {
-        /* optional */
+        /* GPS optional for shelf photo */
       }
-      await api.post('/omr/avc-photos', { outletId: activeId, photo, lat, lng });
-      load();
+
+      const payload = { outletId: activeId, photo, lat, lng };
+
+      if (!isOnline()) {
+        enqueue({ type: 'avc-photo', payload });
+        refreshPending();
+        setInfo(
+          'Saved offline. When network returns, this photo will upload automatically (watch the status badge).'
+        );
+        return;
+      }
+
+      try {
+        await api.post('/omr/avc-photos', payload, { timeout: 60000 });
+        setInfo('Photo uploaded.');
+        load();
+      } catch (err) {
+        // Network / timeout / server — queue for later
+        const status = err.response?.status;
+        const msg = err.response?.data?.message;
+        if (!err.response || status >= 500 || err.code === 'ECONNABORTED' || err.message?.includes('Network')) {
+          enqueue({ type: 'avc-photo', payload });
+          refreshPending();
+          setInfo(
+            'Upload could not finish (network or server). Photo saved on this phone and will sync when connection is stable.'
+          );
+        } else {
+          setError(msg || 'Upload failed');
+        }
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed');
+      setError(err.message || 'Could not read photo');
     } finally {
       setUploading(null);
       setActiveId(null);
@@ -68,6 +146,7 @@ export default function AvcPhotos() {
   };
 
   const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
+  const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
   if (loading) return <p className="text-sm text-slate-500 p-4">Loading AVC tasks…</p>;
 
@@ -82,26 +161,39 @@ export default function AvcPhotos() {
         </p>
       </div>
 
-      <div className={`rounded-2xl border p-4 ${card}`}>
-        <div className="flex justify-between text-sm">
-          <span className={dark ? 'text-slate-300' : 'text-slate-700'}>
-            {data?.periodLabel} · {data?.month}/{data?.year}
-          </span>
-          <span className="font-bold text-[#2596be]">
-            {data?.done || 0}/{data?.required || 0} done
-          </span>
+      {!online && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+          Offline mode — take photos now; they upload when you are back online.
         </div>
-        <div className={`h-2 mt-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-          <div
-            className="h-full bg-[#2596be]"
-            style={{
-              width: `${data?.required ? Math.min(100, (100 * data.done) / data.required) : 0}%`,
-            }}
-          />
+      )}
+      {pendingLocal > 0 && (
+        <div className="rounded-xl border border-[#2596be]/40 bg-[#2596be]/10 px-3 py-2 text-sm font-semibold text-[#117ea6]">
+          {pendingLocal} photo(s) waiting to sync
         </div>
-      </div>
+      )}
+      {error && <p className="text-sm font-semibold text-red-500">{error}</p>}
+      {info && <p className={`text-sm font-medium ${dark ? 'text-emerald-400' : 'text-emerald-700'}`}>{info}</p>}
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {data && (
+        <div className={`rounded-2xl border-2 p-3 ${card}`}>
+          <div className="flex justify-between text-sm font-bold">
+            <span>
+              {data.periodLabel} · {data.month}/{data.year}
+            </span>
+            <span className="text-[#2596be]">
+              {data.done}/{data.required} done
+            </span>
+          </div>
+          <div className={`mt-2 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+            <div
+              className="h-full bg-[#2596be] rounded-full"
+              style={{
+                width: `${data.required ? Math.min(100, (data.done / data.required) * 100) : 0}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <input
         ref={fileRef}
@@ -114,41 +206,37 @@ export default function AvcPhotos() {
 
       <div className="space-y-3">
         {(data?.outlets || []).map((o) => (
-          <div key={o._id} className={`rounded-2xl border p-3 ${card}`}>
-            <div className="flex justify-between gap-2">
-              <div>
-                <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
-                  {o.name}
-                </div>
-                <div className="text-[11px] text-[#2596be] font-semibold">
-                  AVC {o.avcTier || '—'} · {o.distributor || '—'}
-                </div>
+          <div key={o._id} className={`rounded-2xl border-2 p-3 ${card}`}>
+            <div className="flex justify-between gap-2 mb-1">
+              <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {o.name}
               </div>
               <span
-                className={`text-[10px] font-bold px-2 py-1 rounded-lg h-fit ${
-                  o.done
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-amber-500/15 text-amber-500'
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                  o.done ? 'bg-emerald-500/20 text-emerald-600' : 'bg-amber-500/20 text-amber-700'
                 }`}
               >
-                {o.done ? 'Captured' : 'Due'}
+                {o.done ? 'Done' : 'Due'}
               </span>
+            </div>
+            <div className={`text-xs mb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              AVC {o.avcTier || '—'} · {o.distributor || '—'}
             </div>
             {o.photo?.photo && (
               <img
                 src={o.photo.photo}
                 alt=""
-                className="mt-2 w-full max-h-40 object-cover rounded-xl"
+                className="w-full max-h-40 object-cover rounded-xl mb-2"
               />
             )}
             <button
               type="button"
               disabled={uploading === o._id}
               onClick={() => pickPhoto(o._id)}
-              className="mt-2 w-full py-2.5 rounded-xl bg-[#2596be] text-white text-sm font-bold disabled:opacity-60"
+              className="w-full py-2.5 rounded-xl bg-[#117ea6] text-white text-sm font-bold disabled:opacity-60"
             >
               {uploading === o._id
-                ? 'Uploading…'
+                ? 'Saving…'
                 : o.done
                 ? 'Retake photo'
                 : 'Take / upload shelf photo'}
@@ -165,16 +253,15 @@ export default function AvcPhotos() {
   );
 }
 
-function compressImage(dataUrl, quality = 0.7) {
+function compressImage(dataUrl, quality = 0.65, maxSide = 1280) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const max = 1280;
       let { width, height } = img;
-      if (width > max || height > max) {
-        const r = Math.min(max / width, max / height);
-        width *= r;
-        height *= r;
+      if (width > maxSide || height > maxSide) {
+        const r = Math.min(maxSide / width, maxSide / height);
+        width = Math.round(width * r);
+        height = Math.round(height * r);
       }
       const c = document.createElement('canvas');
       c.width = width;
@@ -182,6 +269,7 @@ function compressImage(dataUrl, quality = 0.7) {
       c.getContext('2d').drawImage(img, 0, 0, width, height);
       resolve(c.toDataURL('image/jpeg', quality));
     };
+    img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
 }
