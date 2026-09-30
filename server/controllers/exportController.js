@@ -1155,22 +1155,57 @@ async function fetchTopOmrBarPng(names, sales) {
           {
             label: 'Sales (GHS)',
             data: sales,
-            backgroundColor: '#117ea6',
+            backgroundColor: '#2596be',
+            borderColor: '#117ea6',
+            borderWidth: 1,
           },
         ],
       },
       options: {
+        layout: { padding: { top: 28, bottom: 8 } },
         plugins: {
-          title: { display: true, text: 'OMR sales in period', font: { size: 14 } },
+          title: {
+            display: true,
+            text: 'OMR sales in period (GHS on each bar)',
+            font: { size: 14 },
+          },
           legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            clamp: true,
+            color: '#0f172a',
+            backgroundColor: 'rgba(255,255,255,0.85)',
+            borderRadius: 4,
+            padding: { top: 2, bottom: 2, left: 4, right: 4 },
+            font: { size: 11, weight: 'bold' },
+            formatter: (value) => {
+              const n = Number(value) || 0;
+              return n >= 1000
+                ? n.toLocaleString('en-GH', { maximumFractionDigits: 0 })
+                : n.toLocaleString('en-GH', { maximumFractionDigits: 1 });
+            },
+          },
         },
         scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'GHS' } },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'GHS' },
+            grace: '12%',
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0,
+              autoSkip: false,
+              font: { size: 10 },
+            },
+          },
         },
       },
     };
     const url =
-      'https://quickchart.io/chart?width=960&height=360&devicePixelRatio=2&c=' +
+      'https://quickchart.io/chart?width=960&height=400&devicePixelRatio=2&c=' +
       encodeURIComponent(JSON.stringify(chart));
     const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) return null;
