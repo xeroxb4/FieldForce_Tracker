@@ -1098,8 +1098,9 @@ async function fetchTrendChartPng(labels, series) {
       backgroundColor: s.color,
       fill: false,
       tension: 0.25,
-      pointRadius: 2,
-      borderWidth: 2,
+      pointRadius: s.borderWidth && s.borderWidth >= 3 ? 4 : 2,
+      borderWidth: s.borderWidth || 2,
+      order: s.label.includes('Productive') ? 0 : 1,
     }));
     const chart = {
       type: 'line',
@@ -1379,8 +1380,10 @@ export const exportDataAnalysisXlsx = async (req, res) => {
         ((Array.isArray(v.lineItems) && v.lineItems.length > 0) || (v.amount || 0) > 0);
       if (productive) {
         dayMap[v.date].productive += 1;
-        dayMap[v.date].orders += 1;
         dayMap[v.date].sales += Number(v.amount) || 0;
+        // Orders = product lines on the invoice (so the line is not identical to productive calls)
+        const lines = Array.isArray(v.lineItems) ? v.lineItems.length : 0;
+        dayMap[v.date].orders += lines > 0 ? lines : 1;
       }
     }
 
@@ -1399,7 +1402,7 @@ export const exportDataAnalysisXlsx = async (req, res) => {
 
     // Figures only (no embedded chart) — numbers for Excel analysis / pivot
     const wsTrend = wb.addWorksheet('Daily Figures');
-    wsTrend.addRow(['Date', 'Sales (GHS)', 'Orders', 'Productive calls', 'Visits', 'Hit rate %']);
+    wsTrend.addRow(['Date', 'Sales (GHS)', 'Orders (SKU lines)', 'Productive calls', 'Visits', 'Hit rate %']);
     wsTrend.getRow(1).font = { bold: true };
     let sumSales = 0;
     let sumOrders = 0;
@@ -1456,15 +1459,15 @@ export const exportDataAnalysisXlsx = async (req, res) => {
     wsCharts.getRow(1).font = { bold: true, size: 14 };
     wsCharts.addRow([`Period: ${startDate} → ${endDate}`]);
     wsCharts.addRow([
-      'Daily lines are normalized 0–100 so Sales, Orders, Productive and Hit rate can share one chart. Raw numbers are on Daily Figures.',
+      'Daily lines normalized 0–100. Blue=Sales, Red=Orders (SKU lines), Green=Productive calls, Yellow=Hit rate. Raw numbers on Daily Figures.',
     ]);
     wsCharts.addRow([]);
 
     // Match app LineChart colours: Blue Sales, Red Orders, Green Productive, Yellow Hit rate
     const trendPng = await fetchTrendChartPng(shortLabels, [
       { label: 'Sales', data: normalizeSeries(salesArr), color: '#2596be' },
-      { label: 'Orders', data: normalizeSeries(ordersArr), color: '#f43f5e' },
-      { label: 'Productive calls', data: normalizeSeries(prodArr), color: '#10b981' },
+      { label: 'Orders (SKU lines)', data: normalizeSeries(ordersArr), color: '#f43f5e' },
+      { label: 'Productive calls', data: normalizeSeries(prodArr), color: '#10b981', borderWidth: 3 },
       { label: 'Hit rate %', data: normalizeSeries(hitArr), color: '#f59e0b' },
     ]);
 
