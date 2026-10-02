@@ -110,22 +110,31 @@ async function buildOmrRow(omr, startDate, endDate) {
     servicedNames.size > 0 ? totalLines / servicedNames.size : 0;
 
   const top10 = new Array(10).fill(false);
+  let top10LineTotal = 0;
   for (const v of productive) {
+    const onBill = new Set();
     for (const li of v.lineItems || []) {
       const idx = matchesTop10(li.productName);
-      if (idx >= 0) top10[idx] = true;
+      if (idx >= 0) {
+        top10[idx] = true;
+        onBill.add(idx);
+      }
     }
     if (!v.lineItems?.length && v.products) {
-      const idx = matchesTop10(v.products);
-      if (idx >= 0) top10[idx] = true;
+      for (const part of String(v.products).split(',')) {
+        const idx = matchesTop10(part.trim());
+        if (idx >= 0) {
+          top10[idx] = true;
+          onBill.add(idx);
+        }
+      }
     }
+    top10LineTotal += onBill.size;
   }
-  const top10Count = top10.filter(Boolean).length;
-  const top10Pct = (top10Count / 10) * 100;
-
-  // Per-SKU average penetration isn't one number — average of binary sold flags = top10Pct
-  // "average penetration (all top 10 lines)" = top10Pct
-  // Also per-product sold flag for columns
+  const top10UniqueCount = top10.filter(Boolean).length;
+  const top10Pct = (top10UniqueCount / 10) * 100;
+  const top10LineAvg =
+    productiveCalls > 0 ? Math.round((top10LineTotal / productiveCalls) * 100) / 100 : 0;
 
   return {
     fullName: omr.fullName,
@@ -139,9 +148,11 @@ async function buildOmrRow(omr, startDate, endDate) {
     hitRatePct: Math.round(hitRate * 10) / 10,
     lppc: Math.round(lppc * 100) / 100,
     coveragePct: Math.round(coverage * 10) / 10,
-    top10Count,
+    top10Count: top10UniqueCount,
     top10Pct: Math.round(top10Pct * 10) / 10,
     avgTop10Penetration: Math.round(top10Pct * 10) / 10,
+    top10LineTotal,
+    top10LineAvg,
     avgLinesPerOutlet: Math.round(avgLinesPerOutlet * 100) / 100,
     totalOutletsServiced: servicedNames.size,
     totalLines,
@@ -180,9 +191,10 @@ export const exportOmrXlsx = async (req, res) => {
       'Hit Rate %',
       'LPPC',
       'Coverage %',
-      'Top 10 Count',
+      'Top 10 Unique (of 10)',
       'Top 10 Penetration %',
-      'Avg Top 10 Penetration %',
+      'Top 10 Line Total (sum)',
+      'Top 10 Line Avg / Prod Call',
       'Avg Lines / Outlet',
       'Total Outlets Serviced',
       'Total Product Lines',
@@ -211,7 +223,8 @@ export const exportOmrXlsx = async (req, res) => {
         r.coveragePct,
         r.top10Count,
         r.top10Pct,
-        r.avgTop10Penetration,
+        r.top10LineTotal,
+        r.top10LineAvg,
         r.avgLinesPerOutlet,
         r.totalOutletsServiced,
         r.totalLines,

@@ -491,9 +491,22 @@ export default function Dashboard() {
           </div>
         )}
 
-        <p className={`text-[10px] leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        <div className={`mt-2 grid grid-cols-2 gap-2 text-center text-[11px] ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+          <div className={`rounded-xl border px-2 py-1.5 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
+            <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Top 10 sum</div>
+            <div className="font-bold text-amber-500">{day?.top10LineTotal ?? 0}</div>
+            <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>7+4+8 style total</div>
+          </div>
+          <div className={`rounded-xl border px-2 py-1.5 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
+            <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Top 10 avg</div>
+            <div className="font-bold text-amber-500">{day?.top10LineAvg ?? 0}</div>
+            <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>per productive call</div>
+          </div>
+        </div>
+        <p className={`text-[10px] leading-relaxed mt-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
           Productive call = outlet buys ≥1 piece of any SKU. Coverage = visit every beat outlet.
-          LPPC = product lines ÷ productive calls.
+          LPPC = product lines ÷ productive calls. Top 10 % = unique checklist /10.
+          Top 10 sum = lines added across shops; avg = sum ÷ productive calls.
         </p>
 
         {/* MTD strip */}
@@ -515,6 +528,12 @@ export default function Dashboard() {
               <div className={`text-[9px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>MTD Top10</div>
               <div className="text-xs font-bold text-amber-500">{mtd.top10HitCount}/10</div>
             </div>
+          </div>
+        )}
+        {mtd && (
+          <div className={`mt-1 grid grid-cols-2 gap-1 text-center text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div>MTD Top10 sum <span className="font-bold text-amber-500">{mtd.top10LineTotal ?? 0}</span></div>
+            <div>MTD Top10 avg <span className="font-bold text-amber-500">{mtd.top10LineAvg ?? 0}</span></div>
           </div>
         )}
       </div>
