@@ -362,11 +362,25 @@ export default function Dashboard() {
               <div className="text-lg font-bold text-red-400">{notVisited}</div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-red-600'}`}>Not visited</div>
             </div>
-            <div className={`col-span-2 rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-indigo-50'}`}>
+            <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-teal-50'}`}>
+              <div className="text-lg font-bold text-teal-600">
+                {day?.productiveCalls ?? 0}
+              </div>
+              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-teal-700'}`}>
+                Productive
+              </div>
+              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-teal-600/80'}`}>
+                of {day?.totalVisits ?? visited} visits
+              </div>
+            </div>
+            <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-indigo-50'}`}>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-indigo-600'}`}>
-                Coverage (target 100%)
+                Coverage
               </div>
               <div className="text-sm font-bold text-[#2596be]">{coveragePct}%</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-indigo-500'}`}>
+                target 100%
+              </div>
             </div>
           </div>
         </div>
