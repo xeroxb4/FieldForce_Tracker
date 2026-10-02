@@ -456,51 +456,74 @@ export default function LogShop() {
         <div className="w-10" />
       </div>
 
-      {/* CARD 1 — Outlet + GPS */}
-      <div className={`rounded-3xl p-4 mb-3 relative overflow-hidden ${glass}`}>
-        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
-        <div className="flex gap-3 items-start relative">
-          <div
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-xl ${
-              dark ? 'bg-amber-500/15 border border-amber-400/30' : 'bg-amber-50 border border-amber-200'
-            }`}
-          >
-            📍
-          </div>
+      {/* CARD 1 — Outlet + GPS (reference style) */}
+      <div
+        className={`rounded-2xl mb-3 overflow-hidden border ${
+          dark
+            ? 'bg-[#12171f] border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.4)]'
+            : 'bg-slate-900 border-slate-800 shadow-lg'
+        }`}
+      >
+        <div className="p-4 flex gap-3 items-start">
           <div className="flex-1 min-w-0">
-            <div className="font-extrabold text-amber-400 text-[15px] leading-snug tracking-tight">
-              {form.shopName || ctx.shopName || 'Outlet'}
-            </div>
-            <div className={`text-xs mt-1.5 leading-relaxed font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-              {addressLine}
-            </div>
-          </div>
-          <div className="shrink-0 flex flex-col items-center gap-1.5 w-[76px]">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-emerald-400/30 blur-md" />
-              <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/40 border-2 border-emerald-300/40">
-                <span className="text-white text-lg font-black">✓</span>
+            <div className="flex items-start gap-2">
+              <span className="text-amber-400 text-lg leading-none mt-0.5 shrink-0">📍</span>
+              <div className="min-w-0">
+                <div className="font-bold text-amber-400 text-[15px] leading-snug tracking-tight">
+                  {form.shopName || ctx.shopName || 'Outlet'}
+                </div>
+                <div className="text-[12px] mt-1 leading-snug text-slate-400 font-medium">
+                  {ctx.address || form.contactName || 'Outlet address'}
+                  {ctx.territory ? (
+                    <>
+                      <br />
+                      {ctx.territory}
+                      {ctx.territory && !String(ctx.territory).toLowerCase().includes('region')
+                        ? ''
+                        : ''}
+                    </>
+                  ) : form.contactPhone ? (
+                    <>
+                      <br />
+                      {form.contactPhone}
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
-            <span className="text-[9px] font-extrabold tracking-wider text-emerald-400 uppercase text-center leading-tight">
-              GPS Verified
-            </span>
+          </div>
+          <div className="shrink-0 flex items-center gap-2 pt-0.5">
+            <div className="w-9 h-9 rounded-full border-2 border-emerald-400/80 flex items-center justify-center">
+              <span className="text-emerald-400 text-sm font-black">✓</span>
+            </div>
+            <div className="text-left leading-tight">
+              <div className="text-[10px] font-extrabold tracking-wide text-emerald-400 uppercase">
+                GPS
+              </div>
+              <div className="text-[10px] font-extrabold tracking-wide text-emerald-400 uppercase">
+                Verified
+              </div>
+            </div>
           </div>
         </div>
-        {(!isOnline() || offlinePending > 0) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {!isOnline() && (
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Offline
-              </span>
-            )}
-            {offlinePending > 0 && (
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                {offlinePending} pending sync
-              </span>
-            )}
+        <div className="border-t border-white/10 px-4 py-2.5 flex items-center gap-2.5">
+          <span className="w-5 h-5 rounded-full border border-emerald-400/70 flex items-center justify-center text-emerald-400 text-[10px] font-bold shrink-0">
+            ✓
+          </span>
+          <div className="text-[12px] text-slate-300 font-medium">
+            <span className="text-slate-200">Start visit complete</span>
+            <span className="text-slate-500">
+              {' '}
+              · Today,{' '}
+              {new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            </span>
           </div>
-        )}
+          {!isOnline() && (
+            <span className="ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+              Offline
+            </span>
+          )}
+        </div>
       </div>
 
       <form
