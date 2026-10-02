@@ -364,7 +364,7 @@ export default function LogShop() {
     : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
 
   return (
-    <div>
+    <div className={`min-h-full pb-8 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
       <InvoicePreview
         open={!!invoicePreview}
         invoice={invoicePreview}
@@ -382,103 +382,157 @@ export default function LogShop() {
           setTimeout(() => { window.__ffSkipInvoice = false; }, 800);
         }}
       />
-      <div className="flex items-center justify-between mb-1">
-        <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          {isCallback ? 'Call-back order' : fromBeat ? 'Service Outlet' : 'Log Shop'}
-        </h2>
-        {!isOnline() && (
-          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">
-            Offline
+
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${
+            dark ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'
+          }`}
+          aria-label="Back"
+        >
+          ←
+        </button>
+        <div className="text-center flex-1 px-2">
+          <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+            FieldForce Tracker
+          </div>
+          <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Log Shop · OMR Field Sales
+          </div>
+        </div>
+        <div className="w-9" />
+      </div>
+
+      <div
+        className={`rounded-2xl border p-4 mb-4 ${
+          dark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+        }`}
+      >
+        <div className="flex gap-3 items-start">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              <span className="text-amber-400 text-lg leading-none mt-0.5">📍</span>
+              <div className="min-w-0">
+                <div className="font-bold text-amber-400 text-sm leading-snug">
+                  {form.shopName || 'Outlet'}
+                </div>
+                <div className={`text-xs mt-1 leading-snug ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {[form.contactName, form.contactPhone, ctx.address, ctx.territory]
+                    .filter(Boolean)
+                    .join(' · ') || 'Beat outlet visit'}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="shrink-0 flex flex-col items-center gap-1">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
+              🛡️
+            </div>
+            <span className="text-[9px] font-bold tracking-wide text-emerald-400 uppercase">
+              GPS Verified
+            </span>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-medium flex-wrap">
+          <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">
+            ✓
           </span>
+          <span>
+            {isCallback
+              ? 'Call-back order · convert No Order'
+              : fromBeat
+              ? 'Start visit ready'
+              : 'Log shop visit'}
+            {' · '}
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {!isOnline() && (
+            <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
+              Offline
+            </span>
+          )}
+        </div>
+        {offlinePending > 0 && (
+          <div className="mt-2 text-[10px] text-amber-400 font-semibold">
+            {offlinePending} item(s) pending sync
+          </div>
         )}
       </div>
-      <p className={`text-sm mb-3 font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
-        {isCallback
-            ? `${form.shopName} · convert today’s No Order into an order`
-            : fromBeat
-            ? form.shopName
-            : 'Complete the visit details'}
-        {offlinePending > 0 && (
-          <span className="text-amber-600"> · {offlinePending} pending sync</span>
-        )}
-      </p>
 
       <form id="log-shop-form" onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className={labelCls}>Shop Name *</label>
-          <input
-            value={form.shopName}
-            onChange={(e) => setForm({ ...form, shopName: e.target.value })}
-            disabled={fromBeat}
-            className={inputCls}
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Contact</label>
-            <input
-              value={form.contactName}
-              onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Phone</label>
-            <input
-              value={form.contactPhone}
-              onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-              className={inputCls}
-            />
-          </div>
-        </div>
-
-        {/* Outcome */}
-        <div>
-          <label className={labelCls}>Outcome *</label>
-          <select
-            value={isCallback ? 'Order Placed' : form.outcome}
-            disabled={isCallback || extraCoverage}
-            onChange={(e) => setForm({ ...form, outcome: e.target.value, noOrderReason: '' })}
-            className={inputCls}
-          >
-            {(extraCoverage ? EXTRA_OUTCOMES : OUTCOMES).map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* No Order reason */}
-        {form.outcome === 'No Order' && (
-          <div>
-            <label className={labelCls}>
-              Reason for No Order *
-            </label>
-            <select
-              value={form.noOrderReason}
-              onChange={(e) => setForm({ ...form, noOrderReason: e.target.value })}
-              className={inputCls}
-              required
-            >
-              <option value="">Select reason...</option>
-              {NO_ORDER_REASONS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+        {!fromBeat && !isCallback && (
+          <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div>
+              <label className={labelCls}>Shop Name *</label>
+              <input
+                value={form.shopName}
+                onChange={(e) => setForm({ ...form, shopName: e.target.value })}
+                className={inputCls}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Contact</label>
+                <input
+                  value={form.contactName}
+                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Phone</label>
+                <input
+                  value={form.contactPhone}
+                  onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Order: product picker */}
-        {(form.outcome === 'Order Placed' || extraCoverage) && (
-          <div className={cardCls}>
-            <div className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>Add products</div>
+        {!isCallback && !extraCoverage && (
+          <div className="flex gap-2">
+            {['Order Placed', 'No Order'].map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => setForm({ ...form, outcome: o, noOrderReason: '' })}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${
+                  form.outcome === o
+                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
+                    : dark
+                    ? 'bg-slate-900 text-slate-300 border-slate-600'
+                    : 'bg-white text-slate-600 border-slate-200'
+                }`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+        {extraCoverage && (
+          <div className={`text-xs font-semibold px-3 py-2 rounded-xl ${dark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+            Extra coverage visit
+          </div>
+        )}
 
-            {/* 1. Category */}
+        {(form.outcome === 'Order Placed' || extraCoverage || isCallback) && (
+          <div
+            className={`rounded-2xl border p-4 space-y-3 ${
+              dark ? 'bg-slate-900/90 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                Order placed
+              </h3>
+              <span className="text-lg opacity-70">🛍️</span>
+            </div>
+
             <div>
               <label className={labelXs}>Category</label>
               <select
@@ -486,11 +540,12 @@ export default function LogShop() {
                 onChange={(e) => {
                   setPickCategory(e.target.value);
                   setPickProductId('');
-                  setPickUnit('pc');
                 }}
-                className={inputSm}
+                className={`${inputSm} ${
+                  pickCategory ? 'border-[#0d9488] ring-1 ring-[#0d9488]/40' : ''
+                }`}
               >
-                <option value="">Select category...</option>
+                <option value="">Select category…</option>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -499,7 +554,6 @@ export default function LogShop() {
               </select>
             </div>
 
-            {/* 2. Product */}
             {pickCategory && (
               <div>
                 <label className={labelXs}>Product</label>
@@ -508,31 +562,34 @@ export default function LogShop() {
                   onChange={(e) => setPickProductId(e.target.value)}
                   className={inputSm}
                 >
-                  <option value="">Select product...</option>
+                  <option value="">Select product…</option>
                   {productList.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} ({p.size})
+                      {p.name} {p.size ? `(${p.size})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
             )}
 
-            {/* 3. Unit + Qty */}
             {selectedProduct && (
-              <div className={`flex items-center gap-2 rounded-xl p-2 border ${
-                dark ? 'border-slate-600 bg-slate-900' : 'border-[#117ea6]/30 bg-sky-50'
-              }`}>
-                <div className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                  dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-white'
-                }`}>
+              <div
+                className={`flex items-center gap-3 rounded-xl p-2.5 border ${
+                  dark ? 'border-slate-600 bg-slate-800/80' : 'border-[#0d9488]/25 bg-teal-50'
+                }`}
+              >
+                <div
+                  className={`w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border ${
+                    dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
+                  }`}
+                >
                   {selectedProduct.image ? (
                     <img src={selectedProduct.image} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-xl">🧴</span>
                   )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
                     {selectedProduct.name}
                   </div>
@@ -544,29 +601,118 @@ export default function LogShop() {
             )}
 
             {selectedProduct && (
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelXs}>Unit</label>
-                  <select
-                    value={pickUnit}
-                    onChange={(e) => setPickUnit(e.target.value)}
-                    className={inputSm}
-                  >
-                    <option value="pc">PC (GHS {selectedProduct.pricePc})</option>
-                    <option value="pack">Pack (GHS {selectedProduct.pricePack})</option>
-                    <option value="carton">Carton (GHS {selectedProduct.priceCarton})</option>
-                  </select>
+              <div>
+                <label className={labelXs}>Unit</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'pc', label: 'PC' },
+                    { id: 'pack', label: 'Pack' },
+                    { id: 'carton', label: 'Carton' },
+                  ].map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setPickUnit(u.id)}
+                      className={`py-2.5 rounded-xl text-xs font-bold border ${
+                        pickUnit === u.id
+                          ? 'bg-[#0d9488] text-white border-[#0d9488]'
+                          : dark
+                          ? 'bg-slate-800 text-slate-300 border-slate-600'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}
+                    >
+                      {u.label}
+                    </button>
+                  ))}
                 </div>
-                <div>
+              </div>
+            )}
+
+            {selectedProduct && (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
                   <label className={labelXs}>Quantity</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={pickQty}
-                    onChange={(e) => setPickQty(e.target.value)}
-                    className={inputSm}
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPickQty(String(Math.max(1, Number(pickQty || 1) - 1)))}
+                      className={`w-10 h-10 rounded-xl font-bold text-lg border ${
+                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={pickQty}
+                      onChange={(e) => setPickQty(e.target.value)}
+                      className={`${inputSm} text-center font-bold`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPickQty(String(Number(pickQty || 1) + 1))}
+                      className={`w-10 h-10 rounded-xl font-bold text-lg border ${
+                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
+                <div className="text-right pt-5">
+                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Price</div>
+                  <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                    GHS {Number(unitPrice(selectedProduct, pickUnit) || 0).toFixed(0)}
+                  </div>
+                  <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    per {pickUnit}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedProduct && (
+              <div>
+                <label className={labelXs}>Payment</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, paymentType: 'cash' })}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
+                      form.paymentType === 'cash'
+                        ? 'bg-[#0d9488] text-white border-[#0d9488]'
+                        : dark
+                        ? 'bg-slate-800 text-slate-300 border-slate-600'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    Cash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, paymentType: 'credit' })}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
+                      form.paymentType === 'credit'
+                        ? 'bg-[#0d9488] text-white border-[#0d9488]'
+                        : dark
+                        ? 'bg-slate-800 text-slate-300 border-slate-600'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    Credit
+                  </button>
+                </div>
+                {form.paymentType === 'credit' && (
+                  <select
+                    value={form.creditDurationWeeks}
+                    onChange={(e) => setForm({ ...form, creditDurationWeeks: e.target.value })}
+                    className={`${inputSm} mt-2`}
+                  >
+                    <option value="1">1 week</option>
+                    <option value="2">2 weeks</option>
+                  </select>
+                )}
               </div>
             )}
 
@@ -574,28 +720,32 @@ export default function LogShop() {
               <button
                 type="button"
                 onClick={addProductLine}
-                className="w-full bg-[#117ea6] text-white text-sm font-bold py-2.5 rounded-xl border border-[#117ea6] shadow-sm"
+                className="w-full bg-[#0d9488] text-white text-sm font-bold py-3 rounded-xl shadow-sm"
               >
-                + Add to order
+                Add to order
               </button>
             )}
 
-            {/* Cart */}
             {cart.length > 0 && (
-              <div className={`border-t pt-2 space-y-2 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
-                <div className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  Order cart ({cart.length})
+              <div className={`border-t pt-3 space-y-2 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+                <div className="flex items-center justify-between">
+                  <div className={`text-xs font-bold ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
+                    Order cart ({cart.length})
+                  </div>
+                  <button type="button" onClick={() => setCart([])} className="text-[10px] font-semibold text-slate-400">
+                    Clear all
+                  </button>
                 </div>
                 {cart.map((i, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-2 rounded-xl p-2 border ${
-                      dark ? 'border-slate-700 bg-slate-900/60' : 'border-slate-100 bg-slate-50'
+                    className={`flex items-center gap-2.5 rounded-xl p-2 border ${
+                      dark ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50'
                     }`}
                   >
                     <div
                       className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-white'
+                        dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
                       }`}
                     >
                       {i.image ? (
@@ -609,109 +759,110 @@ export default function LogShop() {
                         {i.productName}
                       </div>
                       <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {i.quantity} {i.unit} · GHS {Number(i.unitPrice).toFixed(2)} each
+                        {i.unit} · {i.quantity} × GHS {Number(i.unitPrice).toFixed(2)}
                       </div>
                     </div>
-                    <span className={`text-xs font-bold shrink-0 ${dark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                    <span className="text-xs font-bold text-emerald-400 shrink-0">
                       GHS {i.lineTotal.toFixed(2)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => removeLine(idx)}
-                      className="text-red-500 px-1 text-sm shrink-0"
-                    >
-                      ✕
+                    <button type="button" onClick={() => removeLine(idx)} className="text-slate-400 text-sm px-1">
+                      🗑️
                     </button>
                   </div>
                 ))}
-                <div className={`text-sm font-bold text-right pt-1 ${dark ? 'text-white' : 'text-navy'}`}>
-                  Total: GHS {cartTotal.toFixed(2)}
+                <div className="flex justify-between items-center pt-1">
+                  <span className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Total
+                  </span>
+                  <span className="text-base font-extrabold text-emerald-400">
+                    GHS {cartTotal.toFixed(2)}
+                  </span>
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Payment */}
-            <div className="border-t border-slate-100 pt-3 space-y-2">
-              <label className={labelXs}>Payment</label>
-              <div className="flex gap-2">
+        {form.outcome === 'No Order' && (
+          <div
+            className={`rounded-2xl border p-4 space-y-3 ${
+              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div>
+              <h3 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>No order</h3>
+              <p className={`text-[11px] mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                If no order was placed, select a reason below.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {NO_ORDER_REASONS.map((r) => (
                 <button
+                  key={r}
                   type="button"
-                  onClick={() => setForm({ ...form, paymentType: 'cash' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
-                    form.paymentType === 'cash'
-                      ? 'bg-[#117ea6] text-white border-[#117ea6] shadow-md'
+                  onClick={() => setForm({ ...form, noOrderReason: r })}
+                  className={`text-[11px] font-semibold px-3 py-2 rounded-xl border ${
+                    form.noOrderReason === r
+                      ? 'bg-[#117ea6] text-white border-[#117ea6]'
                       : dark
                       ? 'bg-slate-800 text-slate-300 border-slate-600'
-                      : 'bg-white text-slate-600 border-slate-200'
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
                   }`}
                 >
-                  Cash
+                  {r}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, paymentType: 'credit' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
-                    form.paymentType === 'credit'
-                      ? 'bg-[#117ea6] text-white border-[#117ea6] shadow-md'
-                      : dark
-                      ? 'bg-slate-800 text-slate-300 border-slate-600'
-                      : 'bg-white text-slate-600 border-slate-200'
-                  }`}
-                >
-                  Credit
-                </button>
-              </div>
-              {form.paymentType === 'credit' && (
-                <div>
-                  <label className={labelXs}>Credit duration</label>
-                  <select
-                    value={form.creditDurationWeeks}
-                    onChange={(e) =>
-                      setForm({ ...form, creditDurationWeeks: e.target.value })
-                    }
-                    className={inputSm}
-                  >
-                    <option value="1">1 week</option>
-                    <option value="2">2 weeks</option>
-                  </select>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Will appear under Owings with due-date countdown
-                  </p>
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
         <div>
-          <label className={labelCls}>Notes</label>
+          <label className={labelCls}>Notes (optional)</label>
           <textarea
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={2}
             className={inputCls}
+            placeholder="Any extra note for this visit…"
           />
         </div>
 
         {status && (
           <div
-            className={`text-sm px-4 py-3 rounded-xl border ${
+            className={`text-sm px-4 py-3 rounded-xl border font-medium ${
               status.type === 'success'
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-red-500/15 text-red-400 border-red-500/30'
             }`}
           >
             {status.msg}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-navy text-white font-semibold py-3.5 rounded-xl disabled:opacity-60"
-        >
-          {loading ? 'Saving...' : isOnline() ? 'Complete Visit' : 'Save Offline'}
-        </button>
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <button
+            type="button"
+            disabled={loading || ((form.outcome === 'Order Placed' || isCallback) && cart.length === 0)}
+            onClick={() => {
+              if (cart.length > 0) {
+                setInvoiceBeforeSave(false);
+                setInvoicePreview(buildInvoiceData());
+              }
+            }}
+            className={`py-3.5 rounded-xl text-sm font-bold border ${
+              dark ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-white border-slate-900'
+            } disabled:opacity-40`}
+          >
+            Print invoice
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="py-3.5 rounded-xl text-sm font-bold bg-[#a3e635] text-slate-900 disabled:opacity-60 shadow-sm"
+          >
+            {loading ? 'Saving…' : isOnline() ? 'Complete visit' : 'Save offline'}
+          </button>
+        </div>
       </form>
     </div>
   );
