@@ -354,20 +354,31 @@ export default function LogShop() {
   const labelCls = dark ? 'block text-sm font-semibold text-slate-200 mb-1' : 'block text-sm font-semibold text-slate-800 mb-1';
   const labelXs = dark ? 'block text-xs font-semibold text-slate-300 mb-1' : 'block text-xs font-semibold text-slate-600 mb-1';
   const inputCls = dark
-    ? 'w-full border border-slate-600 rounded-xl px-4 py-3 text-sm bg-slate-800 text-white placeholder:text-slate-400 disabled:bg-slate-800 disabled:text-white disabled:opacity-100'
-    : 'w-full border border-slate-300 rounded-xl px-4 py-3 text-sm bg-white text-slate-900 disabled:bg-slate-50 disabled:text-slate-900 disabled:opacity-100';
+    ? 'w-full border border-white/10 rounded-2xl px-4 py-3.5 text-sm bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/40 disabled:opacity-100'
+    : 'w-full border border-slate-200 rounded-2xl px-4 py-3.5 text-sm bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 disabled:bg-slate-50 disabled:opacity-100';
   const inputSm = dark
-    ? 'w-full border border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-slate-900 text-white'
-    : 'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white text-slate-900';
+    ? 'w-full border border-white/10 rounded-2xl px-3.5 py-3 text-sm bg-white/5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/30'
+    : 'w-full border border-slate-200 rounded-2xl px-3.5 py-3 text-sm bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20';
   const cardCls = dark
     ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
     : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
+
 
 
   const addressLine =
     [ctx.address, ctx.territory, form.contactPhone].filter(Boolean).join(' · ') ||
     [form.contactName, form.contactPhone].filter(Boolean).join(' · ') ||
     'Outlet location';
+
+  const glass = dark
+    ? 'bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl'
+    : 'bg-gradient-to-br from-white via-white to-slate-50 border border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.08)]';
+
+  const pillActive =
+    'bg-gradient-to-r from-[#0d9488] to-[#117ea6] text-white border-transparent shadow-lg shadow-teal-500/25';
+  const pillIdle = dark
+    ? 'bg-slate-800/80 text-slate-300 border-white/10 hover:border-white/20'
+    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300';
 
   const confirmAndSubmit = (e) => {
     if (e) e.preventDefault();
@@ -378,7 +389,6 @@ export default function LogShop() {
         ? `Confirm complete visit?\n\nTotal: GHS ${cartTotal.toFixed(2)}`
         : 'Confirm complete visit?';
     if (!window.confirm(msg)) return;
-    // Skip invoice-first flow; user already confirmed. Print is a separate button.
     window.__ffSkipInvoice = true;
     const fake = { preventDefault() {} };
     handleSubmit(fake);
@@ -388,7 +398,13 @@ export default function LogShop() {
   };
 
   return (
-    <div className={`min-h-full pb-10 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+    <div
+      className={`min-h-full pb-12 -mx-1 px-0.5 ${
+        dark
+          ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
+          : 'bg-gradient-to-b from-slate-100 via-slate-50 to-white text-slate-900'
+      }`}
+    >
       <InvoicePreview
         open={!!invoicePreview}
         invoice={invoicePreview}
@@ -408,58 +424,82 @@ export default function LogShop() {
         }}
       />
 
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Premium header */}
+      <div className="flex items-center gap-3 mb-5 pt-1">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-            dark ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border transition ${
+            dark
+              ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+              : 'bg-white border-slate-200 text-slate-700 shadow-sm'
           }`}
         >
           ←
         </button>
         <div className="flex-1 text-center">
-          <div className={`text-[15px] font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
+          <div
+            className={`text-[17px] font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${
+              dark ? 'from-white via-teal-100 to-sky-200' : 'from-slate-900 via-[#117ea6] to-teal-700'
+            }`}
+          >
             FieldForce Tracker
           </div>
-          <div className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div
+            className={`text-[11px] font-semibold tracking-wide uppercase ${
+              dark ? 'text-teal-400/80' : 'text-[#117ea6]'
+            }`}
+          >
             Log Shop · OMR Field Sales
           </div>
         </div>
-        <div className="w-9" />
+        <div className="w-10" />
       </div>
 
       {/* CARD 1 — Outlet + GPS */}
-      <div
-        className={`rounded-2xl border p-4 mb-3 ${
-          dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
-        }`}
-      >
-        <div className="flex gap-3 items-start">
-          <div className="text-2xl leading-none mt-0.5">📍</div>
+      <div className={`rounded-3xl p-4 mb-3 relative overflow-hidden ${glass}`}>
+        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+        <div className="flex gap-3 items-start relative">
+          <div
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-xl ${
+              dark ? 'bg-amber-500/15 border border-amber-400/30' : 'bg-amber-50 border border-amber-200'
+            }`}
+          >
+            📍
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-amber-400 text-[15px] leading-snug">
+            <div className="font-extrabold text-amber-400 text-[15px] leading-snug tracking-tight">
               {form.shopName || ctx.shopName || 'Outlet'}
             </div>
-            <div className={`text-xs mt-1 leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`text-xs mt-1.5 leading-relaxed font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
               {addressLine}
             </div>
           </div>
-          <div className="shrink-0 flex flex-col items-center gap-1 w-[72px]">
-            <div className="w-11 h-11 rounded-full bg-emerald-500/15 border-2 border-emerald-400/50 flex items-center justify-center">
-              <span className="text-emerald-400 text-lg font-black">✓</span>
+          <div className="shrink-0 flex flex-col items-center gap-1.5 w-[76px]">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-emerald-400/30 blur-md" />
+              <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/40 border-2 border-emerald-300/40">
+                <span className="text-white text-lg font-black">✓</span>
+              </div>
             </div>
-            <span className="text-[9px] font-extrabold tracking-wide text-emerald-400 uppercase text-center leading-tight">
+            <span className="text-[9px] font-extrabold tracking-wider text-emerald-400 uppercase text-center leading-tight">
               GPS Verified
             </span>
           </div>
         </div>
-        {!isOnline() && (
-          <div className="mt-2 text-[10px] font-semibold text-amber-400">Offline mode</div>
-        )}
-        {offlinePending > 0 && (
-          <div className="mt-1 text-[10px] text-amber-400/90">{offlinePending} pending sync</div>
+        {(!isOnline() || offlinePending > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {!isOnline() && (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Offline
+              </span>
+            )}
+            {offlinePending > 0 && (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                {offlinePending} pending sync
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -472,7 +512,7 @@ export default function LogShop() {
         className="space-y-3"
       >
         {!fromBeat && !isCallback && (
-          <div className={`rounded-2xl border p-4 space-y-2 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className={`rounded-3xl p-4 space-y-2 ${glass}`}>
             <input
               className={inputCls}
               placeholder="Shop name *"
@@ -499,24 +539,20 @@ export default function LogShop() {
 
         {/* CARD 2 — Outcome */}
         {!isCallback && !extraCoverage && (
-          <div
-            className={`rounded-2xl border p-4 ${
-              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
-            }`}
-          >
-            <div className={`text-xs font-bold mb-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+          <div className={`rounded-3xl p-4 ${glass}`}>
+            <div
+              className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${
+                dark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
               Outcome
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setForm({ ...form, outcome: 'Order Placed', noOrderReason: '' })}
-                className={`py-3 rounded-xl text-sm font-bold border ${
-                  form.outcome === 'Order Placed'
-                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
-                    : dark
-                    ? 'bg-slate-800 text-slate-300 border-slate-600'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                className={`py-3.5 rounded-2xl text-sm font-bold border transition ${
+                  form.outcome === 'Order Placed' ? pillActive : pillIdle
                 }`}
               >
                 Order placed
@@ -524,12 +560,8 @@ export default function LogShop() {
               <button
                 type="button"
                 onClick={() => setForm({ ...form, outcome: 'No Order' })}
-                className={`py-3 rounded-xl text-sm font-bold border ${
-                  form.outcome === 'No Order'
-                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
-                    : dark
-                    ? 'bg-slate-800 text-slate-300 border-slate-600'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                className={`py-3.5 rounded-2xl text-sm font-bold border transition ${
+                  form.outcome === 'No Order' ? pillActive : pillIdle
                 }`}
               >
                 No order placed
@@ -538,34 +570,40 @@ export default function LogShop() {
           </div>
         )}
         {(isCallback || extraCoverage) && (
-          <div className={`text-xs font-semibold px-3 py-2 rounded-xl ${dark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+          <div
+            className={`text-xs font-bold px-4 py-2.5 rounded-2xl border ${
+              dark
+                ? 'bg-violet-500/15 text-violet-300 border-violet-500/25'
+                : 'bg-violet-50 text-violet-700 border-violet-200'
+            }`}
+          >
             {isCallback ? 'Call-back order' : 'Extra coverage visit'}
           </div>
         )}
 
-        {/* CARD 3 — Order placed builder */}
+        {/* CARD 3 — Order builder */}
         {(form.outcome === 'Order Placed' || isCallback || extraCoverage) && (
-          <div
-            className={`rounded-2xl border p-4 space-y-3 ${
-              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
-            }`}
-          >
+          <div className={`rounded-3xl p-4 space-y-3.5 ${glass}`}>
             <div className="flex items-center justify-between">
-              <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className={`text-sm font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Order placed
               </h3>
-              <span className="opacity-60">🛍️</span>
+              <span className="text-sm opacity-50">🛍️</span>
             </div>
 
             <div>
-              <label className={labelXs}>Category</label>
+              <label className={`${labelXs} uppercase tracking-wider`}>Category</label>
               <select
                 value={pickCategory}
                 onChange={(e) => {
                   setPickCategory(e.target.value);
                   setPickProductId('');
                 }}
-                className={`${inputSm} ${pickCategory ? 'border-[#0d9488] ring-1 ring-[#0d9488]/30' : ''}`}
+                className={`${inputSm} ${
+                  pickCategory
+                    ? 'border-teal-500/60 ring-2 ring-teal-500/20'
+                    : ''
+                }`}
               >
                 <option value="">Select category…</option>
                 {CATEGORIES.map((c) => (
@@ -578,7 +616,7 @@ export default function LogShop() {
 
             {pickCategory && (
               <div>
-                <label className={labelXs}>Product</label>
+                <label className={`${labelXs} uppercase tracking-wider`}>Product</label>
                 <select
                   value={pickProductId}
                   onChange={(e) => setPickProductId(e.target.value)}
@@ -597,30 +635,37 @@ export default function LogShop() {
 
             {selectedProduct && (
               <div
-                className={`flex items-center gap-3 rounded-xl p-2 border ${
-                  dark ? 'border-slate-600 bg-slate-800/60' : 'border-teal-200 bg-teal-50/50'
+                className={`flex items-center gap-3 rounded-2xl p-2.5 border ${
+                  dark
+                    ? 'border-teal-500/20 bg-teal-500/5'
+                    : 'border-teal-200/80 bg-gradient-to-r from-teal-50 to-sky-50'
                 }`}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border ${
-                    dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
+                  className={`w-14 h-14 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center border shadow-inner ${
+                    dark ? 'border-white/10 bg-slate-900' : 'border-white bg-white shadow-sm'
                   }`}
                 >
                   {selectedProduct.image ? (
                     <img src={selectedProduct.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-xl">🧴</span>
+                    <span className="text-2xl">🧴</span>
                   )}
                 </div>
-                <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
-                  {selectedProduct.name}
+                <div className="min-w-0">
+                  <div className={`text-sm font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                    {selectedProduct.name}
+                  </div>
+                  <div className={`text-[11px] font-medium ${dark ? 'text-teal-400/80' : 'text-teal-700'}`}>
+                    {selectedProduct.size || selectedProduct.category}
+                  </div>
                 </div>
               </div>
             )}
 
             {selectedProduct && (
               <div>
-                <label className={labelXs}>Unit</label>
+                <label className={`${labelXs} uppercase tracking-wider`}>Unit</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'pc', label: 'PC' },
@@ -631,12 +676,8 @@ export default function LogShop() {
                       key={u.id}
                       type="button"
                       onClick={() => setPickUnit(u.id)}
-                      className={`py-2.5 rounded-xl text-xs font-bold border ${
-                        pickUnit === u.id
-                          ? 'bg-[#0d9488] text-white border-[#0d9488]'
-                          : dark
-                          ? 'bg-slate-800 text-slate-300 border-slate-600'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      className={`py-3 rounded-2xl text-xs font-extrabold border transition ${
+                        pickUnit === u.id ? pillActive : pillIdle
                       }`}
                     >
                       {u.label}
@@ -649,14 +690,12 @@ export default function LogShop() {
             {selectedProduct && (
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className={labelXs}>Quantity</label>
+                  <label className={`${labelXs} uppercase tracking-wider`}>Quantity</label>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setPickQty(String(Math.max(1, Number(pickQty || 1) - 1)))}
-                      className={`w-10 h-10 rounded-xl font-bold border ${
-                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
-                      }`}
+                      className={`w-11 h-11 rounded-2xl font-bold text-lg border ${pillIdle}`}
                     >
                       −
                     </button>
@@ -665,28 +704,28 @@ export default function LogShop() {
                       min="1"
                       value={pickQty}
                       onChange={(e) => setPickQty(e.target.value)}
-                      className={`${inputSm} text-center font-bold`}
+                      className={`${inputSm} text-center font-extrabold text-base`}
                     />
                     <button
                       type="button"
                       onClick={() => setPickQty(String(Number(pickQty || 1) + 1))}
-                      className={`w-10 h-10 rounded-xl font-bold border ${
-                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
-                      }`}
+                      className={`w-11 h-11 rounded-2xl font-bold text-lg border ${pillIdle}`}
                     >
                       +
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className={labelXs}>Price (GHS)</label>
+                  <label className={`${labelXs} uppercase tracking-wider`}>Price (GHS)</label>
                   <div
-                    className={`rounded-xl px-3 py-2.5 text-sm font-bold border ${
-                      dark ? 'border-slate-600 bg-slate-800 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'
+                    className={`rounded-2xl px-3 py-3 text-sm font-extrabold border ${
+                      dark
+                        ? 'border-white/10 bg-white/5 text-white'
+                        : 'border-slate-200 bg-slate-50 text-slate-900'
                     }`}
                   >
                     {Number(unitPrice(selectedProduct, pickUnit) || 0).toFixed(2)}
-                    <span className={`text-[10px] font-medium ml-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <span className={`text-[10px] font-semibold ml-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                       / {pickUnit}
                     </span>
                   </div>
@@ -696,17 +735,13 @@ export default function LogShop() {
 
             {selectedProduct && (
               <div>
-                <label className={labelXs}>Payment</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className={`${labelXs} uppercase tracking-wider`}>Payment</label>
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentType: 'cash' })}
-                    className={`py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
-                      form.paymentType === 'cash'
-                        ? 'bg-[#0d9488] text-white border-[#0d9488]'
-                        : dark
-                        ? 'bg-slate-800 text-slate-300 border-slate-600'
-                        : 'bg-white text-slate-600 border-slate-200'
+                    className={`py-3 rounded-2xl text-sm font-bold border flex items-center justify-center gap-2 transition ${
+                      form.paymentType === 'cash' ? pillActive : pillIdle
                     }`}
                   >
                     <span>💵</span> Cash
@@ -714,12 +749,8 @@ export default function LogShop() {
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentType: 'credit' })}
-                    className={`py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
-                      form.paymentType === 'credit'
-                        ? 'bg-[#0d9488] text-white border-[#0d9488]'
-                        : dark
-                        ? 'bg-slate-800 text-slate-300 border-slate-600'
-                        : 'bg-white text-slate-600 border-slate-200'
+                    className={`py-3 rounded-2xl text-sm font-bold border flex items-center justify-center gap-2 transition ${
+                      form.paymentType === 'credit' ? pillActive : pillIdle
                     }`}
                   >
                     <span>💳</span> Credit
@@ -729,7 +760,7 @@ export default function LogShop() {
                   <select
                     value={form.creditDurationWeeks}
                     onChange={(e) => setForm({ ...form, creditDurationWeeks: e.target.value })}
-                    className={`${inputSm} mt-2`}
+                    className={`${inputSm} mt-2.5`}
                   >
                     <option value="1">1 week</option>
                     <option value="2">2 weeks</option>
@@ -742,7 +773,7 @@ export default function LogShop() {
               <button
                 type="button"
                 onClick={addProductLine}
-                className="w-full bg-[#0d9488] text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl text-sm font-extrabold text-white flex items-center justify-center gap-2 bg-gradient-to-r from-[#0d9488] to-[#117ea6] shadow-lg shadow-teal-500/30 active:scale-[0.98] transition"
               >
                 <span>🛒</span> Add to cart
               </button>
@@ -750,21 +781,20 @@ export default function LogShop() {
           </div>
         )}
 
-        {/* CARD 4 — Order cart */}
+        {/* CARD 4 — Cart */}
         {(form.outcome === 'Order Placed' || isCallback || extraCoverage) && cart.length > 0 && (
-          <div
-            className={`rounded-2xl border p-4 space-y-2 ${
-              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
-            }`}
-          >
+          <div className={`rounded-3xl p-4 space-y-2.5 ${glass}`}>
             <div className="flex items-center justify-between">
               <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-                Order cart ({cart.length})
+                Order cart
+                <span className="ml-2 text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-400">
+                  {cart.length}
+                </span>
               </h3>
               <button
                 type="button"
                 onClick={() => setCart([])}
-                className="text-[11px] font-bold text-slate-400"
+                className="text-[11px] font-bold text-rose-400/90 hover:text-rose-400"
               >
                 Clear all
               </button>
@@ -772,13 +802,15 @@ export default function LogShop() {
             {cart.map((i, idx) => (
               <div
                 key={idx}
-                className={`flex items-center gap-2.5 rounded-xl p-2 border ${
-                  dark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-100 bg-slate-50'
+                className={`flex items-center gap-3 rounded-2xl p-2.5 border ${
+                  dark
+                    ? 'border-white/10 bg-white/5'
+                    : 'border-slate-100 bg-gradient-to-r from-slate-50 to-white'
                 }`}
               >
                 <div
-                  className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                    dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
+                  className={`w-12 h-12 rounded-xl overflow-hidden shrink-0 flex items-center justify-center border ${
+                    dark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'
                   }`}
                 >
                   {i.image ? (
@@ -788,49 +820,48 @@ export default function LogShop() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-semibold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
                     {i.productName}
                   </div>
-                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <div className={`text-[10px] font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {String(i.unit).toUpperCase()} · {i.quantity} × GHS {Number(i.unitPrice).toFixed(2)}
                   </div>
                 </div>
-                <span className="text-xs font-bold text-emerald-400 shrink-0">
+                <span className="text-xs font-extrabold text-emerald-400 shrink-0">
                   GHS {i.lineTotal.toFixed(2)}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeLine(idx)}
-                  className="text-base px-1 opacity-70"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-sm bg-rose-500/10 text-rose-400 border border-rose-500/20"
                   title="Remove"
                 >
                   🗑️
                 </button>
               </div>
             ))}
-            <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
-              <span className={`text-xs font-bold uppercase ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div
+              className={`flex justify-between items-center mt-1 pt-3 border-t ${
+                dark ? 'border-white/10' : 'border-slate-100'
+              }`}
+            >
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Total
               </span>
-              <span className="text-base font-extrabold text-emerald-400">
+              <span className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                 GHS {cartTotal.toFixed(2)}
               </span>
             </div>
           </div>
         )}
 
-        {/* No order reasons */}
         {form.outcome === 'No Order' && (
-          <div
-            className={`rounded-2xl border p-4 space-y-3 ${
-              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200'
-            }`}
-          >
+          <div className={`rounded-3xl p-4 space-y-3 ${glass}`}>
             <div>
               <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
                 No order
               </h3>
-              <p className={`text-[11px] mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] mt-1 font-medium ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Select a reason below.
               </p>
             </div>
@@ -840,12 +871,8 @@ export default function LogShop() {
                   key={r}
                   type="button"
                   onClick={() => setForm({ ...form, noOrderReason: r })}
-                  className={`text-[11px] font-semibold px-3 py-2 rounded-xl border ${
-                    form.noOrderReason === r
-                      ? 'bg-[#117ea6] text-white border-[#117ea6]'
-                      : dark
-                      ? 'bg-slate-800 text-slate-300 border-slate-600'
-                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                  className={`text-[11px] font-bold px-3.5 py-2.5 rounded-2xl border transition ${
+                    form.noOrderReason === r ? pillActive : pillIdle
                   }`}
                 >
                   {r}
@@ -855,8 +882,8 @@ export default function LogShop() {
           </div>
         )}
 
-        <div>
-          <label className={labelCls}>Notes (optional)</label>
+        <div className={`rounded-3xl p-4 ${glass}`}>
+          <label className={`${labelCls} !mb-2`}>Notes (optional)</label>
           <textarea
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -868,7 +895,7 @@ export default function LogShop() {
 
         {status && (
           <div
-            className={`text-sm px-4 py-3 rounded-xl border font-medium ${
+            className={`text-sm px-4 py-3.5 rounded-2xl border font-semibold ${
               status.type === 'success'
                 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                 : 'bg-red-500/15 text-red-400 border-red-500/30'
@@ -878,8 +905,7 @@ export default function LogShop() {
           </div>
         )}
 
-        {/* Bottom actions */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
+        <div className="grid grid-cols-2 gap-3 pt-2">
           <button
             type="button"
             disabled={loading || cart.length === 0}
@@ -887,16 +913,18 @@ export default function LogShop() {
               setInvoiceBeforeSave(false);
               setInvoicePreview(buildInvoiceData());
             }}
-            className={`py-3.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
-              dark ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-white border-slate-900'
-            } disabled:opacity-40`}
+            className={`py-4 rounded-2xl text-sm font-extrabold border flex items-center justify-center gap-2 transition disabled:opacity-40 ${
+              dark
+                ? 'bg-slate-800/90 text-white border-white/10 hover:bg-slate-700'
+                : 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20'
+            }`}
           >
             <span>🖨️</span> Print invoice
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="py-3.5 rounded-xl text-sm font-bold bg-[#a3e635] text-slate-900 disabled:opacity-60 flex items-center justify-center gap-1.5"
+            className="py-4 rounded-2xl text-sm font-extrabold bg-gradient-to-r from-[#bef264] via-[#a3e635] to-[#84cc16] text-slate-900 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-lime-500/25 active:scale-[0.98] transition"
           >
             <span>✓</span> {loading ? 'Saving…' : 'Complete visit'}
           </button>
