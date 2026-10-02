@@ -363,8 +363,32 @@ export default function LogShop() {
     ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
     : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
 
+
+  const addressLine =
+    [ctx.address, ctx.territory, form.contactPhone].filter(Boolean).join(' · ') ||
+    [form.contactName, form.contactPhone].filter(Boolean).join(' · ') ||
+    'Outlet location';
+
+  const confirmAndSubmit = (e) => {
+    if (e) e.preventDefault();
+    const msg =
+      form.outcome === 'No Order'
+        ? 'Confirm complete visit with No Order?'
+        : cart.length
+        ? `Confirm complete visit?\n\nTotal: GHS ${cartTotal.toFixed(2)}`
+        : 'Confirm complete visit?';
+    if (!window.confirm(msg)) return;
+    // Skip invoice-first flow; user already confirmed. Print is a separate button.
+    window.__ffSkipInvoice = true;
+    const fake = { preventDefault() {} };
+    handleSubmit(fake);
+    setTimeout(() => {
+      window.__ffSkipInvoice = false;
+    }, 1500);
+  };
+
   return (
-    <div className={`min-h-full pb-8 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
+    <div className={`min-h-full pb-10 ${dark ? 'text-slate-100' : 'text-slate-900'}`}>
       <InvoicePreview
         open={!!invoicePreview}
         invoice={invoicePreview}
@@ -377,160 +401,160 @@ export default function LogShop() {
           setInvoiceBeforeSave(false);
           setInvoicePreview(null);
           window.__ffSkipInvoice = true;
-          const formEl = document.getElementById('log-shop-form');
-          if (formEl) formEl.requestSubmit();
-          setTimeout(() => { window.__ffSkipInvoice = false; }, 800);
+          confirmAndSubmit();
+          setTimeout(() => {
+            window.__ffSkipInvoice = false;
+          }, 800);
         }}
       />
 
-      <div className="flex items-center justify-between mb-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className={`w-9 h-9 rounded-full flex items-center justify-center text-lg ${
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
             dark ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'
           }`}
-          aria-label="Back"
         >
           ←
         </button>
-        <div className="text-center flex-1 px-2">
-          <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+        <div className="flex-1 text-center">
+          <div className={`text-[15px] font-extrabold tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
             FieldForce Tracker
           </div>
-          <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             Log Shop · OMR Field Sales
           </div>
         </div>
         <div className="w-9" />
       </div>
 
+      {/* CARD 1 — Outlet + GPS */}
       <div
-        className={`rounded-2xl border p-4 mb-4 ${
-          dark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+        className={`rounded-2xl border p-4 mb-3 ${
+          dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
         <div className="flex gap-3 items-start">
+          <div className="text-2xl leading-none mt-0.5">📍</div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2">
-              <span className="text-amber-400 text-lg leading-none mt-0.5">📍</span>
-              <div className="min-w-0">
-                <div className="font-bold text-amber-400 text-sm leading-snug">
-                  {form.shopName || 'Outlet'}
-                </div>
-                <div className={`text-xs mt-1 leading-snug ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {[form.contactName, form.contactPhone, ctx.address, ctx.territory]
-                    .filter(Boolean)
-                    .join(' · ') || 'Beat outlet visit'}
-                </div>
-              </div>
+            <div className="font-bold text-amber-400 text-[15px] leading-snug">
+              {form.shopName || ctx.shopName || 'Outlet'}
+            </div>
+            <div className={`text-xs mt-1 leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+              {addressLine}
             </div>
           </div>
-          <div className="shrink-0 flex flex-col items-center gap-1">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
-              🛡️
+          <div className="shrink-0 flex flex-col items-center gap-1 w-[72px]">
+            <div className="w-11 h-11 rounded-full bg-emerald-500/15 border-2 border-emerald-400/50 flex items-center justify-center">
+              <span className="text-emerald-400 text-lg font-black">✓</span>
             </div>
-            <span className="text-[9px] font-bold tracking-wide text-emerald-400 uppercase">
+            <span className="text-[9px] font-extrabold tracking-wide text-emerald-400 uppercase text-center leading-tight">
               GPS Verified
             </span>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-medium flex-wrap">
-          <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">
-            ✓
-          </span>
-          <span>
-            {isCallback
-              ? 'Call-back order · convert No Order'
-              : fromBeat
-              ? 'Start visit ready'
-              : 'Log shop visit'}
-            {' · '}
-            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          {!isOnline() && (
-            <span className="ml-auto text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
-              Offline
-            </span>
-          )}
-        </div>
+        {!isOnline() && (
+          <div className="mt-2 text-[10px] font-semibold text-amber-400">Offline mode</div>
+        )}
         {offlinePending > 0 && (
-          <div className="mt-2 text-[10px] text-amber-400 font-semibold">
-            {offlinePending} item(s) pending sync
-          </div>
+          <div className="mt-1 text-[10px] text-amber-400/90">{offlinePending} pending sync</div>
         )}
       </div>
 
-      <form id="log-shop-form" onSubmit={handleSubmit} className="space-y-4">
+      <form
+        id="log-shop-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          confirmAndSubmit();
+        }}
+        className="space-y-3"
+      >
         {!fromBeat && !isCallback && (
-          <div className={`rounded-2xl border p-4 space-y-3 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <div>
-              <label className={labelCls}>Shop Name *</label>
+          <div className={`rounded-2xl border p-4 space-y-2 ${dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <input
+              className={inputCls}
+              placeholder="Shop name *"
+              value={form.shopName}
+              onChange={(e) => setForm({ ...form, shopName: e.target.value })}
+              required
+            />
+            <div className="grid grid-cols-2 gap-2">
               <input
-                value={form.shopName}
-                onChange={(e) => setForm({ ...form, shopName: e.target.value })}
                 className={inputCls}
-                required
+                placeholder="Contact"
+                value={form.contactName}
+                onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+              />
+              <input
+                className={inputCls}
+                placeholder="Phone"
+                value={form.contactPhone}
+                onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Contact</label>
-                <input
-                  value={form.contactName}
-                  onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Phone</label>
-                <input
-                  value={form.contactPhone}
-                  onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-                  className={inputCls}
-                />
-              </div>
+          </div>
+        )}
+
+        {/* CARD 2 — Outcome */}
+        {!isCallback && !extraCoverage && (
+          <div
+            className={`rounded-2xl border p-4 ${
+              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+            }`}
+          >
+            <div className={`text-xs font-bold mb-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+              Outcome
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, outcome: 'Order Placed', noOrderReason: '' })}
+                className={`py-3 rounded-xl text-sm font-bold border ${
+                  form.outcome === 'Order Placed'
+                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
+                    : dark
+                    ? 'bg-slate-800 text-slate-300 border-slate-600'
+                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                }`}
+              >
+                Order placed
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, outcome: 'No Order' })}
+                className={`py-3 rounded-xl text-sm font-bold border ${
+                  form.outcome === 'No Order'
+                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
+                    : dark
+                    ? 'bg-slate-800 text-slate-300 border-slate-600'
+                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                }`}
+              >
+                No order placed
+              </button>
             </div>
           </div>
         )}
-
-        {!isCallback && !extraCoverage && (
-          <div className="flex gap-2">
-            {['Order Placed', 'No Order'].map((o) => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setForm({ ...form, outcome: o, noOrderReason: '' })}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${
-                  form.outcome === o
-                    ? 'bg-[#117ea6] text-white border-[#117ea6]'
-                    : dark
-                    ? 'bg-slate-900 text-slate-300 border-slate-600'
-                    : 'bg-white text-slate-600 border-slate-200'
-                }`}
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-        )}
-        {extraCoverage && (
-          <div className={`text-xs font-semibold px-3 py-2 rounded-xl ${dark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
-            Extra coverage visit
+        {(isCallback || extraCoverage) && (
+          <div className={`text-xs font-semibold px-3 py-2 rounded-xl ${dark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+            {isCallback ? 'Call-back order' : 'Extra coverage visit'}
           </div>
         )}
 
-        {(form.outcome === 'Order Placed' || extraCoverage || isCallback) && (
+        {/* CARD 3 — Order placed builder */}
+        {(form.outcome === 'Order Placed' || isCallback || extraCoverage) && (
           <div
             className={`rounded-2xl border p-4 space-y-3 ${
-              dark ? 'bg-slate-900/90 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
             }`}
           >
             <div className="flex items-center justify-between">
-              <h3 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Order placed
               </h3>
-              <span className="text-lg opacity-70">🛍️</span>
+              <span className="opacity-60">🛍️</span>
             </div>
 
             <div>
@@ -541,14 +565,12 @@ export default function LogShop() {
                   setPickCategory(e.target.value);
                   setPickProductId('');
                 }}
-                className={`${inputSm} ${
-                  pickCategory ? 'border-[#0d9488] ring-1 ring-[#0d9488]/40' : ''
-                }`}
+                className={`${inputSm} ${pickCategory ? 'border-[#0d9488] ring-1 ring-[#0d9488]/30' : ''}`}
               >
                 <option value="">Select category…</option>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {c === 'Roll-on' ? 'ROLL ON' : c.toUpperCase()}
                   </option>
                 ))}
               </select>
@@ -562,10 +584,11 @@ export default function LogShop() {
                   onChange={(e) => setPickProductId(e.target.value)}
                   className={inputSm}
                 >
-                  <option value="">Select product…</option>
+                  <option value="">List of SKUs…</option>
                   {productList.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} {p.size ? `(${p.size})` : ''}
+                      {p.name}
+                      {p.size ? ` ${p.size}` : ''}
                     </option>
                   ))}
                 </select>
@@ -574,8 +597,8 @@ export default function LogShop() {
 
             {selectedProduct && (
               <div
-                className={`flex items-center gap-3 rounded-xl p-2.5 border ${
-                  dark ? 'border-slate-600 bg-slate-800/80' : 'border-[#0d9488]/25 bg-teal-50'
+                className={`flex items-center gap-3 rounded-xl p-2 border ${
+                  dark ? 'border-slate-600 bg-slate-800/60' : 'border-teal-200 bg-teal-50/50'
                 }`}
               >
                 <div
@@ -589,13 +612,8 @@ export default function LogShop() {
                     <span className="text-xl">🧴</span>
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
-                    {selectedProduct.name}
-                  </div>
-                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    {selectedProduct.size || selectedProduct.category}
-                  </div>
+                <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                  {selectedProduct.name}
                 </div>
               </div>
             )}
@@ -629,14 +647,14 @@ export default function LogShop() {
             )}
 
             {selectedProduct && (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1">
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div>
                   <label className={labelXs}>Quantity</label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setPickQty(String(Math.max(1, Number(pickQty || 1) - 1)))}
-                      className={`w-10 h-10 rounded-xl font-bold text-lg border ${
+                      className={`w-10 h-10 rounded-xl font-bold border ${
                         dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
                       }`}
                     >
@@ -652,7 +670,7 @@ export default function LogShop() {
                     <button
                       type="button"
                       onClick={() => setPickQty(String(Number(pickQty || 1) + 1))}
-                      className={`w-10 h-10 rounded-xl font-bold text-lg border ${
+                      className={`w-10 h-10 rounded-xl font-bold border ${
                         dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-slate-50'
                       }`}
                     >
@@ -660,13 +678,17 @@ export default function LogShop() {
                     </button>
                   </div>
                 </div>
-                <div className="text-right pt-5">
-                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Price</div>
-                  <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-                    GHS {Number(unitPrice(selectedProduct, pickUnit) || 0).toFixed(0)}
-                  </div>
-                  <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    per {pickUnit}
+                <div>
+                  <label className={labelXs}>Price (GHS)</label>
+                  <div
+                    className={`rounded-xl px-3 py-2.5 text-sm font-bold border ${
+                      dark ? 'border-slate-600 bg-slate-800 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'
+                    }`}
+                  >
+                    {Number(unitPrice(selectedProduct, pickUnit) || 0).toFixed(2)}
+                    <span className={`text-[10px] font-medium ml-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      / {pickUnit}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -675,11 +697,11 @@ export default function LogShop() {
             {selectedProduct && (
               <div>
                 <label className={labelXs}>Payment</label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentType: 'cash' })}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
+                    className={`py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
                       form.paymentType === 'cash'
                         ? 'bg-[#0d9488] text-white border-[#0d9488]'
                         : dark
@@ -687,12 +709,12 @@ export default function LogShop() {
                         : 'bg-white text-slate-600 border-slate-200'
                     }`}
                   >
-                    Cash
+                    <span>💵</span> Cash
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentType: 'credit' })}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${
+                    className={`py-2.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
                       form.paymentType === 'credit'
                         ? 'bg-[#0d9488] text-white border-[#0d9488]'
                         : dark
@@ -700,7 +722,7 @@ export default function LogShop() {
                         : 'bg-white text-slate-600 border-slate-200'
                     }`}
                   >
-                    Credit
+                    <span>💳</span> Credit
                   </button>
                 </div>
                 {form.paymentType === 'credit' && (
@@ -720,79 +742,96 @@ export default function LogShop() {
               <button
                 type="button"
                 onClick={addProductLine}
-                className="w-full bg-[#0d9488] text-white text-sm font-bold py-3 rounded-xl shadow-sm"
+                className="w-full bg-[#0d9488] text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2"
               >
-                Add to order
+                <span>🛒</span> Add to cart
               </button>
-            )}
-
-            {cart.length > 0 && (
-              <div className={`border-t pt-3 space-y-2 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
-                <div className="flex items-center justify-between">
-                  <div className={`text-xs font-bold ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
-                    Order cart ({cart.length})
-                  </div>
-                  <button type="button" onClick={() => setCart([])} className="text-[10px] font-semibold text-slate-400">
-                    Clear all
-                  </button>
-                </div>
-                {cart.map((i, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2.5 rounded-xl p-2 border ${
-                      dark ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
-                        dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
-                      }`}
-                    >
-                      {i.image ? (
-                        <img src={i.image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-lg">🧴</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-xs font-semibold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
-                        {i.productName}
-                      </div>
-                      <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {i.unit} · {i.quantity} × GHS {Number(i.unitPrice).toFixed(2)}
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-400 shrink-0">
-                      GHS {i.lineTotal.toFixed(2)}
-                    </span>
-                    <button type="button" onClick={() => removeLine(idx)} className="text-slate-400 text-sm px-1">
-                      🗑️
-                    </button>
-                  </div>
-                ))}
-                <div className="flex justify-between items-center pt-1">
-                  <span className={`text-xs font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Total
-                  </span>
-                  <span className="text-base font-extrabold text-emerald-400">
-                    GHS {cartTotal.toFixed(2)}
-                  </span>
-                </div>
-              </div>
             )}
           </div>
         )}
 
+        {/* CARD 4 — Order cart */}
+        {(form.outcome === 'Order Placed' || isCallback || extraCoverage) && cart.length > 0 && (
+          <div
+            className={`rounded-2xl border p-4 space-y-2 ${
+              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                Order cart ({cart.length})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCart([])}
+                className="text-[11px] font-bold text-slate-400"
+              >
+                Clear all
+              </button>
+            </div>
+            {cart.map((i, idx) => (
+              <div
+                key={idx}
+                className={`flex items-center gap-2.5 rounded-xl p-2 border ${
+                  dark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-100 bg-slate-50'
+                }`}
+              >
+                <div
+                  className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                    dark ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  {i.image ? (
+                    <img src={i.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg">🧴</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-xs font-semibold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                    {i.productName}
+                  </div>
+                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {String(i.unit).toUpperCase()} · {i.quantity} × GHS {Number(i.unitPrice).toFixed(2)}
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-400 shrink-0">
+                  GHS {i.lineTotal.toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeLine(idx)}
+                  className="text-base px-1 opacity-70"
+                  title="Remove"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
+              <span className={`text-xs font-bold uppercase ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Total
+              </span>
+              <span className="text-base font-extrabold text-emerald-400">
+                GHS {cartTotal.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* No order reasons */}
         {form.outcome === 'No Order' && (
           <div
             className={`rounded-2xl border p-4 space-y-3 ${
-              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+              dark ? 'bg-[#0f172a] border-slate-700' : 'bg-white border-slate-200'
             }`}
           >
             <div>
-              <h3 className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>No order</h3>
+              <h3 className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
+                No order
+              </h3>
               <p className={`text-[11px] mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                If no order was placed, select a reason below.
+                Select a reason below.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -823,7 +862,7 @@ export default function LogShop() {
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={2}
             className={inputCls}
-            placeholder="Any extra note for this visit…"
+            placeholder="Any extra note…"
           />
         </div>
 
@@ -839,28 +878,27 @@ export default function LogShop() {
           </div>
         )}
 
+        {/* Bottom actions */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <button
             type="button"
-            disabled={loading || ((form.outcome === 'Order Placed' || isCallback) && cart.length === 0)}
+            disabled={loading || cart.length === 0}
             onClick={() => {
-              if (cart.length > 0) {
-                setInvoiceBeforeSave(false);
-                setInvoicePreview(buildInvoiceData());
-              }
+              setInvoiceBeforeSave(false);
+              setInvoicePreview(buildInvoiceData());
             }}
-            className={`py-3.5 rounded-xl text-sm font-bold border ${
+            className={`py-3.5 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 ${
               dark ? 'bg-slate-800 text-white border-slate-600' : 'bg-slate-900 text-white border-slate-900'
             } disabled:opacity-40`}
           >
-            Print invoice
+            <span>🖨️</span> Print invoice
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="py-3.5 rounded-xl text-sm font-bold bg-[#a3e635] text-slate-900 disabled:opacity-60 shadow-sm"
+            className="py-3.5 rounded-xl text-sm font-bold bg-[#a3e635] text-slate-900 disabled:opacity-60 flex items-center justify-center gap-1.5"
           >
-            {loading ? 'Saving…' : isOnline() ? 'Complete visit' : 'Save offline'}
+            <span>✓</span> {loading ? 'Saving…' : 'Complete visit'}
           </button>
         </div>
       </form>
