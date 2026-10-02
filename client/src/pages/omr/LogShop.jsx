@@ -125,6 +125,7 @@ export default function LogShop() {
           productName: selectedProduct.name,
           category: selectedProduct.category,
           size: selectedProduct.size,
+          image: selectedProduct.image || '',
           unit: pickUnit,
           quantity: qty,
           unitPrice: price,
@@ -519,6 +520,30 @@ export default function LogShop() {
 
             {/* 3. Unit + Qty */}
             {selectedProduct && (
+              <div className={`flex items-center gap-2 rounded-xl p-2 border ${
+                dark ? 'border-slate-600 bg-slate-900' : 'border-[#117ea6]/30 bg-sky-50'
+              }`}>
+                <div className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-white'
+                }`}>
+                  {selectedProduct.image ? (
+                    <img src={selectedProduct.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xl">🧴</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                    {selectedProduct.name}
+                  </div>
+                  <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {selectedProduct.size || selectedProduct.category}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedProduct && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className={labelXs}>Unit</label>
@@ -557,23 +582,49 @@ export default function LogShop() {
 
             {/* Cart */}
             {cart.length > 0 && (
-              <div className="border-t border-slate-100 pt-2 space-y-1">
+              <div className={`border-t pt-2 space-y-2 ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+                <div className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Order cart ({cart.length})
+                </div>
                 {cart.map((i, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
-                    <span className="flex-1 truncate">
-                      {i.productName} · {i.quantity} {i.unit}
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-2 rounded-xl p-2 border ${
+                      dark ? 'border-slate-700 bg-slate-900/60' : 'border-slate-100 bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`w-11 h-11 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                        dark ? 'border-slate-600 bg-slate-800' : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      {i.image ? (
+                        <img src={i.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">🧴</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-semibold truncate ${dark ? 'text-white' : 'text-slate-800'}`}>
+                        {i.productName}
+                      </div>
+                      <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {i.quantity} {i.unit} · GHS {Number(i.unitPrice).toFixed(2)} each
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold shrink-0 ${dark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                      GHS {i.lineTotal.toFixed(2)}
                     </span>
-                    <span className="font-medium">GHS {i.lineTotal.toFixed(2)}</span>
                     <button
                       type="button"
                       onClick={() => removeLine(idx)}
-                      className="text-red-500 px-1"
+                      className="text-red-500 px-1 text-sm shrink-0"
                     >
                       ✕
                     </button>
                   </div>
                 ))}
-                <div className="text-sm font-bold text-navy text-right pt-1">
+                <div className={`text-sm font-bold text-right pt-1 ${dark ? 'text-white' : 'text-navy'}`}>
                   Total: GHS {cartTotal.toFixed(2)}
                 </div>
               </div>
