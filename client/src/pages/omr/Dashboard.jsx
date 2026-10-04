@@ -182,10 +182,12 @@ export default function Dashboard() {
   };
 
   const pct = target?.percentage || 0;
-  const total = beat?.total || incentive?.day?.beatOutlets || 0;
-  const visited = beat?.visitedCount ?? incentive?.day?.outletsVisited ?? 0;
+  const day = incentive?.day;
+  const mtd = incentive?.mtd;
+  const total = beat?.total || day?.beatOutlets || 0;
+  const visited = beat?.visitedCount ?? day?.outletsVisited ?? 0;
   const notVisited = Math.max(0, total - visited);
-  const coveragePct = incentive?.day?.coveragePct ?? (total > 0 ? Math.round((visited / total) * 100) : 0);
+  const coveragePct = day?.coveragePct ?? (total > 0 ? Math.round((visited / total) * 100) : 0);
   const productiveCalls = day?.productiveCalls ?? 0;
   const totalVisitsToday = day?.totalVisits ?? visited;
   const visitConversionPct =
@@ -202,8 +204,6 @@ export default function Dashboard() {
 
   const track = dark ? '#334155' : '#e2e8f0';
   const card = dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm';
-  const day = incentive?.day;
-  const mtd = incentive?.mtd;
 
   if (loading) {
     return (
