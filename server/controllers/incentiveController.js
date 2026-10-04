@@ -147,9 +147,20 @@ export const getIncentiveBreakdown = async (req, res) => {
     const productiveCalls = productiveVisits.length;
     const totalCalls = dayVisits.length;
 
+    // Hit rate = productive ÷ planned beat outlets (e.g. 5/10)
     const hitRatePct =
+      beatTotal > 0 ? Math.round((productiveCalls / beatTotal) * 1000) / 10 : 0;
+    // Conversion of visits made (kept for reference; not the main "Hit rate")
+    const visitConversionPct =
       totalCalls > 0 ? Math.round((productiveCalls / totalCalls) * 1000) / 10 : 0;
-    const productivityPct = hitRatePct;
+    // Productivity % = productive ÷ (70% of planned) — achievement vs productive target
+    const PRODUCTIVITY_FACTOR = 0.7;
+    const productivityTarget =
+      beatTotal > 0 ? Math.round(beatTotal * PRODUCTIVITY_FACTOR * 10) / 10 : 0;
+    const productivityPct =
+      productivityTarget > 0
+        ? Math.round((productiveCalls / productivityTarget) * 1000) / 10
+        : 0;
 
     let totalLines = 0;
     for (const v of productiveVisits) {
@@ -184,8 +195,27 @@ export const getIncentiveBreakdown = async (req, res) => {
     }
     const mtdLppc =
       mtdProdCalls > 0 ? Math.round((mtdLines / mtdProdCalls) * 100) / 100 : 0;
+    // MTD universe = approved outlets assigned to this OMR
+    const universeOutlets = await Outlet.countDocuments({
+      assignedTo: req.user._id,
+      status: "approved",
+      isActive: true,
+    });
+    // Hit rate MTD = productive ÷ universe (same logic as day: productive ÷ planned)
     const mtdHitRate =
+      universeOutlets > 0
+        ? Math.round((mtdProdCalls / universeOutlets) * 1000) / 10
+        : 0;
+    const mtdVisitConversion =
       mtdCalls > 0 ? Math.round((mtdProdCalls / mtdCalls) * 1000) / 10 : 0;
+    const mtdProductivityTarget =
+      universeOutlets > 0
+        ? Math.round(universeOutlets * PRODUCTIVITY_FACTOR * 10) / 10
+        : 0;
+    const mtdProductivityPct =
+      mtdProductivityTarget > 0
+        ? Math.round((mtdProdCalls / mtdProductivityTarget) * 1000) / 10
+        : 0;
     const mtdTop = computeTop10Metrics(mtdProductive);
 
     res.json({
@@ -194,8 +224,14 @@ export const getIncentiveBreakdown = async (req, res) => {
       definitions: {
         productiveCall:
           "Outlet bought at least one piece of any Nivea SKU (not the full range required)",
-        coverage: "Must visit every beat outlet (buy or no buy) — target 100%",
-        hitRate: "Productive calls ÷ total visits",
+        coverage:
+          "Visits ÷ planned beat outlets (e.g. 8/10) — must visit every beat outlet, target 100%",
+        hitRate:
+          "Productive calls ÷ planned beat outlets (e.g. 5/10) — productive coverage / strike vs plan",
+        visitConversion:
+          "Productive calls ÷ visits actually done (e.g. 5/8)",
+        productivity:
+          "Productive calls ÷ (70% of planned beat outlets) — achievement vs productive target",
         lppc: "Product lines sold ÷ productive calls",
         top10Penetration:
           "Share of the 10 priority SKUs sold at least once in the period (checklist)",
@@ -211,8 +247,11 @@ export const getIncentiveBreakdown = async (req, res) => {
         coverageTarget: 100,
         totalVisits: totalCalls,
         productiveCalls,
+        productivityTarget,
+        productivityFactor: PRODUCTIVITY_FACTOR,
         productivityPct,
         hitRatePct,
+        visitConversionPct,
         totalLines,
         lppc,
         // Existing rule (checklist)
@@ -226,6 +265,9 @@ export const getIncentiveBreakdown = async (req, res) => {
       mtd: {
         totalVisits: mtdCalls,
         productiveCalls: mtdProdCalls,
+        universeOutlets,
+        productivityTarget: mtdProductivityTarget,
+        productivityPct: mtdProductivityPct,
         hitRatePct: mtdHitRate,
         lppc: mtdLppc,
         top10HitCount: mtdTop.hitCount,

@@ -413,10 +413,10 @@ export default function Dashboard() {
                 Productivity
               </div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                {day?.productiveCalls ?? 0} productive calls
+                {day?.productiveCalls ?? 0} / {day?.productivityTarget ?? '—'} target
               </div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                LPPC {day?.lppc ?? 0}
+                70% of beat · LPPC {day?.lppc ?? 0}
               </div>
             </div>
           </div>
@@ -457,10 +457,10 @@ export default function Dashboard() {
                 Hit Rate
               </div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                Productive ÷ visits
+                Productive ÷ planned
               </div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                {day?.productiveCalls ?? 0}/{day?.totalVisits ?? 0} calls
+                {day?.productiveCalls ?? 0}/{day?.beatOutlets ?? 0} outlets
               </div>
             </div>
           </div>

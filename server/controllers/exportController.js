@@ -102,8 +102,16 @@ async function buildOmrRow(omr, startDate, endDate) {
     .filter((v) => v.outcome === 'Order Placed')
     .reduce((s, v) => s + (v.amount || 0), 0);
   const totalLines = productive.reduce((s, v) => s + lineCount(v), 0);
-  const hitRate = totalVisits > 0 ? (productiveCalls / totalVisits) * 100 : 0;
-  const productivity = totalVisits > 0 ? (productiveCalls / totalVisits) * 100 : 0;
+  // Hit rate = productive ÷ planned beat opportunities (e.g. 5/10)
+  const plannedBase = beatOutletDays > 0 ? beatOutletDays : totalVisits;
+  const hitRate = plannedBase > 0 ? (productiveCalls / plannedBase) * 100 : 0;
+  const visitConversion =
+    totalVisits > 0 ? (productiveCalls / totalVisits) * 100 : 0;
+  // Productivity vs 70% of planned
+  const PRODUCTIVITY_FACTOR = 0.7;
+  const productivityTarget = plannedBase * PRODUCTIVITY_FACTOR;
+  const productivity =
+    productivityTarget > 0 ? (productiveCalls / productivityTarget) * 100 : 0;
   const lppc = productiveCalls > 0 ? totalLines / productiveCalls : 0;
   const coverage = beatOutletDays > 0 ? (coveredOutletDays / beatOutletDays) * 100 : 0;
   const avgLinesPerOutlet =
