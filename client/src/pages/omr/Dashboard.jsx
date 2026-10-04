@@ -186,6 +186,13 @@ export default function Dashboard() {
   const visited = beat?.visitedCount ?? incentive?.day?.outletsVisited ?? 0;
   const notVisited = Math.max(0, total - visited);
   const coveragePct = incentive?.day?.coveragePct ?? (total > 0 ? Math.round((visited / total) * 100) : 0);
+  const productiveCalls = day?.productiveCalls ?? 0;
+  const totalVisitsToday = day?.totalVisits ?? visited;
+  const visitConversionPct =
+    day?.visitConversionPct ??
+    (totalVisitsToday > 0
+      ? Math.round((productiveCalls / totalVisitsToday) * 1000) / 10
+      : 0);
 
   const todayLabel = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -364,13 +371,13 @@ export default function Dashboard() {
             </div>
             <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-teal-50'}`}>
               <div className="text-lg font-bold text-teal-600">
-                {day?.productiveCalls ?? 0}
+                {productiveCalls}
               </div>
               <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-teal-700'}`}>
                 Productive
               </div>
               <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-teal-600/80'}`}>
-                of {day?.totalVisits ?? visited} visits
+                of {totalVisitsToday} visits
               </div>
             </div>
             <div className={`rounded-xl p-2.5 ${dark ? 'bg-slate-900' : 'bg-indigo-50'}`}>
@@ -379,7 +386,25 @@ export default function Dashboard() {
               </div>
               <div className="text-sm font-bold text-[#2596be]">{coveragePct}%</div>
               <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-indigo-500'}`}>
-                target 100%
+                visits ÷ planned · target 100%
+              </div>
+            </div>
+            <div className={`rounded-xl p-2.5 col-span-2 ${dark ? 'bg-slate-900' : 'bg-violet-50'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className={`text-[10px] font-semibold ${dark ? 'text-slate-300' : 'text-violet-800'}`}>
+                    Visit conversion
+                  </div>
+                  <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-violet-600'}`}>
+                    Productive ÷ visits done (e.g. 5 ÷ 8)
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-violet-600">{visitConversionPct}%</div>
+                  <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-violet-600'}`}>
+                    {productiveCalls} ÷ {totalVisitsToday}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
