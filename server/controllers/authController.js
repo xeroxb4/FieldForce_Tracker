@@ -19,7 +19,7 @@ const userPayload = (user) => ({
 
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, role: selectedRole } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ message: 'Please provide username and password' });
@@ -33,6 +33,18 @@ export const login = async (req, res) => {
 
     if (!user.isActive) {
       return res.status(401).json({ message: 'Account is deactivated' });
+    }
+
+    // Role tab on login must match this account's real role
+    if (selectedRole && ['omr', 'merchandiser', 'admin'].includes(selectedRole)) {
+      if (user.role !== selectedRole) {
+        const labels = { omr: 'OMR', merchandiser: 'Merchandiser', admin: 'Admin' };
+        return res.status(403).json({
+          message: `This account is a ${labels[user.role] || user.role}, not ${labels[selectedRole] || selectedRole}. Select the correct role and try again.`,
+          code: 'ROLE_MISMATCH',
+          actualRole: user.role,
+        });
+      }
     }
 
     res.json({

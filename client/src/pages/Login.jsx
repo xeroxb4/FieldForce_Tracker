@@ -25,8 +25,8 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const data = await login(username, password);
-      // Go to the dashboard for the account's real role (tab is only a hint)
+      // Selected role must match the account — server rejects mismatches
+      const data = await login(username, password, role);
       if (data.role === 'omr') navigate('/omr');
       else if (data.role === 'merchandiser') navigate('/merch');
       else navigate('/admin');
