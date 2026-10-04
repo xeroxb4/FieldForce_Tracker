@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [attendance, setAttendance] = useState(null);
   const [beat, setBeat] = useState(null);
   const [incentive, setIncentive] = useState(null);
+  const [fabOpen, setFabOpen] = useState(false);
   const [monthSum, setMonthSum] = useState(null);
   const [showTop10, setShowTop10] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -386,7 +387,7 @@ export default function Dashboard() {
               </div>
               <div className="text-sm font-bold text-[#2596be]">{coveragePct}%</div>
               <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-indigo-500'}`}>
-                visits ÷ planned · target 100%
+                target 100%
               </div>
             </div>
             <div className={`rounded-xl p-2.5 col-span-2 ${dark ? 'bg-slate-900' : 'bg-violet-50'}`}>
@@ -396,7 +397,7 @@ export default function Dashboard() {
                     Visit conversion
                   </div>
                   <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-violet-600'}`}>
-                    Productive ÷ visits done (e.g. 5 ÷ 8)
+                    Productive ÷ visits done
                   </div>
                 </div>
                 <div className="text-right">
@@ -617,6 +618,49 @@ export default function Dashboard() {
       >
         Start today's beat
       </Link>
+
+      {/* Floating action button */}
+      <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2">
+        {fabOpen && (
+          <div className="flex flex-col items-end gap-2 mb-1">
+            {[
+              { to: '/omr/softphone', label: 'Call', icon: '📞', bg: 'bg-emerald-500' },
+              { to: '/omr/outlets', label: 'Outlet', icon: '🏪', bg: 'bg-sky-500' },
+              { to: '/omr/reports', label: 'Report', icon: '📊', bg: 'bg-violet-500' },
+            ].map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2 group"
+              >
+                <span
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg shadow ${
+                    dark ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  {item.label}
+                </span>
+                <span
+                  className={`w-11 h-11 rounded-full ${item.bg} text-white flex items-center justify-center text-lg shadow-lg`}
+                >
+                  {item.icon}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setFabOpen((o) => !o)}
+          aria-label="Quick actions"
+          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform ${
+            fabOpen ? 'bg-slate-700 rotate-45' : 'bg-[#117ea6]'
+          }`}
+        >
+          {fabOpen ? '×' : '+'}
+        </button>
+      </div>
     </div>
   );
 }
