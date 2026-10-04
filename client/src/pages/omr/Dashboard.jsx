@@ -518,9 +518,9 @@ export default function Dashboard() {
           </div>
         </div>
         <p className={`text-[10px] leading-relaxed mt-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Productive call = outlet buys ≥1 piece of any SKU. Coverage = visit every beat outlet.
-          LPPC = product lines ÷ productive calls. Top 10 % = unique checklist /10.
-          Top 10 sum = lines added across shops; avg = sum ÷ productive calls.
+          Productive call = outlet buys ≥1 SKU. Coverage = visits ÷ planned beat.
+          Hit rate = productive ÷ planned. Productivity % = productive ÷ (70% of planned).
+          LPPC = lines ÷ productive calls. Top 10 % = unique /10; sum = lines across shops; avg = sum ÷ productive.
         </p>
 
         {/* MTD strip */}
