@@ -81,40 +81,42 @@ function OmrFab({ dark }) {
       const s = localStorage.getItem('omrFabPos');
       if (s) return JSON.parse(s);
     } catch {}
-    return { x: null, y: null }; // null = default bottom-right
+    return { x: null, y: null };
   });
   const dragging = useRef(false);
   const moved = useRef(false);
-  const start = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const startPt = useRef({ x: 0, y: 0, px: 0, py: 0 });
 
+  // Arc upward-left like the reference (angles from main button center)
   const items = [
-    { to: '/omr/softphone', label: 'Call', icon: '📞', angle: -60 },
-    { to: '/omr/outlets', label: 'Outlet', icon: '🏪', angle: -90 },
-    { to: '/omr/reports', label: 'Report', icon: '📊', angle: -120 },
+    { to: '/omr/softphone', label: 'Call', icon: '📞', color: '#22c55e', angle: -20 },
+    { to: '/omr/outlets', label: 'Outlet', icon: '🏪', color: '#f59e0b', angle: -70 },
+    { to: '/omr/reports', label: 'Report', icon: '📊', color: '#a855f7', angle: -120 },
   ];
 
   const onPointerDown = (e) => {
+    e.preventDefault();
     dragging.current = true;
     moved.current = false;
-    const el = e.currentTarget;
-    el.setPointerCapture?.(e.pointerId);
-    const rect = el.getBoundingClientRect();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
     const cx = pos.x != null ? pos.x : rect.left;
     const cy = pos.y != null ? pos.y : rect.top;
-    start.current = { x: e.clientX, y: e.clientY, px: cx, py: cy };
+    startPt.current = { x: e.clientX, y: e.clientY, px: cx, py: cy };
   };
 
   const onPointerMove = (e) => {
     if (!dragging.current) return;
-    const dx = e.clientX - start.current.x;
-    const dy = e.clientY - start.current.y;
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved.current = true;
+    const dx = e.clientX - startPt.current.x;
+    const dy = e.clientY - startPt.current.y;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved.current = true;
     if (!moved.current) return;
-    const maxX = window.innerWidth - 56;
-    const maxY = window.innerHeight - 56;
-    const nx = Math.min(maxX, Math.max(8, start.current.px + dx));
-    const ny = Math.min(maxY, Math.max(8, start.current.py + dy));
-    setPos({ x: nx, y: ny });
+    const maxX = window.innerWidth - 64;
+    const maxY = window.innerHeight - 64;
+    setPos({
+      x: Math.min(maxX, Math.max(8, startPt.current.px + dx)),
+      y: Math.min(maxY, Math.max(8, startPt.current.py + dy)),
+    });
   };
 
   const onPointerUp = () => {
@@ -133,54 +135,107 @@ function OmrFab({ dark }) {
     }
   };
 
-  const style =
+  const wrapStyle =
     pos.x != null && pos.y != null
       ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' }
       : { right: 16, bottom: 96 };
 
-  const radius = 72;
+  const radius = 78;
+  const mainSize = 58;
 
   return (
-    <div className="fixed z-40" style={style}>
+    <div className="fixed z-40" style={{ ...wrapStyle, width: mainSize, height: mainSize }}>
+      {/* Soft circular backdrop when open */}
+      <div
+        className="absolute pointer-events-none transition-all duration-300 ease-out"
+        style={{
+          left: '50%',
+          top: '50%',
+          width: open ? radius * 2.4 : 0,
+          height: open ? radius * 2.4 : 0,
+          marginLeft: open ? -radius * 1.2 : 0,
+          marginTop: open ? -radius * 1.2 : 0,
+          borderRadius: '50%',
+          background: dark
+            ? 'radial-gradient(circle, rgba(63,37,139,0.35) 0%, rgba(15,23,42,0) 70%)'
+            : 'radial-gradient(circle, rgba(63,37,139,0.18) 0%, rgba(255,255,255,0) 70%)',
+          opacity: open ? 1 : 0,
+        }}
+      />
+
+      {/* Arc track */}
+      <div
+        className="absolute pointer-events-none transition-opacity duration-300"
+        style={{
+          left: '50%',
+          top: '50%',
+          width: radius * 2,
+          height: radius * 2,
+          marginLeft: -radius,
+          marginTop: -radius,
+          borderRadius: '50%',
+          border: open ? '2px solid rgba(34,197,94,0.25)' : '2px solid transparent',
+          opacity: open ? 1 : 0,
+        }}
+      />
+
+      {/* Satellite actions */}
+      {items.map((item, i) => {
+        const rad = (item.angle * Math.PI) / 180;
+        const tx = Math.cos(rad) * radius;
+        const ty = Math.sin(rad) * radius;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={() => setOpen(false)}
+            className="absolute flex flex-col items-center justify-center rounded-full text-white shadow-lg"
+            style={{
+              width: 46,
+              height: 46,
+              left: '50%',
+              top: '50%',
+              background: item.color,
+              boxShadow: open ? `0 8px 20px ${item.color}66` : 'none',
+              transform: open
+                ? `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1)`
+                : 'translate(-50%, -50%) scale(0.2)',
+              opacity: open ? 1 : 0,
+              pointerEvents: open ? 'auto' : 'none',
+              transition: `transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.05}s, opacity 0.25s ease ${i * 0.05}s`,
+              zIndex: 1,
+            }}
+            title={item.label}
+          >
+            <span className="text-base leading-none">{item.icon}</span>
+          </Link>
+        );
+      })}
+
+      {/* Labels when open */}
       {open &&
         items.map((item) => {
           const rad = (item.angle * Math.PI) / 180;
-          const tx = Math.cos(rad) * radius;
-          const ty = Math.sin(rad) * radius;
+          const tx = Math.cos(rad) * (radius + 28);
+          const ty = Math.sin(rad) * (radius + 28);
           return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className="absolute w-11 h-11 rounded-full flex items-center justify-center text-lg text-white shadow-lg"
+            <span
+              key={`lbl-${item.to}`}
+              className="absolute text-[10px] font-bold whitespace-nowrap pointer-events-none"
               style={{
-                background: '#3F258B',
-                left: 8 + tx,
-                top: 8 + ty,
-                transform: 'translate(-50%, -50%)',
+                left: '50%',
+                top: '50%',
+                transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`,
+                color: dark ? '#e2e8f0' : '#1e293b',
+                textShadow: dark ? '0 1px 2px #000' : '0 1px 0 #fff',
               }}
-              title={item.label}
             >
-              <span className="sr-only">{item.label}</span>
-              {item.icon}
-            </Link>
+              {item.label}
+            </span>
           );
         })}
-      {open && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            left: 28,
-            top: 28,
-            width: radius * 2,
-            height: radius * 2,
-            marginLeft: -radius,
-            marginTop: -radius,
-            border: '1px dashed rgba(63,37,139,0.25)',
-            borderRadius: '50%',
-          }}
-        />
-      )}
+
+      {/* Main FAB — green like reference */}
       <button
         type="button"
         aria-label="Quick actions"
@@ -188,20 +243,26 @@ function OmrFab({ dark }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white touch-none select-none"
+        className="absolute left-0 top-0 rounded-full flex items-center justify-center text-white touch-none select-none"
         style={{
-          background: '#3F258B',
+          width: mainSize,
+          height: mainSize,
+          background: open
+            ? 'linear-gradient(145deg, #4ade80, #16a34a)'
+            : 'linear-gradient(145deg, #4ade80, #15803d)',
+          boxShadow: open
+            ? '0 10px 28px rgba(22,163,74,0.55)'
+            : '0 8px 24px rgba(22,163,74,0.45)',
           transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
-          transition: 'transform 0.2s ease',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          zIndex: 2,
+          fontSize: 28,
+          fontWeight: 300,
+          lineHeight: 1,
         }}
       >
         {open ? '×' : '+'}
       </button>
-      {open && (
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-[#3F258B]">
-          Drag to move
-        </div>
-      )}
     </div>
   );
 }
@@ -752,8 +813,7 @@ export default function Dashboard() {
         Start today's beat
       </Link>
 
-      {/* Floating action button */}
-      {/* Floating action button — draggable, radial menu */}
+      {/* Floating action button — circular menu */}
       <OmrFab dark={dark} />
 
     </div>
