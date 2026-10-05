@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { getCachedBeat, cacheBeat } from '../../services/offline';
+import { usePremium, PremiumHero } from '../../lib/premium';
 
 function loadLeaflet() {
   return new Promise((resolve, reject) => {
@@ -24,9 +25,7 @@ function loadLeaflet() {
 function openDirections(lat, lng, name) {
   const dest = `${Number(lat)},${Number(lng)}`;
   const label = encodeURIComponent(name || 'Outlet');
-  // Google Maps directions (works Android + most phones; iPhone can choose Maps app)
   const google = `https://www.google.com/maps/dir/?api=1&destination=${dest}&destination_place_id=&travelmode=driving`;
-  // Apple Maps fallback style
   const apple = `https://maps.apple.com/?daddr=${dest}&dirflg=d&q=${label}`;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   window.open(isIOS ? apple : google, '_blank');
@@ -34,6 +33,7 @@ function openDirections(lat, lng, name) {
 
 export default function BeatMap() {
   const { dark } = useTheme();
+  const p = usePremium(dark);
   const mapRef = useRef(null);
   const mapInst = useRef(null);
   const [outlets, setOutlets] = useState([]);
@@ -63,7 +63,7 @@ export default function BeatMap() {
     })();
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (p) => setMyPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        (pos) => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => {},
         { enableHighAccuracy: true, timeout: 12000 }
       );
@@ -103,7 +103,7 @@ export default function BeatMap() {
             radius: 9,
             color: '#fff',
             weight: 2,
-            fillColor: '#2596be',
+            fillColor: '#3F258B',
             fillOpacity: 1,
           }).addTo(map);
           m.bindPopup('<strong>You are here</strong>');
@@ -122,7 +122,7 @@ export default function BeatMap() {
               <span style="font-size:11px;color:#64748b">${o.address || ''}</span><br/>
               <em style="font-size:11px">#${i + 1} on beat</em><br/><br/>
               <button id="${popupId}" type="button"
-                style="width:100%;padding:8px 10px;border:none;border-radius:8px;background:#2596be;color:#fff;font-weight:700;font-size:12px;cursor:pointer">
+                style="width:100%;padding:8px 10px;border:none;border-radius:10px;background:#3F258B;color:#fff;font-weight:700;font-size:12px;cursor:pointer">
                 Navigate here
               </button>
             </div>`
@@ -152,54 +152,106 @@ export default function BeatMap() {
     };
   }, [loading, outlets, myPos]);
 
-  const card = dark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900';
+  const withGps = outlets.filter((o) => o.location?.lat && o.location?.lng).length;
 
   return (
-    <div className="space-y-3">
-      <div>
-        <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Today’s beat map</h2>
-        <p className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-          {dayName} · {outlets.length} outlet(s) · tap pin or Navigate for route
+    <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>
+      <PremiumHero
+        dark={dark}
+        eyebrow="Navigation"
+        title="Beat Map"
+        subtitle={`${dayName} · ${outlets.length} outlet${outlets.length === 1 ? '' : 's'} · ${withGps} with GPS`}
+      />
+
+      {error && (
+        <div className="mb-4 text-sm px-4 py-3 rounded-2xl border font-semibold bg-red-50 text-red-700 border-red-200">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+          <div className="w-8 h-8 mx-auto rounded-full border-2 border-[#3F258B] border-t-transparent animate-spin" />
+          <p className={`text-sm mt-3 font-medium ${p.muted}`}>Loading map…</p>
+        </div>
+      ) : (
+        <div
+          className={`rounded-[1.5rem] overflow-hidden mb-5 border ${
+            dark ? 'border-white/10' : 'border-slate-200'
+          }`}
+          style={{ boxShadow: '0 24px 56px rgba(63,37,139,0.12)' }}
+        >
+          <div ref={mapRef} className="w-full h-[400px]" />
+        </div>
+      )}
+
+      <div className={`rounded-[1.5rem] p-5 ${p.glass}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`text-sm font-black tracking-tight ${p.title}`}>Route list</h3>
+          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${p.chip}`}>
+            {outlets.length}
+          </span>
+        </div>
+        {outlets.length === 0 && (
+          <p className={`text-sm ${p.soft}`}>No outlets on today’s beat.</p>
+        )}
+        <div className="space-y-2">
+          {outlets.map((o, i) => {
+            const hasGps = o.location?.lat && o.location?.lng;
+            return (
+              <div
+                key={o._id || i}
+                className={`flex items-center justify-between gap-3 rounded-2xl p-3.5 border ${
+                  dark
+                    ? 'bg-slate-950/60 border-white/8'
+                    : 'bg-white border-slate-100 shadow-sm'
+                }`}
+              >
+                <div className="min-w-0 flex items-center gap-3">
+                  <span
+                    className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-white"
+                    style={{ background: 'linear-gradient(135deg, #5b3aad, #3F258B)' }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-bold truncate ${p.title}`}>
+                      {o.displayName || o.name}
+                    </p>
+                    {!hasGps && (
+                      <p className="text-[10px] font-semibold text-amber-500 mt-0.5">
+                        No GPS — pin at shop first
+                      </p>
+                    )}
+                    {o.address && (
+                      <p className={`text-[11px] truncate mt-0.5 ${p.soft}`}>{o.address}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!hasGps}
+                  onClick={() =>
+                    openDirections(o.location.lat, o.location.lng, o.displayName || o.name)
+                  }
+                  className="shrink-0 text-[11px] font-black px-3.5 py-2 rounded-xl text-white disabled:opacity-35"
+                  style={{
+                    background: hasGps
+                      ? 'linear-gradient(135deg, #5b3aad, #3F258B)'
+                      : '#94a3b8',
+                    boxShadow: hasGps ? '0 8px 20px rgba(63,37,139,0.3)' : 'none',
+                  }}
+                >
+                  Navigate
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <p className={`text-[11px] mt-4 leading-relaxed ${p.soft}`}>
+          Navigate opens Google Maps or Apple Maps with turn-by-turn directions to that shop.
         </p>
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {loading ? (
-        <p className="text-sm text-slate-500">Loading map…</p>
-      ) : (
-        <div ref={mapRef} className="w-full h-[420px] rounded-2xl overflow-hidden border border-slate-200 shadow" />
-      )}
-      <div className={`rounded-2xl p-3 space-y-2 ${card}`}>
-        <div className="text-xs font-bold uppercase tracking-wide opacity-60">List · tap Navigate for directions</div>
-        {outlets.length === 0 && <p className="text-sm opacity-70">No outlets on today’s beat.</p>}
-        {outlets.map((o, i) => {
-          const hasGps = o.location?.lat && o.location?.lng;
-          return (
-            <div
-              key={o._id || i}
-              className="text-sm flex items-center justify-between gap-2 border-b border-black/5 pb-2"
-            >
-              <span className="min-w-0">
-                <span className="font-bold text-[#2596be] mr-1">{i + 1}.</span>
-                {o.displayName || o.name}
-                {!hasGps && (
-                  <span className="block text-[10px] text-amber-600">No GPS — fix pin at shop first</span>
-                )}
-              </span>
-              <button
-                type="button"
-                disabled={!hasGps}
-                onClick={() => openDirections(o.location.lat, o.location.lng, o.displayName || o.name)}
-                className="shrink-0 text-[11px] font-extrabold px-3 py-1.5 rounded-lg bg-[#2596be] text-white disabled:opacity-40"
-              >
-                Navigate
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <p className={`text-[11px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
-        Navigate opens Google Maps or Apple Maps with turn-by-turn directions to that shop.
-      </p>
     </div>
   );
 }

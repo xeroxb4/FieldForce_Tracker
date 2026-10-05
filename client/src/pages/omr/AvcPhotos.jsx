@@ -8,9 +8,11 @@ import {
   queueCount,
   getQueue,
 } from '../../services/offline';
+import { usePremium, PremiumHero } from '../../lib/premium';
 
 export default function AvcPhotos() {
   const { dark } = useTheme();
+  const p = usePremium(dark);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(null);
@@ -156,63 +158,76 @@ export default function AvcPhotos() {
     }
   };
 
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
   const maxShelves = data?.maxShelves || 8;
+  const progressPct = data?.required
+    ? Math.min(100, Math.round((data.done / data.required) * 100))
+    : 0;
 
   if (loading) {
-    return <p className="text-sm text-slate-500 p-4">Loading AVC tasks…</p>;
+    return (
+      <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[50vh] ${p.shell}`}>
+        <div className={`rounded-[1.5rem] p-8 text-center mt-6 ${p.glass}`}>
+          <div className="w-8 h-8 mx-auto rounded-full border-2 border-[#3F258B] border-t-transparent animate-spin" />
+          <p className={`text-sm mt-3 font-medium ${p.muted}`}>Loading AVC tasks…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 pb-6">
-      <div>
-        <h1 className={`text-lg font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          AVC shelf photos
-        </h1>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-          Twice a month. If Nivea is on more than one shelf, add a photo for each shelf (up to{' '}
-          {maxShelves}).
-        </p>
-      </div>
+    <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>
+      <PremiumHero
+        dark={dark}
+        eyebrow="Visibility program"
+        title="AVC Shelf Photos"
+        subtitle={`Twice a month · up to ${maxShelves} shelves per outlet`}
+      >
+        {data && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs font-bold mb-1.5">
+              <span className="text-violet-200/90">
+                {data.periodLabel} · {data.month}/{data.year}
+              </span>
+              <span className="text-white">
+                {data.done}/{data.required} done
+              </span>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden bg-white/15">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-300 via-white to-emerald-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </PremiumHero>
 
       {!online && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+        <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/15 px-4 py-3 text-sm font-semibold text-amber-800 dark:text-amber-200">
           Offline mode — take photos now; they upload when you are back online.
         </div>
       )}
       {pendingLocal > 0 && (
-        <div className="rounded-xl border border-[#2596be]/40 bg-[#2596be]/10 px-3 py-2 text-sm font-semibold text-[#117ea6]">
+        <div
+          className="mb-4 rounded-2xl border px-4 py-3 text-sm font-semibold"
+          style={{
+            borderColor: 'rgba(63,37,139,0.35)',
+            background: dark ? 'rgba(63,37,139,0.2)' : 'rgba(63,37,139,0.08)',
+            color: dark ? '#c4b5fd' : '#3F258B',
+          }}
+        >
           {pendingLocal} photo(s) waiting to sync
         </div>
       )}
-      {error && <p className="text-sm font-semibold text-red-500">{error}</p>}
-      {info && (
-        <p className={`text-sm font-medium ${dark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-          {info}
-        </p>
+      {error && (
+        <div className="mb-4 text-sm px-4 py-3 rounded-2xl border font-semibold bg-red-50 text-red-700 border-red-200">
+          {error}
+        </div>
       )}
-
-      {data && (
-        <div className={`rounded-2xl border-2 p-3 ${card}`}>
-          <div className="flex justify-between text-sm font-bold">
-            <span>
-              {data.periodLabel} · {data.month}/{data.year}
-            </span>
-            <span className="text-[#2596be]">
-              {data.done}/{data.required} outlets done
-            </span>
-          </div>
-          <div
-            className={`mt-2 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}
-          >
-            <div
-              className="h-full bg-[#2596be] rounded-full"
-              style={{
-                width: `${data.required ? Math.min(100, (data.done / data.required) * 100) : 0}%`,
-              }}
-            />
-          </div>
+      {info && (
+        <div className="mb-4 text-sm px-4 py-3 rounded-2xl border font-semibold bg-emerald-50 text-emerald-800 border-emerald-200">
+          {info}
         </div>
       )}
 
@@ -230,35 +245,33 @@ export default function AvcPhotos() {
           const count = o.photoCount || o.photos?.length || 0;
           const canAdd = count < maxShelves;
           return (
-            <div key={o._id} className={`rounded-2xl border-2 p-3 ${card}`}>
+            <div key={o._id} className={`rounded-[1.35rem] p-5 ${p.glass}`}>
               <div className="flex justify-between gap-2 mb-1">
-                <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
-                  {o.name}
-                </div>
+                <div className={`font-bold text-sm ${p.title}`}>{o.name}</div>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                  className={`text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-lg shrink-0 ${
                     o.done
-                      ? 'bg-emerald-500/20 text-emerald-600'
-                      : 'bg-amber-500/20 text-amber-700'
+                      ? 'bg-emerald-500/15 text-emerald-400'
+                      : 'bg-amber-500/15 text-amber-500'
                   }`}
                 >
-                  {o.done ? `${count} shelf photo(s)` : 'Due'}
+                  {o.done ? `${count} shelf(s)` : 'Due'}
                 </span>
               </div>
-              <div className={`text-xs mb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <div className={`text-xs mb-3 ${p.soft}`}>
                 AVC {o.avcTier || '—'} · {o.distributor || '—'}
               </div>
 
               {(o.photos || []).length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
+                <div className="flex gap-2.5 overflow-x-auto pb-2 mb-3">
                   {o.photos.map((ph, i) => (
                     <div key={ph._id || i} className="shrink-0 w-24">
                       <img
                         src={ph.photo}
                         alt={ph.label || `Shelf ${i + 1}`}
-                        className="w-24 h-24 object-cover rounded-xl border border-slate-200 dark:border-slate-600"
+                        className="w-24 h-24 object-cover rounded-2xl border border-white/10 shadow-md"
                       />
-                      <div className={`text-[10px] mt-0.5 font-semibold truncate ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className={`text-[10px] mt-1 font-semibold truncate ${p.soft}`}>
                         {ph.label || `Shelf ${i + 1}`}
                       </div>
                     </div>
@@ -270,7 +283,8 @@ export default function AvcPhotos() {
                 type="button"
                 disabled={uploading === o._id || !canAdd}
                 onClick={() => pickPhoto(o._id)}
-                className="w-full py-2.5 rounded-xl bg-[#117ea6] text-white text-sm font-bold disabled:opacity-60"
+                className={`w-full ${p.btnPrimary} disabled:opacity-55`}
+                style={p.btnPrimaryStyle}
               >
                 {uploading === o._id
                   ? 'Saving…'
@@ -278,15 +292,17 @@ export default function AvcPhotos() {
                   ? `Max ${maxShelves} shelves reached`
                   : count === 0
                   ? 'Take / upload shelf photo'
-                  : `Add another shelf photo (${count}/${maxShelves})`}
+                  : `Add another shelf (${count}/${maxShelves})`}
               </button>
             </div>
           );
         })}
         {!data?.outlets?.length && (
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            No AVC outlets assigned to you.
-          </p>
+          <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+            <p className="text-3xl mb-2">📸</p>
+            <p className={`text-sm font-semibold ${p.title}`}>No AVC outlets assigned</p>
+            <p className={`text-xs mt-1 ${p.soft}`}>Contact admin if you expect outlets here</p>
+          </div>
         )}
       </div>
     </div>

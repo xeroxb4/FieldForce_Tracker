@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { usePremium, PremiumHero } from '../../lib/premium';
 
 const CAPACITY_BANDS = [
   { id: 'under_2000', label: 'Under GHS 2,000', min: 0 },
@@ -36,6 +37,7 @@ const emptyForm = {
 
 export default function Outlets() {
   const { dark } = useTheme();
+  const p = usePremium(dark);
   const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -44,11 +46,7 @@ export default function Outlets() {
   const [saving, setSaving] = useState(false);
   const [avcPrompt, setAvcPrompt] = useState(null); // { tier, channelType }
 
-  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border ${
-    dark
-      ? 'bg-slate-900 border-slate-600 text-white placeholder:text-slate-500'
-      : 'bg-white border-[#117ea6]/50 text-slate-900'
-  }`;
+  const inputCls = p.input;
 
   const load = () => {
     setLoading(true);
@@ -195,25 +193,26 @@ export default function Outlets() {
   const bandLabel = (id) => CAPACITY_BANDS.find((b) => b.id === id)?.label || id || '';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-800'}`}>My Outlets</h2>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-            Create shops · capacity sets Mini / Sub-wholesaler · AVC when eligible
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm(!showForm);
-            setAvcPrompt(null);
-          }}
-          className="bg-[#117ea6] text-white text-xs font-semibold px-3 py-2 rounded-lg"
-        >
-          {showForm ? 'Cancel' : '+ New Outlet'}
-        </button>
-      </div>
+    <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>
+      <PremiumHero
+        dark={dark}
+        eyebrow="Universe"
+        title="My Outlets"
+        subtitle="Create shops · capacity · AVC eligibility"
+        right={
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(!showForm);
+              setAvcPrompt(null);
+            }}
+            className="shrink-0 rounded-2xl px-4 py-2.5 text-xs font-black text-white"
+            style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)' }}
+          >
+            {showForm ? 'Cancel' : '+ New'}
+          </button>
+        }
+      />
 
       {status && (
         <div
@@ -236,7 +235,7 @@ export default function Outlets() {
             }`}
           >
             <div className="text-3xl text-center mb-2">🎉</div>
-            <h3 className="text-lg font-extrabold text-center text-[#117ea6]">Hurray!</h3>
+            <h3 className="text-lg font-extrabold text-center text-[#3F258B]">Hurray!</h3>
             <p className={`text-sm text-center mt-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
               Based on monthly purchase capacity ({avcPrompt.capacityLabel}), this customer can join the{' '}
               <strong>AVC programme</strong>.
@@ -260,7 +259,8 @@ export default function Outlets() {
               <button
                 type="button"
                 onClick={acceptAvc}
-                className="py-2.5 rounded-xl text-sm font-bold bg-[#117ea6] text-white"
+                className="py-2.5 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #5b3aad, #3F258B)' }}
               >
                 Add to AVC
               </button>
@@ -272,11 +272,7 @@ export default function Outlets() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className={`rounded-xl border p-4 space-y-3 mb-4 ${
-            dark
-              ? 'bg-slate-800 border-slate-700'
-              : 'bg-gradient-to-r from-sky-50 to-teal-50 border-sky-200 shadow-md'
-          }`}
+          className={`rounded-[1.5rem] p-5 space-y-4 mb-5 ${p.glass}`}
         >
           <input
             required
@@ -332,7 +328,7 @@ export default function Outlets() {
               }`}
             >
               <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Classified as: </span>
-              <strong className="text-[#117ea6]">{form.channelType}</strong>
+              <strong className="text-[#3F258B]">{form.channelType}</strong>
               <span className={`text-xs block mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
                 Mini-wholesaler = under GHS 10,000 · Sub-wholesaler = GHS 10,000+
               </span>
@@ -358,7 +354,8 @@ export default function Outlets() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-[#117ea6] text-white font-semibold py-3 rounded-xl disabled:opacity-60"
+            className={`w-full ${p.btnPrimary} disabled:opacity-60`}
+            style={p.btnPrimaryStyle}
           >
             {saving ? 'Getting GPS & Saving...' : 'Submit for Approval'}
           </button>
@@ -376,11 +373,7 @@ export default function Outlets() {
           {outlets.map((o) => (
             <div
               key={o._id}
-              className={`rounded-xl border p-3 ${
-                dark
-                  ? 'bg-slate-800 border-slate-700'
-                  : 'bg-gradient-to-r from-sky-50 to-teal-50 border-sky-200 shadow-md'
-              }`}
+              className={`rounded-[1.25rem] p-4 ${p.glass}`}
             >
               <div className="flex items-start justify-between">
                 <div>

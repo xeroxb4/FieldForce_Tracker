@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { usePremium, PremiumHero } from '../../lib/premium';
 
 export default function OMRReports() {
   const { dark } = useTheme();
+  const p = usePremium(dark);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [visits, setVisits] = useState([]);
   const [wrapUps, setWrapUps] = useState([]);
@@ -31,85 +33,153 @@ export default function OMRReports() {
     loadData();
   }, [date]);
 
-  const card = dark
-    ? 'bg-slate-800 border-slate-700'
-    : 'bg-white border-slate-200 shadow-sm';
-  const title = dark ? 'text-white' : 'text-slate-900';
-  const muted = dark ? 'text-slate-300' : 'text-slate-700';
-  const soft = dark ? 'text-slate-400' : 'text-slate-600';
+  const productive = visits.filter((v) => v.outcome === 'Order Placed').length;
+  const totalAmt = visits.reduce((s, v) => s + (Number(v.amount) || 0), 0);
 
   return (
-    <div className="pb-6">
-      <h2 className={`text-lg font-bold mb-1 ${title}`}>My Reports</h2>
-      <p className={`text-sm mb-4 ${soft}`}>Visits and wrap-ups for the selected day</p>
+    <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>
+      <PremiumHero
+        dark={dark}
+        eyebrow="Field intelligence"
+        title="My Reports"
+        subtitle="Visits, orders & wrap-ups for any day"
+      />
 
-      <div className={`mb-4 rounded-2xl border p-3 ${card}`}>
-        <label className={`block text-sm font-semibold mb-2 ${title}`}>Date</label>
+      {/* Date + KPI strip */}
+      <div className={`rounded-[1.5rem] p-5 mb-5 ${p.glass}`}>
+        <label className={p.label}>Select date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-[#3F258B] ${
-            dark
-              ? 'bg-slate-900 border-slate-600 text-white'
-              : 'bg-white border-slate-300 text-slate-900'
-          }`}
+          className={p.input}
           style={{ colorScheme: dark ? 'dark' : 'light' }}
         />
+        <div className="grid grid-cols-3 gap-3 mt-5">
+          {[
+            { label: 'Visits', value: visits.length, color: 'text-sky-400' },
+            { label: 'Orders', value: productive, color: 'text-emerald-400' },
+            {
+              label: 'Value',
+              value: totalAmt ? `GHS ${totalAmt.toLocaleString()}` : '—',
+              color: 'text-violet-400',
+            },
+          ].map((k) => (
+            <div
+              key={k.label}
+              className={`rounded-2xl px-3 py-3 text-center ${
+                dark ? 'bg-slate-950/70 border border-white/8' : 'bg-violet-50/80 border border-violet-100'
+              }`}
+            >
+              <p className={`text-[10px] font-black uppercase tracking-wider ${p.soft}`}>{k.label}</p>
+              <p className={`text-lg font-black mt-0.5 ${k.color}`}>{loading ? '…' : k.value}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200 mb-4">
+        <div className="mb-4 text-sm px-4 py-3 rounded-2xl border font-semibold bg-red-50 text-red-700 border-red-200">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className={`text-sm ${muted}`}>Loading...</p>
+        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+          <div className="w-8 h-8 mx-auto rounded-full border-2 border-[#3F258B] border-t-transparent animate-spin" />
+          <p className={`text-sm mt-3 font-medium ${p.muted}`}>Loading reports…</p>
+        </div>
       ) : (
         <>
-          <div className="mb-6">
-            <h3 className={`text-sm font-bold mb-2 ${title}`}>
-              Shop Visits ({visits.length})
-            </h3>
+          {/* Visits */}
+          <div className={`rounded-[1.5rem] p-5 mb-5 ${p.glass}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-sm font-black tracking-tight ${p.title}`}>
+                Shop visits
+              </h3>
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${p.chip}`}>
+                {visits.length}
+              </span>
+            </div>
             {visits.length === 0 ? (
-              <p className={`text-sm ${soft}`}>No visits on this date</p>
+              <p className={`text-sm ${p.soft}`}>No visits on this date</p>
             ) : (
-              <div className="space-y-2">
-                {visits.map((v) => (
-                  <div key={v._id} className={`rounded-xl border p-3 text-sm ${card}`}>
-                    <div className={`font-semibold ${title}`}>{v.shopName}</div>
-                    <div className={`mt-0.5 ${muted}`}>
-                      {v.outcome}
-                      {v.amount > 0 && ` · GHS ${Number(v.amount).toLocaleString()}`}
+              <div className="space-y-2.5">
+                {visits.map((v) => {
+                  const ordered = v.outcome === 'Order Placed';
+                  return (
+                    <div
+                      key={v._id}
+                      className={`rounded-2xl p-4 border ${
+                        dark
+                          ? 'bg-slate-950/60 border-white/8'
+                          : 'bg-white border-slate-100 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className={`font-bold text-sm truncate ${p.title}`}>{v.shopName}</p>
+                          <p className={`text-xs mt-1 font-medium ${ordered ? 'text-emerald-500' : p.muted}`}>
+                            {v.outcome}
+                            {v.amount > 0 && ` · GHS ${Number(v.amount).toLocaleString()}`}
+                          </p>
+                          {v.products && (
+                            <p className={`text-[11px] mt-1.5 leading-relaxed ${p.soft}`}>{v.products}</p>
+                          )}
+                        </div>
+                        <span
+                          className={`shrink-0 text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-lg ${
+                            ordered
+                              ? 'bg-emerald-500/15 text-emerald-400'
+                              : dark
+                              ? 'bg-slate-800 text-slate-400'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {ordered ? 'Order' : 'Visit'}
+                        </span>
+                      </div>
                     </div>
-                    {v.products && (
-                      <div className={`text-xs mt-1 ${soft}`}>{v.products}</div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          <div className="mb-6">
-            <h3 className={`text-sm font-bold mb-2 ${title}`}>
-              Day Wrap-ups ({wrapUps.length})
-            </h3>
+          {/* Wrap-ups */}
+          <div className={`rounded-[1.5rem] p-5 ${p.glass}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-sm font-black tracking-tight ${p.title}`}>Day wrap-ups</h3>
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${p.chip}`}>
+                {wrapUps.length}
+              </span>
+            </div>
             {wrapUps.length === 0 ? (
-              <p className={`text-sm ${soft}`}>No wrap-up on this date</p>
+              <p className={`text-sm ${p.soft}`}>No wrap-up on this date</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {wrapUps.map((w) => (
-                  <div key={w._id} className={`rounded-xl border p-3 text-sm ${card}`}>
-                    <div className={`font-semibold ${title}`}>
-                      {w.date || date}
-                    </div>
-                    {w.notes && <div className={`mt-1 ${muted}`}>{w.notes}</div>}
-                    {w.totalSales != null && (
-                      <div className={`mt-1 font-medium ${title}`}>
-                        Sales: GHS {Number(w.totalSales).toLocaleString()}
-                      </div>
+                  <div
+                    key={w._id}
+                    className={`rounded-2xl p-4 border ${
+                      dark
+                        ? 'bg-slate-950/60 border-white/8'
+                        : 'bg-white border-slate-100 shadow-sm'
+                    }`}
+                  >
+                    <p className={`font-bold text-sm ${p.title}`}>{w.date || date}</p>
+                    {w.notes && <p className={`text-xs mt-1.5 ${p.muted}`}>{w.notes}</p>}
+                    {(w.totalSales != null || w.totalAmount != null) && (
+                      <p className={`text-sm font-black mt-2 text-violet-400`}>
+                        Sales: GHS {Number(w.totalSales ?? w.totalAmount).toLocaleString()}
+                      </p>
+                    )}
+                    {w.shopsVisited != null && (
+                      <p className={`text-[11px] mt-1 ${p.soft}`}>
+                        Visited {w.shopsVisited}
+                        {w.shopsPlanned != null ? ` / ${w.shopsPlanned} planned` : ''}
+                        {w.ordersCount != null ? ` · ${w.ordersCount} orders` : ''}
+                      </p>
                     )}
                   </div>
                 ))}

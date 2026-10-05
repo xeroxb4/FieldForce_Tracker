@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import api, { isOnline } from '../../services/api';
 import { getCachedWeek, cacheWeek } from '../../services/offline';
 import { useTheme } from '../../context/ThemeContext';
+import { usePremium, PremiumHero } from '../../lib/premium';
 
 const DAY_ORDER = [1, 2, 3, 4, 5]; // OMR Mon-Fri
 
 export default function Beats() {
   const { dark } = useTheme();
+  const p = usePremium(dark);
   const [week, setWeek] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -210,49 +212,60 @@ export default function Beats() {
   const isTodayBeat = Number(week?.today) === Number(selectedDay);
 
   return (
-    <div>
+    <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>
+      <PremiumHero
+        dark={dark}
+        eyebrow="Route plan"
+        title="Daily Beats"
+        subtitle="Mon–Fri outlets · tap a day, then start a visit"
+      />
+
       {error && week && (
-        <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+        <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/15 px-4 py-3 text-xs font-semibold text-amber-800 dark:text-amber-200">
           {error}
         </div>
       )}
-      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>
-        Daily Beats
-      </h2>
-      <p className={`text-sm mb-4 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-        Outlets by day of the week (Mon–Fri). Tap a day, then start a visit.
-      </p>
 
       {/* Day tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
-        {DAY_ORDER.map((d) => {
-          const count = week?.days?.[d]?.outlets?.length || 0;
-          const isToday = week?.today === d;
-          const active = selectedDay === d;
-          return (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setSelectedDay(d)}
-              className={`flex-1 min-w-[3.5rem] py-2 px-1 rounded-xl text-center transition ${
-                active
-                  ? 'bg-[#2596be] text-white shadow-lg'
-                  : dark
-                  ? 'bg-slate-800 text-slate-300'
-                  : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              <div className="text-[10px] font-semibold uppercase">
-                {week?.days?.[d]?.dayName?.slice(0, 3)}
-              </div>
-              <div className="text-sm font-bold">{count}</div>
-              {isToday && <div className="text-[9px] opacity-80">Today</div>}
-            </button>
-          );
-        })}
+      <div className={`rounded-[1.5rem] p-3 mb-5 ${p.glass}`}>
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+          {DAY_ORDER.map((d) => {
+            const count = week?.days?.[d]?.outlets?.length || 0;
+            const isToday = week?.today === d;
+            const active = selectedDay === d;
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setSelectedDay(d)}
+                className={`flex-1 min-w-[3.5rem] py-2.5 px-1 rounded-2xl text-center transition ${
+                  active
+                    ? 'text-white shadow-lg'
+                    : dark
+                    ? 'bg-slate-950/60 text-slate-300 border border-white/8'
+                    : 'bg-slate-50 text-slate-600 border border-slate-100'
+                }`}
+                style={
+                  active
+                    ? {
+                        background: 'linear-gradient(135deg, #5b3aad, #3F258B)',
+                        boxShadow: '0 10px 28px rgba(63,37,139,0.4)',
+                      }
+                    : undefined
+                }
+              >
+                <div className="text-[10px] font-black uppercase tracking-wide">
+                  {week?.days?.[d]?.dayName?.slice(0, 3)}
+                </div>
+                <div className="text-sm font-black">{count}</div>
+                {isToday && <div className="text-[9px] font-bold opacity-85">Today</div>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className={`mb-3 text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
+      <div className={`mb-3 text-sm font-black ${p.title}`}>
         {dayData?.dayName || ''} · {outlets.length} outlet{outlets.length !== 1 ? 's' : ''}
       </div>
 
@@ -284,11 +297,7 @@ export default function Beats() {
           {outlets.map((o) => (
             <div
               key={o._id}
-              className={`w-full rounded-2xl border p-3 ${
-                dark
-                  ? 'bg-slate-800 border-slate-700'
-                  : 'bg-gradient-to-r from-violet-50 to-fuchsia-50 border-violet-200 shadow-md'
-              } ${!isTodayBeat ? 'opacity-80' : ''}`}
+              className={`w-full rounded-[1.25rem] p-4 ${p.glass} ${!isTodayBeat ? 'opacity-80' : ''}`}
             >
               <div className="flex items-center gap-3">
                 <label className="relative shrink-0 cursor-pointer">
@@ -348,7 +357,8 @@ export default function Beats() {
                         <button
                           type="button"
                           onClick={() => startCallbackOrder(o)}
-                          className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-[#117ea6] text-white border border-[#0e6a8c]"
+                          className="text-[10px] font-black px-2.5 py-1.5 rounded-xl text-white"
+                          style={{ background: 'linear-gradient(135deg, #5b3aad, #3F258B)' }}
                         >
                           Add order (call-back)
                         </button>
@@ -359,7 +369,11 @@ export default function Beats() {
                       type="button"
                       onClick={() => startOutletVisit(o)}
                       disabled={startingId === o._id}
-                      className="text-xs font-bold shrink-0 px-2.5 py-1.5 rounded-lg bg-[#d9f99d] text-lime-900 border border-lime-300 disabled:opacity-60"
+                      className="text-xs font-black shrink-0 px-3 py-2 rounded-xl text-white disabled:opacity-60"
+                      style={{
+                        background: 'linear-gradient(135deg, #5b3aad, #3F258B)',
+                        boxShadow: '0 8px 20px rgba(63,37,139,0.35)',
+                      }}
                     >
                       {startingId === o._id ? 'Starting…' : 'Start visit →'}
                     </button>
