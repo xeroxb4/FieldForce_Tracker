@@ -17,20 +17,32 @@ const empty = {
   image: "",
 };
 
-function compressImage(dataUrl, quality = 0.7, maxSide = 400) {
+/**
+ * Auto-fit any product photo into a square catalog frame (white studio bg).
+ * Keeps full bottle visible (contain) and shrinks large uploads.
+ */
+function compressImage(dataUrl, quality = 0.78, frame = 280) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      let { width, height } = img;
-      if (width > maxSide || height > maxSide) {
-        const r = Math.min(maxSide / width, maxSide / height);
-        width = Math.round(width * r);
-        height = Math.round(height * r);
-      }
       const c = document.createElement("canvas");
-      c.width = width;
-      c.height = height;
-      c.getContext("2d").drawImage(img, 0, 0, width, height);
+      c.width = frame;
+      c.height = frame;
+      const ctx = c.getContext("2d");
+      // White studio background (like Nivea product shots)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, frame, frame);
+      // Fit entire product inside frame with padding
+      const pad = Math.round(frame * 0.06);
+      const box = frame - pad * 2;
+      const r = Math.min(box / img.width, box / img.height);
+      const w = Math.max(1, Math.round(img.width * r));
+      const h = Math.max(1, Math.round(img.height * r));
+      const x = Math.round((frame - w) / 2);
+      const y = Math.round((frame - h) / 2);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, x, y, w, h);
       resolve(c.toDataURL("image/jpeg", quality));
     };
     img.onerror = () => resolve(dataUrl);
@@ -76,9 +88,14 @@ export default function AdminProducts() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      let img = await compressImage(dataUrl, 0.72, 420);
-      if (typeof img === "string" && img.length > 250_000) {
-        img = await compressImage(img, 0.55, 320);
+      // Always auto-resize into 280px square catalog frame
+      let img = await compressImage(dataUrl, 0.78, 280);
+      // If still large (rare), shrink harder
+      if (typeof img === "string" && img.length > 180_000) {
+        img = await compressImage(dataUrl, 0.62, 220);
+      }
+      if (typeof img === "string" && img.length > 180_000) {
+        img = await compressImage(dataUrl, 0.5, 180);
       }
       setForm((f) => ({ ...f, image: img }));
       setStatus({ type: "success", msg: "Image ready — save product to apply" });
@@ -177,7 +194,7 @@ export default function AdminProducts() {
             }`}
           >
             {form.image ? (
-              <img src={form.image} alt="" className="w-full h-full object-cover" />
+              <img src={form.image} alt="" className="w-full h-full object-contain bg-white" />
             ) : (
               <span className="text-2xl">🧴</span>
             )}
@@ -190,6 +207,7 @@ export default function AdminProducts() {
               className="w-full py-2 rounded-xl bg-[#117ea6] text-white text-sm font-bold"
             >
               {form.image ? "Change product image" : "Upload product image"}
+              <span className="block text-[10px] font-medium opacity-80 mt-0.5">Auto-resized to fit · white catalog frame</span>
             </button>
             {form.image && (
               <button
@@ -317,7 +335,7 @@ export default function AdminProducts() {
                     }`}
                   >
                     {p.image ? (
-                      <img src={p.image} alt="" className="w-full h-full object-cover" />
+                      <img src={p.image} alt="" className="w-full h-full object-contain bg-white" />
                     ) : (
                       <span className="text-xl">🧴</span>
                     )}

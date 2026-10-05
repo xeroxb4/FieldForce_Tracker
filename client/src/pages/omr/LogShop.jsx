@@ -818,7 +818,7 @@ export default function LogShop() {
                             }`}
                           >
                             {p.image ? (
-                              <img src={p.image} alt="" className="w-full h-full object-cover" />
+                              <img src={p.image} alt="" className="w-full h-full object-contain bg-white" />
                             ) : (
                               <span className="text-lg">{catMeta[pickCategory]?.icon || '🧴'}</span>
                             )}
@@ -870,7 +870,7 @@ export default function LogShop() {
                   }`}
                 >
                   {selectedProduct.image ? (
-                    <img src={selectedProduct.image} alt="" className="w-full h-full object-cover" />
+                    <img src={selectedProduct.image} alt="" className="w-full h-full object-contain bg-white" />
                   ) : (
                     <span className="text-2xl">🧴</span>
                   )}
@@ -1037,7 +1037,7 @@ export default function LogShop() {
                   }`}
                 >
                   {i.image ? (
-                    <img src={i.image} alt="" className="w-full h-full object-cover" />
+                    <img src={i.image} alt="" className="w-full h-full object-contain bg-white" />
                   ) : (
                     <span className="text-lg">🧴</span>
                   )}
