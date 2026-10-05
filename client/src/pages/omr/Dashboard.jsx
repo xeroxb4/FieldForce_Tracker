@@ -688,48 +688,56 @@ export default function Dashboard() {
         className="fixed z-40"
         style={{ left: fabPos.x, top: fabPos.y, width: FAB_SIZE, height: FAB_SIZE, touchAction: 'none' }}
       >
-        {[
-          { to: '/omr/softphone', label: 'Call', icon: '📞', angleDeg: -150 },
-          { to: '/omr/outlets', label: 'Outlet', icon: '🏪', angleDeg: -90 },
-          { to: '/omr/reports', label: 'Report', icon: '📊', angleDeg: -30 },
-        ].map((item, i) => {
-          const radius = 76;
-          const rad = (item.angleDeg * Math.PI) / 180;
-          const dx = Math.cos(rad) * radius;
-          const dy = Math.sin(rad) * radius;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={() => setFabOpen(false)}
-              className="absolute flex flex-col items-center gap-1 transition-all duration-300 ease-out"
-              style={{
-                left: FAB_SIZE / 2 - 22,
-                top: FAB_SIZE / 2 - 22,
-                pointerEvents: fabOpen ? 'auto' : 'none',
-                opacity: fabOpen ? 1 : 0,
-                transform: fabOpen
-                  ? `translate(${dx}px, ${dy}px) rotate(0deg) scale(1)`
-                  : 'translate(0px, 0px) rotate(-220deg) scale(0)',
-                transitionDelay: fabOpen ? `${i * 40}ms` : '0ms',
-              }}
-            >
-              <span
-                className="w-11 h-11 rounded-full text-white flex items-center justify-center text-lg shadow-lg"
-                style={{ backgroundColor: '#3F258B' }}
+        {/* This wrapper is what actually swings around the FAB — children counter-rotate to stay upright */}
+        <div
+          className="absolute inset-0 transition-transform duration-300 ease-out"
+          style={{
+            transformOrigin: '50% 50%',
+            transform: `rotate(${fabOpen ? 0 : -110}deg)`,
+          }}
+        >
+          {[
+            { to: '/omr/softphone', label: 'Call', icon: '📞', angleDeg: -150 },
+            { to: '/omr/outlets', label: 'Outlet', icon: '🏪', angleDeg: -90 },
+            { to: '/omr/reports', label: 'Report', icon: '📊', angleDeg: -30 },
+          ].map((item, i) => {
+            const radius = 76;
+            const rad = (item.angleDeg * Math.PI) / 180;
+            const dx = Math.cos(rad) * radius;
+            const dy = Math.sin(rad) * radius;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setFabOpen(false)}
+                className="absolute flex flex-col items-center gap-1"
+                style={{
+                  left: FAB_SIZE / 2 - 22,
+                  top: FAB_SIZE / 2 - 22,
+                  pointerEvents: fabOpen ? 'auto' : 'none',
+                  opacity: fabOpen ? 1 : 0,
+                  transform: `translate(${dx}px, ${dy}px) rotate(${fabOpen ? 0 : 110}deg)`,
+                  transition: 'transform 300ms ease-out, opacity 250ms ease-out',
+                  transitionDelay: fabOpen ? `${i * 40}ms` : '0ms',
+                }}
               >
-                {item.icon}
-              </span>
-              <span
-                className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shadow whitespace-nowrap ${
-                  dark ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'
-                }`}
-              >
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
+                <span
+                  className="w-11 h-11 rounded-full text-white flex items-center justify-center text-lg shadow-lg"
+                  style={{ backgroundColor: '#3F258B' }}
+                >
+                  {item.icon}
+                </span>
+                <span
+                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shadow whitespace-nowrap ${
+                    dark ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
         <button
           type="button"
           onPointerDown={handleFabPointerDown}
