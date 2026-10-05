@@ -83,29 +83,73 @@ function OmrFab({ dark }) {
     } catch {}
     return { x: null, y: null };
   });
+  // Extra rotation (degrees) so user can spin the arc around the +
+  const [spin, setSpin] = useState(0);
   const dragging = useRef(false);
+  const rotating = useRef(false);
   const moved = useRef(false);
   const startPt = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const lastAngle = useRef(null);
+  const wrapRef = useRef(null);
 
-  // Arc upward-left like the reference (angles from main button center)
-  const items = [
-    { to: '/omr/softphone', label: 'Call', icon: '📞', color: '#22c55e', angle: -20 },
-    { to: '/omr/outlets', label: 'Outlet', icon: '🏪', color: '#f59e0b', angle: -70 },
-    { to: '/omr/reports', label: 'Report', icon: '📊', color: '#a855f7', angle: -120 },
+  // 3 actions evenly on a 180° arc (left → up → right-up)
+  const baseItems = [
+    { to: '/omr/softphone', label: 'Call', icon: '📞', color: '#22c55e' },
+    { to: '/omr/outlets', label: 'Outlet', icon: '🏪', color: '#f59e0b' },
+    { to: '/omr/reports', label: 'Report', icon: '📊', color: '#a855f7' },
   ];
+  // Base angles: -180°, -90°, 0° (semicircle), then + spin
+  const baseAngles = [-180, -90, 0];
+
+  const centerOfFab = () => {
+    const el = wrapRef.current;
+    if (!el) return { cx: 0, cy: 0 };
+    const r = el.getBoundingClientRect();
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+  };
+
+  const angleFromEvent = (e) => {
+    const { cx, cy } = centerOfFab();
+    return (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
+  };
 
   const onPointerDown = (e) => {
     e.preventDefault();
+    const target = e.currentTarget;
+    target.setPointerCapture?.(e.pointerId);
+    const { cx, cy } = centerOfFab();
+    const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+
+    // If menu open and touch is away from center knob → rotate ring
+    if (open && dist > 28) {
+      rotating.current = true;
+      dragging.current = false;
+      lastAngle.current = angleFromEvent(e);
+      return;
+    }
+
+    rotating.current = false;
     dragging.current = true;
     moved.current = false;
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx = pos.x != null ? pos.x : rect.left;
-    const cy = pos.y != null ? pos.y : rect.top;
-    startPt.current = { x: e.clientX, y: e.clientY, px: cx, py: cy };
+    const rect = target.getBoundingClientRect();
+    const px = pos.x != null ? pos.x : rect.left;
+    const py = pos.y != null ? pos.y : rect.top;
+    startPt.current = { x: e.clientX, y: e.clientY, px, py };
   };
 
   const onPointerMove = (e) => {
+    if (rotating.current && open) {
+      const a = angleFromEvent(e);
+      if (lastAngle.current != null) {
+        let delta = a - lastAngle.current;
+        // normalize delta to [-180, 180]
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        setSpin((s) => s + delta);
+      }
+      lastAngle.current = a;
+      return;
+    }
     if (!dragging.current) return;
     const dx = e.clientX - startPt.current.x;
     const dy = e.clientY - startPt.current.y;
@@ -120,6 +164,11 @@ function OmrFab({ dark }) {
   };
 
   const onPointerUp = () => {
+    if (rotating.current) {
+      rotating.current = false;
+      lastAngle.current = null;
+      return;
+    }
     if (!dragging.current) return;
     dragging.current = false;
     if (moved.current) {
@@ -140,84 +189,115 @@ function OmrFab({ dark }) {
       ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' }
       : { right: 16, bottom: 96 };
 
-  const radius = 78;
+  const radius = 84;
   const mainSize = 58;
 
   return (
-    <div className="fixed z-40" style={{ ...wrapStyle, width: mainSize, height: mainSize }}>
-      {/* Soft circular backdrop when open */}
+    <div
+      ref={wrapRef}
+      className="fixed z-40"
+      style={{ ...wrapStyle, width: mainSize, height: mainSize }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      {/* Soft backdrop */}
       <div
         className="absolute pointer-events-none transition-all duration-300 ease-out"
         style={{
           left: '50%',
           top: '50%',
-          width: open ? radius * 2.4 : 0,
-          height: open ? radius * 2.4 : 0,
-          marginLeft: open ? -radius * 1.2 : 0,
-          marginTop: open ? -radius * 1.2 : 0,
+          width: open ? radius * 2.6 : 0,
+          height: open ? radius * 2.6 : 0,
+          marginLeft: open ? -radius * 1.3 : 0,
+          marginTop: open ? -radius * 1.3 : 0,
           borderRadius: '50%',
           background: dark
-            ? 'radial-gradient(circle, rgba(63,37,139,0.35) 0%, rgba(15,23,42,0) 70%)'
-            : 'radial-gradient(circle, rgba(63,37,139,0.18) 0%, rgba(255,255,255,0) 70%)',
+            ? 'radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(15,23,42,0) 72%)'
+            : 'radial-gradient(circle, rgba(34,197,94,0.16) 0%, rgba(255,255,255,0) 72%)',
           opacity: open ? 1 : 0,
         }}
       />
 
-      {/* Arc track */}
-      <div
+      {/* 180° arc guide */}
+      <svg
         className="absolute pointer-events-none transition-opacity duration-300"
+        width={radius * 2}
+        height={radius * 2}
         style={{
           left: '50%',
           top: '50%',
-          width: radius * 2,
-          height: radius * 2,
           marginLeft: -radius,
           marginTop: -radius,
-          borderRadius: '50%',
-          border: open ? '2px solid rgba(34,197,94,0.25)' : '2px solid transparent',
           opacity: open ? 1 : 0,
+          transform: `rotate(${spin}deg)`,
+          transition: rotating.current ? 'none' : 'transform 0.15s linear',
         }}
-      />
+      >
+        <path
+          d={`M ${radius - radius} ${radius} A ${radius} ${radius} 0 0 1 ${radius + radius} ${radius}`}
+          fill="none"
+          stroke={dark ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.3)'}
+          strokeWidth="2"
+          strokeDasharray="6 4"
+        />
+      </svg>
 
-      {/* Satellite actions */}
-      {items.map((item, i) => {
-        const rad = (item.angle * Math.PI) / 180;
+      {/* Satellite actions — 180° arc, spin with finger */}
+      {baseItems.map((item, i) => {
+        const angle = baseAngles[i] + spin;
+        const rad = (angle * Math.PI) / 180;
         const tx = Math.cos(rad) * radius;
         const ty = Math.sin(rad) * radius;
         return (
           <Link
             key={item.to}
             to={item.to}
-            onClick={() => setOpen(false)}
-            className="absolute flex flex-col items-center justify-center rounded-full text-white shadow-lg"
+            onClick={(e) => {
+              if (moved.current || rotating.current) {
+                e.preventDefault();
+                return;
+              }
+              setOpen(false);
+            }}
+            className="absolute flex items-center justify-center rounded-full text-white shadow-lg"
             style={{
-              width: 46,
-              height: 46,
+              width: 48,
+              height: 48,
               left: '50%',
               top: '50%',
               background: item.color,
               boxShadow: open ? `0 8px 20px ${item.color}66` : 'none',
               transform: open
-                ? `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1)`
-                : 'translate(-50%, -50%) scale(0.2)',
+                ? `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1) rotate(${spin}deg)`
+                : 'translate(-50%, -50%) scale(0.15) rotate(0deg)',
               opacity: open ? 1 : 0,
               pointerEvents: open ? 'auto' : 'none',
-              transition: `transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.05}s, opacity 0.25s ease ${i * 0.05}s`,
+              transition: rotating.current
+                ? 'none'
+                : `transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.06}s, opacity 0.25s ease ${i * 0.06}s`,
               zIndex: 1,
             }}
             title={item.label}
           >
-            <span className="text-base leading-none">{item.icon}</span>
+            <span
+              className="text-base leading-none"
+              style={{ transform: open ? `rotate(${-spin}deg)` : undefined }}
+            >
+              {item.icon}
+            </span>
           </Link>
         );
       })}
 
-      {/* Labels when open */}
+      {/* Labels */}
       {open &&
-        items.map((item) => {
-          const rad = (item.angle * Math.PI) / 180;
-          const tx = Math.cos(rad) * (radius + 28);
-          const ty = Math.sin(rad) * (radius + 28);
+        baseItems.map((item, i) => {
+          const angle = baseAngles[i] + spin;
+          const rad = (angle * Math.PI) / 180;
+          const tx = Math.cos(rad) * (radius + 30);
+          const ty = Math.sin(rad) * (radius + 30);
           return (
             <span
               key={`lbl-${item.to}`}
@@ -227,7 +307,6 @@ function OmrFab({ dark }) {
                 top: '50%',
                 transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`,
                 color: dark ? '#e2e8f0' : '#1e293b',
-                textShadow: dark ? '0 1px 2px #000' : '0 1px 0 #fff',
               }}
             >
               {item.label}
@@ -235,14 +314,10 @@ function OmrFab({ dark }) {
           );
         })}
 
-      {/* Main FAB — green like reference */}
+      {/* Main green knob */}
       <button
         type="button"
         aria-label="Quick actions"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
         className="absolute left-0 top-0 rounded-full flex items-center justify-center text-white touch-none select-none"
         style={{
           width: mainSize,
@@ -250,11 +325,9 @@ function OmrFab({ dark }) {
           background: open
             ? 'linear-gradient(145deg, #4ade80, #16a34a)'
             : 'linear-gradient(145deg, #4ade80, #15803d)',
-          boxShadow: open
-            ? '0 10px 28px rgba(22,163,74,0.55)'
-            : '0 8px 24px rgba(22,163,74,0.45)',
+          boxShadow: '0 8px 24px rgba(22,163,74,0.5)',
           transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
-          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          transition: 'transform 0.3s ease',
           zIndex: 2,
           fontSize: 28,
           fontWeight: 300,
