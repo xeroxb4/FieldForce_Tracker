@@ -18,8 +18,8 @@ export default function OMRReports() {
         api.get(`/omr/visits?date=${date}`),
         api.get(`/omr/wrapups?date=${date}`),
       ]);
-      setVisits(vRes.data);
-      setWrapUps(wRes.data);
+      setVisits(vRes.data || []);
+      setWrapUps(wRes.data || []);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load reports');
     } finally {
@@ -31,64 +31,60 @@ export default function OMRReports() {
     loadData();
   }, [date]);
 
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
+  const card = dark
+    ? 'bg-slate-800 border-slate-700'
+    : 'bg-white border-slate-200 shadow-sm';
+  const title = dark ? 'text-white' : 'text-slate-900';
+  const muted = dark ? 'text-slate-300' : 'text-slate-700';
+  const soft = dark ? 'text-slate-400' : 'text-slate-600';
 
   return (
-    <div>
-      <h2 className={`text-lg font-bold mb-1 ${dark ? 'text-white' : 'text-slate-800'}`}>My Reports</h2>
-      <p className={`text-sm mb-4 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-        View your visits and wrap-ups
-      </p>
+    <div className="pb-6">
+      <h2 className={`text-lg font-bold mb-1 ${title}`}>My Reports</h2>
+      <p className={`text-sm mb-4 ${soft}`}>Visits and wrap-ups for the selected day</p>
 
-      <div className="mb-4">
-        <label className={`block text-sm font-medium mb-1 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
-          Date
-        </label>
+      <div className={`mb-4 rounded-2xl border p-3 ${card}`}>
+        <label className={`block text-sm font-semibold mb-2 ${title}`}>Date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          style={{ colorScheme: dark ? 'dark' : 'light' }}
-          className={`w-full rounded-xl px-4 py-3 text-sm border focus:outline-none focus:ring-2 focus:ring-[#2596be] ${
-            dark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-800'
+          className={`w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-[#3F258B] ${
+            dark
+              ? 'bg-slate-900 border-slate-600 text-white'
+              : 'bg-white border-slate-300 text-slate-900'
           }`}
+          style={{ colorScheme: dark ? 'dark' : 'light' }}
         />
       </div>
 
       {error && (
-        <div
-          className={`text-sm px-4 py-3 rounded-xl border mb-4 ${
-            dark ? 'bg-red-900/30 text-red-300 border-red-800' : 'bg-red-50 text-red-700 border-red-200'
-          }`}
-        >
+        <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-200 mb-4">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>Loading...</p>
+        <p className={`text-sm ${muted}`}>Loading...</p>
       ) : (
         <>
-          {/* Visits */}
           <div className="mb-6">
-            <h3 className={`text-sm font-bold mb-2 ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
+            <h3 className={`text-sm font-bold mb-2 ${title}`}>
               Shop Visits ({visits.length})
             </h3>
             {visits.length === 0 ? (
-              <p className={`text-sm ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No visits on this date</p>
+              <p className={`text-sm ${soft}`}>No visits on this date</p>
             ) : (
               <div className="space-y-2">
                 {visits.map((v) => (
-                  <div key={v._id} className={`rounded-xl p-3 text-sm border ${card}`}>
-                    <div className={`font-medium ${dark ? 'text-white' : 'text-slate-800'}`}>{v.shopName}</div>
-                    <div className={`mt-0.5 ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <div key={v._id} className={`rounded-xl border p-3 text-sm ${card}`}>
+                    <div className={`font-semibold ${title}`}>{v.shopName}</div>
+                    <div className={`mt-0.5 ${muted}`}>
                       {v.outcome}
-                      {v.amount > 0 && ` · GHS ${v.amount}`}
+                      {v.amount > 0 && ` · GHS ${Number(v.amount).toLocaleString()}`}
                     </div>
                     {v.products && (
-                      <div className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-400'}`}>
-                        {v.products}
-                      </div>
+                      <div className={`text-xs mt-1 ${soft}`}>{v.products}</div>
                     )}
                   </div>
                 ))}
@@ -96,31 +92,23 @@ export default function OMRReports() {
             )}
           </div>
 
-          {/* Wrap-ups */}
-          <div>
-            <h3 className={`text-sm font-bold mb-2 ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
-              Day Wrap-Ups ({wrapUps.length})
+          <div className="mb-6">
+            <h3 className={`text-sm font-bold mb-2 ${title}`}>
+              Day Wrap-ups ({wrapUps.length})
             </h3>
             {wrapUps.length === 0 ? (
-              <p className={`text-sm ${dark ? 'text-slate-500' : 'text-slate-400'}`}>No wrap-up on this date</p>
+              <p className={`text-sm ${soft}`}>No wrap-up on this date</p>
             ) : (
               <div className="space-y-2">
                 {wrapUps.map((w) => (
-                  <div key={w._id} className={`rounded-xl p-3 text-sm border ${card}`}>
-                    <div className="flex justify-between">
-                      <span className={`font-medium ${dark ? 'text-white' : 'text-slate-800'}`}>
-                        Visited: {w.shopsVisited}
-                      </span>
-                      <span className={dark ? 'text-slate-300' : 'text-slate-500'}>
-                        Orders: {w.ordersCount}
-                      </span>
+                  <div key={w._id} className={`rounded-xl border p-3 text-sm ${card}`}>
+                    <div className={`font-semibold ${title}`}>
+                      {w.date || date}
                     </div>
-                    <div className={`mt-0.5 ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
-                      Amount: GHS {w.totalAmount}
-                    </div>
-                    {w.shopNames?.length > 0 && (
-                      <div className={`text-xs mt-1 ${dark ? 'text-slate-400' : 'text-slate-400'}`}>
-                        {w.shopNames.join(', ')}
+                    {w.notes && <div className={`mt-1 ${muted}`}>{w.notes}</div>}
+                    {w.totalSales != null && (
+                      <div className={`mt-1 font-medium ${title}`}>
+                        Sales: GHS {Number(w.totalSales).toLocaleString()}
                       </div>
                     )}
                   </div>

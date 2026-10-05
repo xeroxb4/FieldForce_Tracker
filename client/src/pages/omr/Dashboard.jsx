@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -73,6 +73,140 @@ function Ring({ pct, size = 88, color = '#6366f1', track, label, value }) {
   );
 }
 
+
+function OmrFab({ dark }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(() => {
+    try {
+      const s = localStorage.getItem('omrFabPos');
+      if (s) return JSON.parse(s);
+    } catch {}
+    return { x: null, y: null }; // null = default bottom-right
+  });
+  const dragging = useRef(false);
+  const moved = useRef(false);
+  const start = useRef({ x: 0, y: 0, px: 0, py: 0 });
+
+  const items = [
+    { to: '/omr/softphone', label: 'Call', icon: '📞', angle: -60 },
+    { to: '/omr/outlets', label: 'Outlet', icon: '🏪', angle: -90 },
+    { to: '/omr/reports', label: 'Report', icon: '📊', angle: -120 },
+  ];
+
+  const onPointerDown = (e) => {
+    dragging.current = true;
+    moved.current = false;
+    const el = e.currentTarget;
+    el.setPointerCapture?.(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    const cx = pos.x != null ? pos.x : rect.left;
+    const cy = pos.y != null ? pos.y : rect.top;
+    start.current = { x: e.clientX, y: e.clientY, px: cx, py: cy };
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - start.current.x;
+    const dy = e.clientY - start.current.y;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved.current = true;
+    if (!moved.current) return;
+    const maxX = window.innerWidth - 56;
+    const maxY = window.innerHeight - 56;
+    const nx = Math.min(maxX, Math.max(8, start.current.px + dx));
+    const ny = Math.min(maxY, Math.max(8, start.current.py + dy));
+    setPos({ x: nx, y: ny });
+  };
+
+  const onPointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (moved.current) {
+      setPos((p) => {
+        try {
+          localStorage.setItem('omrFabPos', JSON.stringify(p));
+        } catch {}
+        return p;
+      });
+      setOpen(false);
+    } else {
+      setOpen((o) => !o);
+    }
+  };
+
+  const style =
+    pos.x != null && pos.y != null
+      ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' }
+      : { right: 16, bottom: 96 };
+
+  const radius = 72;
+
+  return (
+    <div className="fixed z-40" style={style}>
+      {open &&
+        items.map((item) => {
+          const rad = (item.angle * Math.PI) / 180;
+          const tx = Math.cos(rad) * radius;
+          const ty = Math.sin(rad) * radius;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className="absolute w-11 h-11 rounded-full flex items-center justify-center text-lg text-white shadow-lg"
+              style={{
+                background: '#3F258B',
+                left: 8 + tx,
+                top: 8 + ty,
+                transform: 'translate(-50%, -50%)',
+              }}
+              title={item.label}
+            >
+              <span className="sr-only">{item.label}</span>
+              {item.icon}
+            </Link>
+          );
+        })}
+      {open && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: 28,
+            top: 28,
+            width: radius * 2,
+            height: radius * 2,
+            marginLeft: -radius,
+            marginTop: -radius,
+            border: '1px dashed rgba(63,37,139,0.25)',
+            borderRadius: '50%',
+          }}
+        />
+      )}
+      <button
+        type="button"
+        aria-label="Quick actions"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white touch-none select-none"
+        style={{
+          background: '#3F258B',
+          transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
+          transition: 'transform 0.2s ease',
+        }}
+      >
+        {open ? '×' : '+'}
+      </button>
+      {open && (
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-[#3F258B]">
+          Drag to move
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { dark, toggle } = useTheme();
@@ -81,7 +215,6 @@ export default function Dashboard() {
   const [attendance, setAttendance] = useState(null);
   const [beat, setBeat] = useState(null);
   const [incentive, setIncentive] = useState(null);
-  const [fabOpen, setFabOpen] = useState(false);
   const [monthSum, setMonthSum] = useState(null);
   const [showTop10, setShowTop10] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -620,47 +753,9 @@ export default function Dashboard() {
       </Link>
 
       {/* Floating action button */}
-      <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2">
-        {fabOpen && (
-          <div className="flex flex-col items-end gap-2 mb-1">
-            {[
-              { to: '/omr/softphone', label: 'Call', icon: '📞', bg: 'bg-emerald-500' },
-              { to: '/omr/outlets', label: 'Outlet', icon: '🏪', bg: 'bg-sky-500' },
-              { to: '/omr/reports', label: 'Report', icon: '📊', bg: 'bg-violet-500' },
-            ].map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2 group"
-              >
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg shadow ${
-                    dark ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'
-                  }`}
-                >
-                  {item.label}
-                </span>
-                <span
-                  className={`w-11 h-11 rounded-full ${item.bg} text-white flex items-center justify-center text-lg shadow-lg`}
-                >
-                  {item.icon}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => setFabOpen((o) => !o)}
-          aria-label="Quick actions"
-          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform ${
-            fabOpen ? 'bg-slate-700 rotate-45' : 'bg-[#117ea6]'
-          }`}
-        >
-          {fabOpen ? '×' : '+'}
-        </button>
-      </div>
+      {/* Floating action button — draggable, radial menu */}
+      <OmrFab dark={dark} />
+
     </div>
   );
 }
