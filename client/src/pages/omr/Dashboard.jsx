@@ -47,7 +47,12 @@ function motivationForToday() {
 function Ring({ pct, size = 88, color = '#6366f1', track, label, value }) {
   const r = 15.5;
   const c = 2 * Math.PI * r;
-  const dash = Math.min(100, Math.max(0, pct)) * 0.97;
+  // Fill 0–100% only (values over 100 still show full ring)
+  const fill = Math.min(100, Math.max(0, Number(pct) || 0));
+  const dash = (fill / 100) * c;
+  const valStr = String(value ?? '');
+  const longVal = valStr.length >= 5; // e.g. 14.3% or 100%
+  const fontSize = size <= 64 ? (longVal ? 11 : 13) : longVal ? 14 : 16;
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
@@ -59,15 +64,20 @@ function Ring({ pct, size = 88, color = '#6366f1', track, label, value }) {
           fill="none"
           stroke={color}
           strokeWidth="3"
-          strokeDasharray={`${dash} 100`}
+          strokeDasharray={`${dash} ${c}`}
           strokeLinecap="round"
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold leading-none" style={{ color }}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-0.5 text-center">
+        <span
+          className="font-bold leading-tight tabular-nums"
+          style={{ color, fontSize }}
+        >
           {value}
         </span>
-        <span className="text-[9px] opacity-60 mt-0.5">{label}</span>
+        {label ? (
+          <span className="text-[8px] opacity-60 mt-0.5 leading-none">{label}</span>
+        ) : null}
       </div>
     </div>
   );
@@ -83,23 +93,23 @@ function OmrFab({ dark }) {
     } catch {}
     return { x: null, y: null };
   });
-  // Extra rotation (degrees) so user can spin the arc around the +
   const [spin, setSpin] = useState(0);
+  const spinRef = useRef(0);
   const dragging = useRef(false);
   const rotating = useRef(false);
   const moved = useRef(false);
   const startPt = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const lastAngle = useRef(null);
   const wrapRef = useRef(null);
+  const rafRef = useRef(null);
 
-  // 3 actions evenly on a 180° arc (left → up → right-up)
   const baseItems = [
     { to: '/omr/softphone', label: 'Call', icon: '📞', color: '#22c55e' },
     { to: '/omr/outlets', label: 'Outlet', icon: '🏪', color: '#f59e0b' },
     { to: '/omr/reports', label: 'Report', icon: '📊', color: '#a855f7' },
   ];
-  // Base angles: -180°, -90°, 0° (semicircle), then + spin
-  const baseAngles = [-180, -90, 0];
+  // Full 360° — evenly spaced
+  const baseAngles = [0, 120, 240];
 
   const centerOfFab = () => {
     const el = wrapRef.current;
@@ -113,15 +123,19 @@ function OmrFab({ dark }) {
     return (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
   };
 
+  const applySpin = (next) => {
+    spinRef.current = next;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => setSpin(spinRef.current));
+  };
+
   const onPointerDown = (e) => {
     e.preventDefault();
-    const target = e.currentTarget;
-    target.setPointerCapture?.(e.pointerId);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     const { cx, cy } = centerOfFab();
     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
 
-    // If menu open and touch is away from center knob → rotate ring
-    if (open && dist > 28) {
+    if (open && dist > 26) {
       rotating.current = true;
       dragging.current = false;
       lastAngle.current = angleFromEvent(e);
@@ -131,10 +145,13 @@ function OmrFab({ dark }) {
     rotating.current = false;
     dragging.current = true;
     moved.current = false;
-    const rect = target.getBoundingClientRect();
-    const px = pos.x != null ? pos.x : rect.left;
-    const py = pos.y != null ? pos.y : rect.top;
-    startPt.current = { x: e.clientX, y: e.clientY, px, py };
+    const rect = e.currentTarget.getBoundingClientRect();
+    startPt.current = {
+      x: e.clientX,
+      y: e.clientY,
+      px: pos.x != null ? pos.x : rect.left,
+      py: pos.y != null ? pos.y : rect.top,
+    };
   };
 
   const onPointerMove = (e) => {
@@ -142,10 +159,9 @@ function OmrFab({ dark }) {
       const a = angleFromEvent(e);
       if (lastAngle.current != null) {
         let delta = a - lastAngle.current;
-        // normalize delta to [-180, 180]
         if (delta > 180) delta -= 360;
         if (delta < -180) delta += 360;
-        setSpin((s) => s + delta);
+        applySpin(spinRef.current + delta);
       }
       lastAngle.current = a;
       return;
@@ -155,11 +171,9 @@ function OmrFab({ dark }) {
     const dy = e.clientY - startPt.current.y;
     if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved.current = true;
     if (!moved.current) return;
-    const maxX = window.innerWidth - 64;
-    const maxY = window.innerHeight - 64;
     setPos({
-      x: Math.min(maxX, Math.max(8, startPt.current.px + dx)),
-      y: Math.min(maxY, Math.max(8, startPt.current.py + dy)),
+      x: Math.min(window.innerWidth - 64, Math.max(8, startPt.current.px + dx)),
+      y: Math.min(window.innerHeight - 64, Math.max(8, startPt.current.py + dy)),
     });
   };
 
@@ -189,7 +203,7 @@ function OmrFab({ dark }) {
       ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto' }
       : { right: 16, bottom: 96 };
 
-  const radius = 84;
+  const radius = 88;
   const mainSize = 58;
 
   return (
@@ -202,49 +216,39 @@ function OmrFab({ dark }) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {/* Soft backdrop */}
       <div
         className="absolute pointer-events-none transition-all duration-300 ease-out"
         style={{
           left: '50%',
           top: '50%',
-          width: open ? radius * 2.6 : 0,
-          height: open ? radius * 2.6 : 0,
-          marginLeft: open ? -radius * 1.3 : 0,
-          marginTop: open ? -radius * 1.3 : 0,
+          width: open ? radius * 2.5 : 0,
+          height: open ? radius * 2.5 : 0,
+          marginLeft: open ? -radius * 1.25 : 0,
+          marginTop: open ? -radius * 1.25 : 0,
           borderRadius: '50%',
           background: dark
-            ? 'radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(15,23,42,0) 72%)'
-            : 'radial-gradient(circle, rgba(34,197,94,0.16) 0%, rgba(255,255,255,0) 72%)',
+            ? 'radial-gradient(circle, rgba(34,197,94,0.25) 0%, rgba(15,23,42,0) 70%)'
+            : 'radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(255,255,255,0) 70%)',
           opacity: open ? 1 : 0,
         }}
       />
 
-      {/* 180° arc guide */}
-      <svg
-        className="absolute pointer-events-none transition-opacity duration-300"
-        width={radius * 2}
-        height={radius * 2}
+      {/* Full 360° ring guide */}
+      <div
+        className="absolute pointer-events-none rounded-full border-2 border-dashed transition-opacity duration-300"
         style={{
           left: '50%',
           top: '50%',
+          width: radius * 2,
+          height: radius * 2,
           marginLeft: -radius,
           marginTop: -radius,
+          borderColor: dark ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.3)',
           opacity: open ? 1 : 0,
           transform: `rotate(${spin}deg)`,
-          transition: rotating.current ? 'none' : 'transform 0.15s linear',
         }}
-      >
-        <path
-          d={`M ${radius - radius} ${radius} A ${radius} ${radius} 0 0 1 ${radius + radius} ${radius}`}
-          fill="none"
-          stroke={dark ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.3)'}
-          strokeWidth="2"
-          strokeDasharray="6 4"
-        />
-      </svg>
+      />
 
-      {/* Satellite actions — 180° arc, spin with finger */}
       {baseItems.map((item, i) => {
         const angle = baseAngles[i] + spin;
         const rad = (angle * Math.PI) / 180;
@@ -255,7 +259,7 @@ function OmrFab({ dark }) {
             key={item.to}
             to={item.to}
             onClick={(e) => {
-              if (moved.current || rotating.current) {
+              if (moved.current) {
                 e.preventDefault();
                 return;
               }
@@ -268,36 +272,31 @@ function OmrFab({ dark }) {
               left: '50%',
               top: '50%',
               background: item.color,
-              boxShadow: open ? `0 8px 20px ${item.color}66` : 'none',
+              boxShadow: open ? `0 8px 20px ${item.color}55` : 'none',
               transform: open
-                ? `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1) rotate(${spin}deg)`
-                : 'translate(-50%, -50%) scale(0.15) rotate(0deg)',
+                ? `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1)`
+                : 'translate(-50%, -50%) scale(0.12)',
               opacity: open ? 1 : 0,
               pointerEvents: open ? 'auto' : 'none',
               transition: rotating.current
                 ? 'none'
-                : `transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.06}s, opacity 0.25s ease ${i * 0.06}s`,
+                : `transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${i * 0.05}s, opacity 0.3s ease ${i * 0.05}s`,
               zIndex: 1,
+              willChange: 'transform',
             }}
             title={item.label}
           >
-            <span
-              className="text-base leading-none"
-              style={{ transform: open ? `rotate(${-spin}deg)` : undefined }}
-            >
-              {item.icon}
-            </span>
+            <span className="text-base leading-none">{item.icon}</span>
           </Link>
         );
       })}
 
-      {/* Labels */}
       {open &&
         baseItems.map((item, i) => {
           const angle = baseAngles[i] + spin;
           const rad = (angle * Math.PI) / 180;
-          const tx = Math.cos(rad) * (radius + 30);
-          const ty = Math.sin(rad) * (radius + 30);
+          const tx = Math.cos(rad) * (radius + 32);
+          const ty = Math.sin(rad) * (radius + 32);
           return (
             <span
               key={`lbl-${item.to}`}
@@ -314,7 +313,6 @@ function OmrFab({ dark }) {
           );
         })}
 
-      {/* Main green knob */}
       <button
         type="button"
         aria-label="Quick actions"
@@ -322,19 +320,17 @@ function OmrFab({ dark }) {
         style={{
           width: mainSize,
           height: mainSize,
-          background: open
-            ? 'linear-gradient(145deg, #4ade80, #16a34a)'
-            : 'linear-gradient(145deg, #4ade80, #15803d)',
+          background: 'linear-gradient(145deg, #4ade80, #15803d)',
           boxShadow: '0 8px 24px rgba(22,163,74,0.5)',
-          transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
-          transition: 'transform 0.3s ease',
+          transform: open ? 'rotate(135deg)' : 'rotate(0deg)',
+          transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
           zIndex: 2,
           fontSize: 28,
           fontWeight: 300,
           lineHeight: 1,
         }}
       >
-        {open ? '×' : '+'}
+        +
       </button>
     </div>
   );
@@ -692,24 +688,27 @@ export default function Dashboard() {
 
         {/* 4 rings / metrics */}
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className={`rounded-xl p-3 flex items-center gap-3 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+          <div className={`rounded-xl p-3 flex items-center gap-2.5 min-w-0 ${dark ? 'bg-slate-900' : 'bg-slate-50'}`}>
             <Ring
-              pct={day?.productivityPct || 0}
+              pct={Math.min(100, Number(day?.productivityPct) || 0)}
               size={64}
               color="#10b981"
               track={track}
               value={`${day?.productivityPct ?? 0}%`}
               label=""
             />
-            <div>
+            <div className="min-w-0 flex-1">
               <div className={`text-xs font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
                 Productivity
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                {day?.productiveCalls ?? 0} / {day?.productivityTarget ?? '—'} target
+              <div className={`text-[10px] leading-snug ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                {day?.productiveCalls ?? 0}/{day?.productivityTarget ?? '—'} target
               </div>
-              <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                70% of beat · LPPC {day?.lppc ?? 0}
+              <div className={`text-[10px] leading-snug ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                70% of beat
+              </div>
+              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+                LPPC {day?.lppc ?? 0}
               </div>
             </div>
           </div>
