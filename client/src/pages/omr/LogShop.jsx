@@ -354,31 +354,30 @@ export default function LogShop() {
   const labelCls = dark ? 'block text-sm font-semibold text-slate-200 mb-1' : 'block text-sm font-semibold text-slate-800 mb-1';
   const labelXs = dark ? 'block text-xs font-semibold text-slate-300 mb-1' : 'block text-xs font-semibold text-slate-600 mb-1';
   const inputCls = dark
-    ? 'w-full border border-white/10 rounded-2xl px-4 py-3.5 text-sm bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/40 disabled:opacity-100'
-    : 'w-full border border-slate-200 rounded-2xl px-4 py-3.5 text-sm bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 disabled:bg-slate-50 disabled:opacity-100';
+    ? 'w-full border border-white/10 rounded-2xl px-4 py-3.5 text-sm bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#3F258B]/40 focus:border-[#3F258B]/50 disabled:opacity-100'
+    : 'w-full border border-slate-300 rounded-2xl px-4 py-3.5 text-sm bg-slate-50 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3F258B]/25 focus:border-[#3F258B]/50 disabled:bg-slate-50 disabled:opacity-100';
   const inputSm = dark
-    ? 'w-full border border-white/10 rounded-2xl px-3.5 py-3 text-sm bg-white/5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/30'
-    : 'w-full border border-slate-200 rounded-2xl px-3.5 py-3 text-sm bg-white text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20';
+    ? 'w-full border border-white/10 rounded-2xl px-3.5 py-3 text-sm bg-white/5 text-white focus:outline-none focus:ring-2 focus:ring-[#3F258B]/40'
+    : 'w-full border border-slate-300 rounded-2xl px-3.5 py-3 text-sm bg-slate-50 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3F258B]/25';
   const cardCls = dark
     ? 'bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3'
-    : 'bg-white border border-slate-200 rounded-xl p-4 space-y-3';
-
-
+    : 'bg-white border border-slate-300 rounded-xl p-4 space-y-3 shadow-md';
 
   const addressLine =
     [ctx.address, ctx.territory, form.contactPhone].filter(Boolean).join(' · ') ||
     [form.contactName, form.contactPhone].filter(Boolean).join(' · ') ||
     'Outlet location';
 
+  // Deeper light-mode cards so they separate clearly from the page background
   const glass = dark
-    ? 'bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl'
-    : 'bg-gradient-to-br from-white via-white to-slate-50 border border-slate-200/80 shadow-[0_8px_30px_rgba(15,23,42,0.08)]';
+    ? 'bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-white/12 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl'
+    : 'bg-white border border-slate-300/95 shadow-[0_12px_40px_rgba(15,23,42,0.12),0_2px_8px_rgba(15,23,42,0.06)]';
 
   const pillActive =
-    'bg-gradient-to-r from-[#0d9488] to-[#117ea6] text-white border-transparent shadow-lg shadow-teal-500/25';
+    'bg-gradient-to-r from-[#5b3aad] to-[#3F258B] text-white border-transparent shadow-lg shadow-[#3F258B]/30';
   const pillIdle = dark
     ? 'bg-slate-800/80 text-slate-300 border-white/10 hover:border-white/20'
-    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300';
+    : 'bg-slate-50 text-slate-700 border-slate-300 hover:border-slate-400 shadow-sm';
 
   const confirmAndSubmit = (e) => {
     if (e) e.preventDefault();
@@ -402,7 +401,7 @@ export default function LogShop() {
       className={`min-h-full pb-12 -mx-1 px-0.5 ${
         dark
           ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100'
-          : 'bg-gradient-to-b from-slate-100 via-slate-50 to-white text-slate-900'
+          : 'bg-gradient-to-b from-slate-200/90 via-slate-100 to-violet-50/60 text-slate-900'
       }`}
     >
       <InvoicePreview
@@ -440,14 +439,14 @@ export default function LogShop() {
         <div className="flex-1 text-center">
           <div
             className={`text-[17px] font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${
-              dark ? 'from-white via-teal-100 to-sky-200' : 'from-slate-900 via-[#117ea6] to-teal-700'
+              dark ? 'from-white via-violet-200 to-violet-100' : 'from-slate-900 via-[#3F258B] to-violet-700'
             }`}
           >
             FieldForce Tracker
           </div>
           <div
             className={`text-[11px] font-semibold tracking-wide uppercase ${
-              dark ? 'text-teal-400/80' : 'text-[#117ea6]'
+              dark ? 'text-violet-300/90' : 'text-[#3F258B]'
             }`}
           >
             Log Shop · OMR Field Sales
@@ -947,7 +946,11 @@ export default function LogShop() {
           <button
             type="submit"
             disabled={loading}
-            className="py-4 rounded-2xl text-sm font-extrabold bg-gradient-to-r from-[#bef264] via-[#a3e635] to-[#84cc16] text-slate-900 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-lime-500/25 active:scale-[0.98] transition"
+            className="py-4 rounded-2xl text-sm font-extrabold text-white disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition"
+            style={{
+              background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
+              boxShadow: '0 14px 36px rgba(5,150,105,0.4)',
+            }}
           >
             <span>✓</span> {loading ? 'Saving…' : 'Complete visit'}
           </button>

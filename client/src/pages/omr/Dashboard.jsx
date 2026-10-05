@@ -920,9 +920,13 @@ export default function Dashboard() {
 
       <Link
         to="/omr/beats"
-        className="block w-full text-center bg-[#2596be] text-white font-semibold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20"
+        className="block w-full text-center text-white font-black py-4 rounded-2xl tracking-wide"
+        style={{
+          background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
+          boxShadow: '0 16px 40px rgba(5,150,105,0.4)',
+        }}
       >
-        Start today's beat
+        Start today&apos;s beat
       </Link>
 
       {/* Floating action button — circular menu */}

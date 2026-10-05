@@ -7,15 +7,16 @@ export const ACCENT_GLOW = 'rgba(63,37,139,0.45)';
 export function usePremium(dark) {
   const shell = dark
     ? 'bg-gradient-to-b from-slate-950 via-[#070b14] to-slate-950'
-    : 'bg-gradient-to-b from-slate-100 via-white to-violet-50/40';
+    : 'bg-gradient-to-b from-slate-200/80 via-slate-100 to-violet-100/50';
 
+  // Light mode: solid white + stronger border + deeper shadow so cards pop off the bg
   const glass = dark
-    ? 'bg-slate-900/75 border border-white/10 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]'
-    : 'bg-white/90 border border-slate-200/80 backdrop-blur-2xl shadow-[0_20px_50px_rgba(63,37,139,0.08)]';
+    ? 'bg-slate-900/80 border border-white/12 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]'
+    : 'bg-white border border-slate-300/90 backdrop-blur-2xl shadow-[0_12px_40px_rgba(15,23,42,0.10),0_2px_8px_rgba(15,23,42,0.06)]';
 
   const glassSoft = dark
-    ? 'bg-slate-900/50 border border-white/8 backdrop-blur-xl'
-    : 'bg-white/70 border border-slate-200/60 backdrop-blur-xl';
+    ? 'bg-slate-900/55 border border-white/10 backdrop-blur-xl'
+    : 'bg-white border border-slate-250 shadow-[0_6px_24px_rgba(15,23,42,0.07)]';
 
   const label = `block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${
     dark ? 'text-violet-300/90' : 'text-[#3F258B]'
@@ -41,9 +42,17 @@ export function usePremium(dark) {
     boxShadow: '0 14px 36px rgba(63,37,139,0.4)',
   };
 
+  /** Green CTA — Start visit / Start today's beat */
+  const btnSuccess =
+    'inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-black text-white tracking-wide disabled:opacity-55 transition active:scale-[0.98]';
+  const btnSuccessStyle = {
+    background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
+    boxShadow: '0 14px 36px rgba(5,150,105,0.4)',
+  };
+
   const btnGhost = dark
     ? 'rounded-2xl px-4 py-3 text-sm font-bold border border-slate-600 text-slate-200 bg-slate-900/60'
-    : 'rounded-2xl px-4 py-3 text-sm font-bold border border-slate-200 text-slate-700 bg-white';
+    : 'rounded-2xl px-4 py-3 text-sm font-bold border border-slate-300 text-slate-700 bg-white shadow-sm';
 
   const heroStyle = {
     background: dark
@@ -64,6 +73,8 @@ export function usePremium(dark) {
     chip,
     btnPrimary,
     btnPrimaryStyle,
+    btnSuccess,
+    btnSuccessStyle,
     btnGhost,
     heroStyle,
     accent: ACCENT,
