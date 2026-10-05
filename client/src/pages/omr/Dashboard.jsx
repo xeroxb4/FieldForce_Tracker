@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -82,70 +82,6 @@ export default function Dashboard() {
   const [beat, setBeat] = useState(null);
   const [incentive, setIncentive] = useState(null);
   const [fabOpen, setFabOpen] = useState(false);
-  const [fabPos, setFabPos] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('fabPosition'));
-      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') return saved;
-    } catch {}
-    return { x: window.innerWidth - 72, y: window.innerHeight - 180 };
-  });
-  const [dragging, setDragging] = useState(false);
-  const fabDragRef = useRef({ startX: 0, startY: 0, startFabX: 0, startFabY: 0, moved: false });
-
-  const FAB_SIZE = 56;
-  const clampFabPos = (x, y) => {
-    const margin = 8;
-    const navH = 76; // keep clear of the bottom nav bar
-    const maxX = window.innerWidth - FAB_SIZE - margin;
-    const maxY = window.innerHeight - FAB_SIZE - navH;
-    return {
-      x: Math.min(Math.max(x, margin), Math.max(margin, maxX)),
-      y: Math.min(Math.max(y, margin), Math.max(margin, maxY)),
-    };
-  };
-
-  const handleFabPointerDown = (e) => {
-    fabDragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startFabX: fabPos.x,
-      startFabY: fabPos.y,
-      moved: false,
-    };
-    setDragging(true);
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-  };
-
-  const handleFabPointerMove = (e) => {
-    if (!dragging) return;
-    const { startX, startY, startFabX, startFabY } = fabDragRef.current;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) fabDragRef.current.moved = true;
-    const next = clampFabPos(startFabX + dx, startFabY + dy);
-    setFabPos(next);
-  };
-
-  const handleFabPointerUp = () => {
-    if (!dragging) return;
-    setDragging(false);
-    setFabPos((pos) => {
-      const clamped = clampFabPos(pos.x, pos.y);
-      try {
-        localStorage.setItem('fabPosition', JSON.stringify(clamped));
-      } catch {}
-      return clamped;
-    });
-    if (!fabDragRef.current.moved) {
-      setFabOpen((o) => !o);
-    }
-  };
-
-  useEffect(() => {
-    const onResize = () => setFabPos((pos) => clampFabPos(pos.x, pos.y));
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
   const [monthSum, setMonthSum] = useState(null);
   const [showTop10, setShowTop10] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -683,72 +619,44 @@ export default function Dashboard() {
         Start today's beat
       </Link>
 
-      {/* Floating action button — draggable, opens in a radial fan */}
-      <div
-        className="fixed z-40"
-        style={{ left: fabPos.x, top: fabPos.y, width: FAB_SIZE, height: FAB_SIZE, touchAction: 'none' }}
-      >
-        {/* This wrapper is what actually swings around the FAB — children counter-rotate to stay upright */}
-        <div
-          className="absolute inset-0 transition-transform duration-300 ease-out"
-          style={{
-            transformOrigin: '50% 50%',
-            transform: `rotate(${fabOpen ? 0 : -110}deg)`,
-          }}
-        >
-          {[
-            { to: '/omr/softphone', label: 'Call', icon: '📞', angleDeg: -150 },
-            { to: '/omr/outlets', label: 'Outlet', icon: '🏪', angleDeg: -90 },
-            { to: '/omr/reports', label: 'Report', icon: '📊', angleDeg: -30 },
-          ].map((item, i) => {
-            const radius = 76;
-            const rad = (item.angleDeg * Math.PI) / 180;
-            const dx = Math.cos(rad) * radius;
-            const dy = Math.sin(rad) * radius;
-            return (
+      {/* Floating action button */}
+      <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-2">
+        {fabOpen && (
+          <div className="flex flex-col items-end gap-2 mb-1">
+            {[
+              { to: '/omr/softphone', label: 'Call', icon: '📞', bg: 'bg-emerald-500' },
+              { to: '/omr/outlets', label: 'Outlet', icon: '🏪', bg: 'bg-sky-500' },
+              { to: '/omr/reports', label: 'Report', icon: '📊', bg: 'bg-violet-500' },
+            ].map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setFabOpen(false)}
-                className="absolute flex flex-col items-center gap-1"
-                style={{
-                  left: FAB_SIZE / 2 - 22,
-                  top: FAB_SIZE / 2 - 22,
-                  pointerEvents: fabOpen ? 'auto' : 'none',
-                  opacity: fabOpen ? 1 : 0,
-                  transform: `translate(${dx}px, ${dy}px) rotate(${fabOpen ? 0 : 110}deg)`,
-                  transition: 'transform 300ms ease-out, opacity 250ms ease-out',
-                  transitionDelay: fabOpen ? `${i * 40}ms` : '0ms',
-                }}
+                className="flex items-center gap-2 group"
               >
                 <span
-                  className="w-11 h-11 rounded-full text-white flex items-center justify-center text-lg shadow-lg"
-                  style={{ backgroundColor: '#3F258B' }}
-                >
-                  {item.icon}
-                </span>
-                <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shadow whitespace-nowrap ${
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg shadow ${
                     dark ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'
                   }`}
                 >
                   {item.label}
                 </span>
+                <span
+                  className={`w-11 h-11 rounded-full ${item.bg} text-white flex items-center justify-center text-lg shadow-lg`}
+                >
+                  {item.icon}
+                </span>
               </Link>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
         <button
           type="button"
-          onPointerDown={handleFabPointerDown}
-          onPointerMove={handleFabPointerMove}
-          onPointerUp={handleFabPointerUp}
-          onPointerCancel={handleFabPointerUp}
+          onClick={() => setFabOpen((o) => !o)}
           aria-label="Quick actions"
-          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform select-none ${
-            fabOpen ? 'rotate-45' : ''
-          } ${dragging ? 'scale-110' : ''}`}
-          style={{ backgroundColor: fabOpen ? '#2a1a63' : '#3F258B', cursor: dragging ? 'grabbing' : 'grab' }}
+          className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform ${
+            fabOpen ? 'bg-slate-700 rotate-45' : 'bg-[#117ea6]'
+          }`}
         >
           {fabOpen ? '×' : '+'}
         </button>
