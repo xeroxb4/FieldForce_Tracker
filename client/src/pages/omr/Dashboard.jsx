@@ -536,18 +536,18 @@ export default function Dashboard() {
     dark
       ? darkTile
       : {
-          background: `linear-gradient(145deg, #ffffff 0%, ${accent}18 100%)`,
-          border: `1px solid ${accent}40`,
-          boxShadow: `0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 24px -6px ${accent}28`,
+          background: `linear-gradient(145deg, #ffffff 0%, ${accent}12 100%)`,
+          border: `1px solid ${accent}28`,
+          boxShadow: `0 1px 0 0 rgba(255,255,255,1) inset, 0 2px 6px rgba(15,23,42,0.04)`,
         };
-  /** Stronger light-mode standout tiles (Top 10 sum / avg / conversion) */
+  /** Light standout tiles — soft, low glow */
   const tileHot = (accent) =>
     dark
       ? darkTile
       : {
-          background: `linear-gradient(145deg, #ffffff 0%, ${accent}32 50%, ${accent}48 100%)`,
-          border: `1.5px solid ${accent}70`,
-          boxShadow: `0 1.5px 0 0 rgba(255,255,255,1) inset, 0 14px 36px -8px ${accent}45, 0 4px 14px ${accent}30`,
+          background: `linear-gradient(145deg, #ffffff 0%, ${accent}16 100%)`,
+          border: `1px solid ${accent}35`,
+          boxShadow: `0 1px 0 0 rgba(255,255,255,1) inset, 0 3px 10px rgba(15,23,42,0.06)`,
         };
   // Ring / text colors: blend in light, classic in dark
   const ringProd = dark ? '#10b981' : C.cyan;
@@ -1020,7 +1020,9 @@ export default function Dashboard() {
         className="block w-full text-center text-white font-black py-4 rounded-2xl tracking-wide"
         style={{
           background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
-          boxShadow: '0 16px 40px rgba(5,150,105,0.4)',
+          boxShadow: dark
+            ? '0 14px 32px rgba(5,150,105,0.35)'
+            : '0 4px 12px rgba(5,150,105,0.22)',
         }}
       >
         Start today&apos;s beat
