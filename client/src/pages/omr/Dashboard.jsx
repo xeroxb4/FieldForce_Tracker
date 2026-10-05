@@ -102,6 +102,25 @@ function OmrFab({ dark }) {
   const lastAngle = useRef(null);
   const wrapRef = useRef(null);
   const rafRef = useRef(null);
+  const scrollLocked = useRef(false);
+  const savedOverflow = useRef('');
+
+  const lockScroll = () => {
+    if (scrollLocked.current) return;
+    scrollLocked.current = true;
+    savedOverflow.current = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+  };
+
+  const unlockScroll = () => {
+    if (!scrollLocked.current) return;
+    scrollLocked.current = false;
+    document.body.style.overflow = savedOverflow.current || '';
+    document.documentElement.style.overflow = '';
+  };
+
+  useEffect(() => () => unlockScroll(), []);
 
   const baseItems = [
     { to: '/omr/softphone', label: 'Call', icon: '📞', color: '#22c55e' },
@@ -131,7 +150,9 @@ function OmrFab({ dark }) {
 
   const onPointerDown = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     e.currentTarget.setPointerCapture?.(e.pointerId);
+    lockScroll();
     const { cx, cy } = centerOfFab();
     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
 
@@ -155,6 +176,8 @@ function OmrFab({ dark }) {
   };
 
   const onPointerMove = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (rotating.current && open) {
       const a = angleFromEvent(e);
       if (lastAngle.current != null) {
@@ -177,7 +200,10 @@ function OmrFab({ dark }) {
     });
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    unlockScroll();
     if (rotating.current) {
       rotating.current = false;
       lastAngle.current = null;
@@ -209,12 +235,25 @@ function OmrFab({ dark }) {
   return (
     <div
       ref={wrapRef}
-      className="fixed z-40"
-      style={{ ...wrapStyle, width: mainSize, height: mainSize }}
+      className="fixed z-40 touch-none select-none"
+      style={{
+        ...wrapStyle,
+        width: mainSize,
+        height: mainSize,
+        touchAction: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onTouchStart={(e) => {
+        e.preventDefault();
+        lockScroll();
+      }}
+      onTouchMove={(e) => e.preventDefault()}
+      onTouchEnd={() => unlockScroll()}
     >
       <div
         className="absolute pointer-events-none transition-all duration-300 ease-out"
@@ -227,8 +266,8 @@ function OmrFab({ dark }) {
           marginTop: open ? -radius * 1.25 : 0,
           borderRadius: '50%',
           background: dark
-            ? 'radial-gradient(circle, rgba(34,197,94,0.25) 0%, rgba(15,23,42,0) 70%)'
-            : 'radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(255,255,255,0) 70%)',
+            ? 'radial-gradient(circle, rgba(63,37,139,0.35) 0%, rgba(15,23,42,0) 70%)'
+            : 'radial-gradient(circle, rgba(63,37,139,0.2) 0%, rgba(255,255,255,0) 70%)',
           opacity: open ? 1 : 0,
         }}
       />
@@ -243,7 +282,7 @@ function OmrFab({ dark }) {
           height: radius * 2,
           marginLeft: -radius,
           marginTop: -radius,
-          borderColor: dark ? 'rgba(34,197,94,0.35)' : 'rgba(22,163,74,0.3)',
+          borderColor: dark ? 'rgba(167,139,250,0.4)' : 'rgba(109,40,217,0.35)',
           opacity: open ? 1 : 0,
           transform: `rotate(${spin}deg)`,
         }}
@@ -320,14 +359,15 @@ function OmrFab({ dark }) {
         style={{
           width: mainSize,
           height: mainSize,
-          background: 'linear-gradient(145deg, #4ade80, #15803d)',
-          boxShadow: '0 8px 24px rgba(22,163,74,0.5)',
+          background: 'linear-gradient(145deg, #5b3aad, #3F258B)',
+          boxShadow: '0 8px 28px rgba(63,37,139,0.55)',
           transform: open ? 'rotate(135deg)' : 'rotate(0deg)',
           transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
           zIndex: 2,
           fontSize: 28,
           fontWeight: 300,
           lineHeight: 1,
+          touchAction: 'none',
         }}
       >
         +
