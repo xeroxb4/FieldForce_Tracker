@@ -520,37 +520,45 @@ export default function Dashboard() {
           '0 1.5px 0 0 rgba(255,255,255,1) inset, 0 -1.5px 3px 0 rgba(15,23,42,0.05) inset, 0 4px 8px -2px rgba(15,23,42,0.08), 0 16px 36px -8px rgba(15,23,42,0.14), 0 28px 56px -16px rgba(63,37,139,0.08)',
       };
 
-  // Brand blend for KPI tiles
+  // Brand blend — LIGHT MODE ONLY. Dark keeps classic slate tiles.
   const C = {
     deep: '#2E1732',
     mag: '#AC60A4',
     cyan: '#28B8F0',
     purp: '#AB6BF0',
   };
+  const darkTile = {
+    background: 'rgb(15 23 42)', // slate-900
+    border: '1px solid rgb(51 65 85)', // slate-700
+    boxShadow: 'none',
+  };
   const tileBg = (accent) =>
     dark
-      ? {
-          background: `linear-gradient(145deg, ${C.deep}ee 0%, ${accent}33 100%)`,
-          border: `1px solid ${accent}55`,
-          boxShadow: `0 1px 0 0 rgba(255,255,255,0.08) inset, 0 8px 24px -6px ${accent}40`,
-        }
+      ? darkTile
       : {
           background: `linear-gradient(145deg, #ffffff 0%, ${accent}18 100%)`,
           border: `1px solid ${accent}40`,
           boxShadow: `0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 24px -6px ${accent}28`,
         };
+  /** Stronger light-mode standout tiles (Top 10 sum / avg / conversion) */
   const tileHot = (accent) =>
     dark
-      ? {
-          background: `linear-gradient(145deg, ${C.deep} 0%, ${accent}55 100%)`,
-          border: `1px solid ${accent}88`,
-          boxShadow: `0 1.5px 0 0 rgba(255,255,255,0.12) inset, 0 12px 32px -6px ${accent}55, 0 4px 12px ${accent}33`,
-        }
+      ? darkTile
       : {
-          background: `linear-gradient(145deg, #fff 0%, ${accent}28 55%, ${accent}40 100%)`,
-          border: `1px solid ${accent}60`,
-          boxShadow: `0 1.5px 0 0 rgba(255,255,255,1) inset, 0 12px 32px -6px ${accent}40, 0 4px 12px ${accent}25`,
+          background: `linear-gradient(145deg, #ffffff 0%, ${accent}32 50%, ${accent}48 100%)`,
+          border: `1.5px solid ${accent}70`,
+          boxShadow: `0 1.5px 0 0 rgba(255,255,255,1) inset, 0 14px 36px -8px ${accent}45, 0 4px 14px ${accent}30`,
         };
+  // Ring / text colors: blend in light, classic in dark
+  const ringProd = dark ? '#10b981' : C.cyan;
+  const ringCov = dark ? (coveragePct >= 100 ? '#10b981' : '#f59e0b') : C.mag;
+  const ringHit = dark ? '#8b5cf6' : C.purp;
+  const ringTop = dark ? '#f59e0b' : C.cyan;
+  const ringVisit = dark ? '#6366f1' : C.purp;
+  // Light-mode standout accents (user asked to change these three)
+  const lightSum = C.deep;      // Top 10 sum
+  const lightAvg = C.purp;      // Top 10 avg / MTD Top 10 avg
+  const lightConv = C.cyan;     // Visit conversion
 
 
   if (loading) {
@@ -670,22 +678,22 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-2xl p-3" style={tileBg(C.cyan)}>
-            <div className="text-lg font-black" style={{ color: C.cyan }}>
+            <div className={`text-lg font-black ${dark ? 'text-[#2596be]' : ''}`} style={dark ? undefined : { color: C.cyan }}>
               GHS {Number(monthSum?.totalSales || 0).toLocaleString()}
             </div>
-            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/70' : 'text-slate-600'}`}>Sales MTD</div>
+            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Sales MTD</div>
           </div>
           <div className="rounded-2xl p-3" style={tileBg(C.purp)}>
-            <div className="text-lg font-black" style={{ color: C.purp }}>{monthSum?.orders || 0}</div>
-            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/70' : 'text-slate-600'}`}>Orders MTD</div>
+            <div className={`text-lg font-black ${dark ? 'text-violet-500' : ''}`} style={dark ? undefined : { color: C.purp }}>{monthSum?.orders || 0}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Orders MTD</div>
           </div>
           <div className="rounded-2xl p-3" style={tileBg(C.mag)}>
-            <div className="text-lg font-black" style={{ color: C.mag }}>{monthSum?.productiveCalls || 0}</div>
-            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/70' : 'text-slate-600'}`}>Productive calls</div>
+            <div className={`text-lg font-black ${dark ? 'text-emerald-500' : ''}`} style={dark ? undefined : { color: C.mag }}>{monthSum?.productiveCalls || 0}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Productive calls</div>
           </div>
           <div className="rounded-2xl p-3" style={tileBg(C.deep)}>
-            <div className={`text-lg font-black ${dark ? 'text-white' : ''}`} style={{ color: dark ? undefined : C.deep }}>{monthSum?.totalVisits || 0}</div>
-            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-white/70' : 'text-slate-600'}`}>Visits MTD</div>
+            <div className={`text-lg font-black ${dark ? 'text-amber-500' : ''}`} style={dark ? undefined : { color: C.deep }}>{monthSum?.totalVisits || 0}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Visits MTD</div>
           </div>
         </div>
       </div>
@@ -703,43 +711,51 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           <Ring
             pct={coveragePct}
-            color={C.purp}
+            color={ringVisit}
             track={track}
             value={total}
             label="Outlets"
           />
           <div className="flex-1 grid grid-cols-2 gap-2">
             <div className="rounded-2xl p-2.5" style={tileBg(C.cyan)}>
-              <div className="text-lg font-black" style={{ color: C.cyan }}>{visited}</div>
-              <div className={`text-[10px] font-bold ${dark ? 'text-white/70' : 'text-slate-600'}`}>Visited</div>
+              <div className={`text-lg font-black ${dark ? 'text-emerald-500' : ''}`} style={dark ? undefined : { color: C.cyan }}>{visited}</div>
+              <div className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Visited</div>
             </div>
             <div className="rounded-2xl p-2.5" style={tileBg(C.deep)}>
-              <div className={`text-lg font-black ${dark ? 'text-white' : ''}`} style={{ color: dark ? undefined : C.deep }}>{notVisited}</div>
-              <div className={`text-[10px] font-bold ${dark ? 'text-white/70' : 'text-slate-600'}`}>Not visited</div>
+              <div className={`text-lg font-black ${dark ? 'text-red-400' : ''}`} style={dark ? undefined : { color: C.deep }}>{notVisited}</div>
+              <div className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Not visited</div>
             </div>
             <div className="rounded-2xl p-2.5" style={tileBg(C.mag)}>
-              <div className="text-lg font-black" style={{ color: C.mag }}>{productiveCalls}</div>
-              <div className={`text-[10px] font-bold ${dark ? 'text-white/70' : 'text-slate-600'}`}>Productive</div>
-              <div className={`text-[9px] ${dark ? 'text-white/50' : 'text-slate-500'}`}>of {totalVisitsToday} visits</div>
+              <div className={`text-lg font-black ${dark ? 'text-teal-500' : ''}`} style={dark ? undefined : { color: C.mag }}>{productiveCalls}</div>
+              <div className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Productive</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>of {totalVisitsToday} visits</div>
             </div>
             <div className="rounded-2xl p-2.5" style={tileBg(C.purp)}>
-              <div className={`text-[10px] font-bold ${dark ? 'text-white/70' : 'text-slate-600'}`}>Coverage</div>
-              <div className="text-sm font-black" style={{ color: C.purp }}>{coveragePct}%</div>
-              <div className={`text-[9px] ${dark ? 'text-white/50' : 'text-slate-500'}`}>target 100%</div>
+              <div className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>Coverage</div>
+              <div className={`text-sm font-black ${dark ? 'text-[#2596be]' : ''}`} style={dark ? undefined : { color: C.purp }}>{coveragePct}%</div>
+              <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>target 100%</div>
             </div>
-            <div className="rounded-2xl p-3 col-span-2" style={tileHot(C.purp)}>
+            <div
+              className={`rounded-2xl p-3 col-span-2 ${dark ? 'bg-slate-900' : ''}`}
+              style={dark ? undefined : tileHot(lightConv)}
+            >
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className={`text-[10px] font-black uppercase tracking-wide ${dark ? 'text-white' : 'text-slate-800'}`}>
+                  <div className={`text-[10px] font-black uppercase tracking-wide ${dark ? 'text-slate-300' : 'text-slate-800'}`}>
                     Visit conversion
                   </div>
-                  <div className={`text-[9px] ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  <div className={`text-[9px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
                     Productive ÷ visits done
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xl font-black" style={{ color: C.purp }}>{visitConversionPct}%</div>
-                  <div className={`text-[9px] font-semibold ${dark ? 'text-white/60' : 'text-slate-500'}`}>
+                  <div
+                    className={`text-xl font-black ${dark ? 'text-violet-500' : ''}`}
+                    style={dark ? undefined : { color: lightConv }}
+                  >
+                    {visitConversionPct}%
+                  </div>
+                  <div className={`text-[9px] font-semibold ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
                     {productiveCalls} ÷ {totalVisitsToday}
                   </div>
                 </div>
@@ -766,7 +782,7 @@ export default function Dashboard() {
             <Ring
               pct={Math.min(100, Number(day?.productivityPct) || 0)}
               size={64}
-              color={C.cyan}
+              color={ringProd}
               track={track}
               value={`${day?.productivityPct ?? 0}%`}
               label=""
@@ -775,13 +791,13 @@ export default function Dashboard() {
               <div className={`text-xs font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Productivity
               </div>
-              <div className={`text-[10px] leading-snug font-semibold ${dark ? 'text-white/70' : 'text-slate-600'}`}>
+              <div className={`text-[10px] leading-snug font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {day?.productiveCalls ?? 0}/{day?.productivityTarget ?? '—'} target
               </div>
-              <div className={`text-[10px] leading-snug ${dark ? 'text-white/50' : 'text-slate-500'}`}>
+              <div className={`text-[10px] leading-snug ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
                 70% of beat
               </div>
-              <div className="text-[10px] font-bold" style={{ color: C.cyan }}>
+              <div className="text-[10px] font-bold" style={{ color: dark ? undefined : C.cyan }}>
                 LPPC {day?.lppc ?? 0}
               </div>
             </div>
@@ -791,7 +807,7 @@ export default function Dashboard() {
             <Ring
               pct={day?.coveragePct || 0}
               size={64}
-              color={C.mag}
+              color={ringCov}
               track={track}
               value={`${day?.coveragePct ?? 0}%`}
               label=""
@@ -800,10 +816,10 @@ export default function Dashboard() {
               <div className={`text-xs font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Coverage
               </div>
-              <div className={`text-[10px] font-semibold ${dark ? 'text-white/70' : 'text-slate-600'}`}>
+              <div className={`text-[10px] font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 {day?.outletsVisited ?? 0}/{day?.beatOutlets ?? 0} outlets
               </div>
-              <div className={`text-[10px] ${dark ? 'text-white/50' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
                 Must be 100%
               </div>
             </div>
@@ -813,7 +829,7 @@ export default function Dashboard() {
             <Ring
               pct={day?.hitRatePct || 0}
               size={64}
-              color={C.purp}
+              color={ringHit}
               track={track}
               value={`${day?.hitRatePct ?? 0}%`}
               label=""
@@ -822,10 +838,10 @@ export default function Dashboard() {
               <div className={`text-xs font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Hit Rate
               </div>
-              <div className={`text-[10px] font-semibold ${dark ? 'text-white/70' : 'text-slate-600'}`}>
+              <div className={`text-[10px] font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Productive ÷ planned
               </div>
-              <div className={`text-[10px] ${dark ? 'text-white/50' : 'text-slate-500'}`}>
+              <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
                 {day?.productiveCalls ?? 0}/{day?.beatOutlets ?? 0} outlets
               </div>
             </div>
@@ -835,7 +851,7 @@ export default function Dashboard() {
             <Ring
               pct={day?.top10Pct || 0}
               size={64}
-              color={C.cyan}
+              color={ringTop}
               track={track}
               value={`${day?.top10HitCount ?? 0}/10`}
               label=""
@@ -844,14 +860,14 @@ export default function Dashboard() {
               <div className={`text-xs font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
                 Top 10
               </div>
-              <div className={`text-[10px] font-semibold ${dark ? 'text-white/70' : 'text-slate-600'}`}>
+              <div className={`text-[10px] font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Penetration {day?.top10Pct ?? 0}%
               </div>
               <button
                 type="button"
                 onClick={() => setShowTop10(!showTop10)}
-                className="text-[10px] font-bold"
-                style={{ color: C.cyan }}
+                className={`text-[10px] font-bold ${dark ? 'text-[#2596be]' : ''}`}
+                style={dark ? undefined : { color: C.cyan }}
               >
                 {showTop10 ? 'Hide list' : 'View list'}
               </button>
@@ -873,25 +889,37 @@ export default function Dashboard() {
         )}
 
         <div className="mt-3 grid grid-cols-2 gap-2.5 text-center">
-          <div className="rounded-2xl px-3 py-3.5" style={tileHot(C.mag)}>
-            <div className={`text-[10px] font-black uppercase tracking-[0.15em] ${dark ? 'text-white/80' : 'text-slate-700'}`}>
+          <div
+            className={`rounded-2xl px-3 py-3.5 ${dark ? 'border border-slate-700' : ''}`}
+            style={dark ? undefined : tileHot(lightSum)}
+          >
+            <div className={`text-[10px] font-black uppercase tracking-[0.15em] ${dark ? 'text-slate-400' : 'text-slate-700'}`}>
               Top 10 sum
             </div>
-            <div className="text-2xl font-black mt-1" style={{ color: C.mag }}>
+            <div
+              className={`text-2xl font-black mt-1 ${dark ? 'text-amber-500' : ''}`}
+              style={dark ? undefined : { color: lightSum }}
+            >
               {day?.top10LineTotal ?? 0}
             </div>
-            <div className={`text-[9px] font-semibold mt-0.5 ${dark ? 'text-white/55' : 'text-slate-500'}`}>
+            <div className={`text-[9px] font-semibold mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
               7+4+8 style total
             </div>
           </div>
-          <div className="rounded-2xl px-3 py-3.5" style={tileHot(C.cyan)}>
-            <div className={`text-[10px] font-black uppercase tracking-[0.15em] ${dark ? 'text-white/80' : 'text-slate-700'}`}>
+          <div
+            className={`rounded-2xl px-3 py-3.5 ${dark ? 'border border-slate-700' : ''}`}
+            style={dark ? undefined : tileHot(lightAvg)}
+          >
+            <div className={`text-[10px] font-black uppercase tracking-[0.15em] ${dark ? 'text-slate-400' : 'text-slate-700'}`}>
               Top 10 avg
             </div>
-            <div className="text-2xl font-black mt-1" style={{ color: C.cyan }}>
+            <div
+              className={`text-2xl font-black mt-1 ${dark ? 'text-amber-500' : ''}`}
+              style={dark ? undefined : { color: lightAvg }}
+            >
               {day?.top10LineAvg ?? 0}
             </div>
-            <div className={`text-[9px] font-semibold mt-0.5 ${dark ? 'text-white/55' : 'text-slate-500'}`}>
+            <div className={`text-[9px] font-semibold mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
               per productive call
             </div>
           </div>
@@ -906,30 +934,48 @@ export default function Dashboard() {
         {mtd && (
           <div className={`mt-3 pt-3 border-t grid grid-cols-4 gap-1.5 text-center ${dark ? 'border-white/10' : 'border-slate-200'}`}>
             <div className="rounded-xl py-2" style={tileBg(C.purp)}>
-              <div className={`text-[9px] font-bold ${dark ? 'text-white/60' : 'text-slate-500'}`}>MTD Hit</div>
-              <div className="text-xs font-black" style={{ color: C.purp }}>{mtd.hitRatePct}%</div>
+              <div className={`text-[9px] font-bold ${dark ? 'text-slate-500' : 'text-slate-500'}`}>MTD Hit</div>
+              <div className={`text-xs font-black ${dark ? 'text-violet-500' : ''}`} style={dark ? undefined : { color: C.purp }}>{mtd.hitRatePct}%</div>
             </div>
             <div className="rounded-xl py-2" style={tileBg(C.mag)}>
-              <div className={`text-[9px] font-bold ${dark ? 'text-white/60' : 'text-slate-500'}`}>MTD LPPC</div>
-              <div className="text-xs font-black" style={{ color: C.mag }}>{mtd.lppc}</div>
+              <div className={`text-[9px] font-bold ${dark ? 'text-slate-500' : 'text-slate-500'}`}>MTD LPPC</div>
+              <div className={`text-xs font-black ${dark ? 'text-emerald-500' : ''}`} style={dark ? undefined : { color: C.mag }}>{mtd.lppc}</div>
             </div>
             <div className="rounded-xl py-2" style={tileBg(C.cyan)}>
-              <div className={`text-[9px] font-bold ${dark ? 'text-white/60' : 'text-slate-500'}`}>MTD Prod</div>
-              <div className="text-xs font-black" style={{ color: C.cyan }}>{mtd.productiveCalls}</div>
+              <div className={`text-[9px] font-bold ${dark ? 'text-slate-500' : 'text-slate-500'}`}>MTD Prod</div>
+              <div className={`text-xs font-black ${dark ? 'text-[#2596be]' : ''}`} style={dark ? undefined : { color: C.cyan }}>{mtd.productiveCalls}</div>
             </div>
             <div className="rounded-xl py-2" style={tileBg(C.deep)}>
-              <div className={`text-[9px] font-bold ${dark ? 'text-white/60' : 'text-slate-500'}`}>MTD Top10</div>
-              <div className={`text-xs font-black ${dark ? 'text-white' : ''}`} style={{ color: dark ? undefined : C.deep }}>{mtd.top10HitCount}/10</div>
+              <div className={`text-[9px] font-bold ${dark ? 'text-slate-500' : 'text-slate-500'}`}>MTD Top10</div>
+              <div className={`text-xs font-black ${dark ? 'text-amber-500' : ''}`} style={dark ? undefined : { color: C.deep }}>{mtd.top10HitCount}/10</div>
             </div>
           </div>
         )}
         {mtd && (
           <div className="mt-2 grid grid-cols-2 gap-2 text-center text-[10px]">
-            <div className="rounded-xl py-2.5 font-semibold" style={tileHot(C.mag)}>
-              MTD Top10 sum <span className="font-black text-base ml-1" style={{ color: C.mag }}>{mtd.top10LineTotal ?? 0}</span>
+            <div
+              className={`rounded-xl py-2.5 font-semibold ${dark ? 'text-slate-400' : ''}`}
+              style={dark ? undefined : tileHot(lightSum)}
+            >
+              MTD Top10 sum{' '}
+              <span
+                className={`font-black text-base ml-1 ${dark ? 'text-amber-500' : ''}`}
+                style={dark ? undefined : { color: lightSum }}
+              >
+                {mtd.top10LineTotal ?? 0}
+              </span>
             </div>
-            <div className="rounded-xl py-2.5 font-semibold" style={tileHot(C.cyan)}>
-              MTD Top10 avg <span className="font-black text-base ml-1" style={{ color: C.cyan }}>{mtd.top10LineAvg ?? 0}</span>
+            <div
+              className={`rounded-xl py-2.5 font-semibold ${dark ? 'text-slate-400' : ''}`}
+              style={dark ? undefined : tileHot(lightAvg)}
+            >
+              MTD Top10 avg{' '}
+              <span
+                className={`font-black text-base ml-1 ${dark ? 'text-amber-500' : ''}`}
+                style={dark ? undefined : { color: lightAvg }}
+              >
+                {mtd.top10LineAvg ?? 0}
+              </span>
             </div>
           </div>
         )}
