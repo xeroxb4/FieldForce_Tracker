@@ -11,12 +11,12 @@ const sampleSKUs = [
   { name: 'Nivea Nourishing Cocoa Lotion', skuCode: 'NIV-LO-COCOA-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Perfect and Radiant Lotion', skuCode: 'NIV-LO-PR-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Rich Nourishing Lotion', skuCode: 'NIV-LO-RN-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
-  { name: 'Nivea Firming Q10 Lotion', skuCode: 'NIV-LO-Q10-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Firming Q10 Lotion', skuCode: 'NIV-LO-Q10-400', category: 'Lotion', size: '400ML', pricePc: 55.6, pricePack: 333.6, priceCarton: 667.2, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Radiant and Beauty (Advance Care)', skuCode: 'NIV-LO-RBAC-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Radiant and Beauty (Even Glow)', skuCode: 'NIV-LO-RBEG-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
-  { name: 'Nivea Shea Smooth Lotion', skuCode: 'NIV-LO-SHEA-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
-  { name: 'Nivea Deep Men Lotion', skuCode: 'NIV-LO-DEEP-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
-  { name: 'Nivea Maximum Hydration Lotion', skuCode: 'NIV-LO-MH-400', category: 'Lotion', size: '400ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Shea Smooth Lotion', skuCode: 'NIV-LO-SHEA-400', category: 'Lotion', size: '400ML', pricePc: 55.6, pricePack: 333.6, priceCarton: 667.2, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Deep Men Lotion', skuCode: 'NIV-LO-DEEP-400', category: 'Lotion', size: '400ML', pricePc: 55.6, pricePack: 333.6, priceCarton: 667.2, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Maximum Hydration Lotion', skuCode: 'NIV-LO-MH-400', category: 'Lotion', size: '400ML', pricePc: 55.6, pricePack: 333.6, priceCarton: 667.2, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Soft Moisturizing Cream', skuCode: 'NIV-LO-SOFT-200', category: 'Lotion', size: '200ML', pricePc: 43, pricePack: 258, priceCarton: 516, unitsPerPack: 6, unitsPerCarton: 12 },
 
   // —— ROLL-ONS 50ML ——
@@ -31,6 +31,9 @@ const sampleSKUs = [
   { name: 'Nivea Deep Espresso Roll-on', skuCode: 'NIV-RO-DE-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
   { name: 'Nivea Cool Kick Roll-on', skuCode: 'NIV-RO-CK-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
   { name: 'Nivea Fresh Pearl and Beauty Roll-on', skuCode: 'NIV-RO-FPB-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
+  { name: 'Nivea Derma Control Natural Tone Female Roll-on', skuCode: 'NIV-RO-DCNT-F-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
+  { name: 'Nivea Derma Control Defend Female Roll-on', skuCode: 'NIV-RO-DCD-F-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
+  { name: 'Nivea Derma Control Cool Defend Men Roll-on', skuCode: 'NIV-RO-DCCD-M-50', category: 'Roll-on', size: '50ML', pricePc: 15.5, pricePack: 93, priceCarton: 465, unitsPerPack: 6, unitsPerCarton: 30 },
 
   // —— SPRAYS 200ML ——
   { name: 'Nivea Cool Kick Spray', skuCode: 'NIV-SP-CK-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
@@ -43,6 +46,9 @@ const sampleSKUs = [
   { name: 'Nivea Fresh Energy Spray', skuCode: 'NIV-SP-FE-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Fresh Active Spray', skuCode: 'NIV-SP-FA-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
   { name: 'Nivea Pearl and Beauty Spray', skuCode: 'NIV-SP-PB-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Derma Control Natural Tone Female Spray', skuCode: 'NIV-SP-DCNT-F-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Derma Control Defend Female Spray', skuCode: 'NIV-SP-DCD-F-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
+  { name: 'Nivea Derma Control Defend Men Spray', skuCode: 'NIV-SP-DCD-M-200', category: 'Spray', size: '200ML', pricePc: 45, pricePack: 270, priceCarton: 540, unitsPerPack: 6, unitsPerCarton: 12 },
 ];
 
 const sampleUsers = [

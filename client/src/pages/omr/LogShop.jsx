@@ -55,6 +55,8 @@ export default function LogShop() {
   const [pickProductId, setPickProductId] = useState('');
   const [pickUnit, setPickUnit] = useState('pc');
   const [pickQty, setPickQty] = useState('1');
+  const [skuSheetOpen, setSkuSheetOpen] = useState(false);
+  const [skuSearch, setSkuSearch] = useState('');
 
   const [cart, setCart] = useState([]);
   const [status, setStatus] = useState(null);
@@ -88,6 +90,21 @@ export default function LogShop() {
 
   const productList = pickCategory ? products[pickCategory] || [] : [];
   const selectedProduct = productList.find((p) => p._id === pickProductId);
+  const filteredSkus = (() => {
+    const q = skuSearch.trim().toLowerCase();
+    if (!q) return productList;
+    return productList.filter(
+      (p) =>
+        String(p.name || '').toLowerCase().includes(q) ||
+        String(p.size || '').toLowerCase().includes(q)
+    );
+  })();
+
+  const catMeta = {
+    Lotion: { icon: '🧴', label: 'Lotion', tone: '#28B8F0' },
+    'Roll-on': { icon: '🫧', label: 'Roll-on', tone: '#AC60A4' },
+    Spray: { icon: '💨', label: 'Spray', tone: '#AB6BF0' },
+  };
 
   const unitPrice = (sku, unit) => {
     if (!sku) return 0;
@@ -615,43 +632,227 @@ export default function LogShop() {
 
             <div>
               <label className={`${labelXs} uppercase tracking-wider`}>Category</label>
-              <select
-                value={pickCategory}
-                onChange={(e) => {
-                  setPickCategory(e.target.value);
-                  setPickProductId('');
-                }}
-                className={`${inputSm} ${
-                  pickCategory
-                    ? 'border-teal-500/60 ring-2 ring-teal-500/20'
-                    : ''
-                }`}
-              >
-                <option value="">Select category…</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c === 'Roll-on' ? 'ROLL ON' : c.toUpperCase()}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-3 gap-2.5">
+                {CATEGORIES.map((c) => {
+                  const meta = catMeta[c] || { icon: '📦', label: c, tone: '#3F258B' };
+                  const active = pickCategory === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setPickCategory(c);
+                        setPickProductId('');
+                        setSkuSearch('');
+                      }}
+                      className={`relative overflow-hidden rounded-2xl py-3.5 px-2 text-center transition active:scale-[0.97] ${
+                        active
+                          ? 'text-white'
+                          : dark
+                          ? 'bg-slate-900/80 border border-white/10 text-slate-300'
+                          : 'bg-white border border-slate-200 text-slate-700 shadow-sm'
+                      }`}
+                      style={
+                        active
+                          ? {
+                              background: `linear-gradient(145deg, ${meta.tone}, #3F258B)`,
+                              boxShadow: `0 1px 0 rgba(255,255,255,0.2) inset, 0 12px 28px ${meta.tone}55`,
+                              border: '1px solid transparent',
+                            }
+                          : undefined
+                      }
+                    >
+                      <div className="text-xl leading-none mb-1">{meta.icon}</div>
+                      <div className="text-[11px] font-black tracking-wide uppercase">
+                        {meta.label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {pickCategory && (
               <div>
                 <label className={`${labelXs} uppercase tracking-wider`}>Product</label>
-                <select
-                  value={pickProductId}
-                  onChange={(e) => setPickProductId(e.target.value)}
-                  className={inputSm}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSkuSearch('');
+                    setSkuSheetOpen(true);
+                  }}
+                  className={`w-full rounded-2xl px-4 py-3.5 text-left flex items-center justify-between gap-3 border transition active:scale-[0.99] ${
+                    dark
+                      ? 'bg-slate-950/80 border-white/12 text-white'
+                      : 'bg-white border-slate-300 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
+                  }`}
                 >
-                  <option value="">List of SKUs…</option>
-                  {productList.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name}
-                      {p.size ? ` ${p.size}` : ''}
-                    </option>
-                  ))}
-                </select>
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] font-black uppercase tracking-wider ${
+                        dark ? 'text-violet-300/80' : 'text-[#3F258B]'
+                      }`}
+                    >
+                      {pickCategory} · {productList.length} SKUs
+                    </div>
+                    <div className={`text-sm font-bold truncate mt-0.5 ${selectedProduct ? '' : dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {selectedProduct
+                        ? `${selectedProduct.name}${selectedProduct.size ? ` · ${selectedProduct.size}` : ''}`
+                        : 'Tap to choose SKU…'}
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black"
+                    style={{
+                      background: 'linear-gradient(145deg, #5b3aad, #3F258B)',
+                      boxShadow: '0 8px 18px rgba(63,37,139,0.35)',
+                    }}
+                  >
+                    ⌕
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Premium SKU bottom sheet */}
+            {skuSheetOpen && (
+              <div className="fixed inset-0 z-[80] flex items-end justify-center">
+                <button
+                  type="button"
+                  className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+                  aria-label="Close"
+                  onClick={() => setSkuSheetOpen(false)}
+                />
+                <div
+                  className={`relative w-full max-w-lg max-h-[78vh] rounded-t-[1.75rem] flex flex-col overflow-hidden ${
+                    dark ? 'bg-slate-950 border-t border-white/10' : 'bg-white'
+                  }`}
+                  style={{
+                    boxShadow:
+                      '0 -12px 48px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.12) inset',
+                  }}
+                >
+                  <div className="flex justify-center pt-3 pb-1">
+                    <div className={`w-10 h-1 rounded-full ${dark ? 'bg-white/20' : 'bg-slate-300'}`} />
+                  </div>
+                  <div className="px-4 pb-3 pt-1 flex items-center justify-between gap-3">
+                    <div>
+                      <p
+                        className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                          dark ? 'text-violet-300/90' : 'text-[#3F258B]'
+                        }`}
+                      >
+                        Select SKU
+                      </p>
+                      <p className={`text-base font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
+                        {pickCategory}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSkuSheetOpen(false)}
+                      className={`text-xs font-bold px-3 py-2 rounded-xl ${
+                        dark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="px-4 pb-3">
+                    <input
+                      value={skuSearch}
+                      onChange={(e) => setSkuSearch(e.target.value)}
+                      placeholder="Search product name…"
+                      className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold outline-none border ${
+                        dark
+                          ? 'bg-slate-900 border-white/10 text-white placeholder:text-slate-500'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-3 pb-6 space-y-1.5">
+                    {filteredSkus.length === 0 && (
+                      <p className={`text-sm text-center py-8 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        No SKUs match
+                      </p>
+                    )}
+                    {filteredSkus.map((p) => {
+                      const active = String(pickProductId) === String(p._id);
+                      return (
+                        <button
+                          key={p._id}
+                          type="button"
+                          onClick={() => {
+                            setPickProductId(p._id);
+                            setSkuSheetOpen(false);
+                            setSkuSearch('');
+                          }}
+                          className={`w-full text-left rounded-2xl px-3.5 py-3.5 flex items-center gap-3 border transition ${
+                            active
+                              ? dark
+                                ? 'bg-violet-500/20 border-violet-400/40'
+                                : 'bg-violet-50 border-[#3F258B]/35'
+                              : dark
+                              ? 'bg-slate-900/70 border-white/8'
+                              : 'bg-white border-slate-150 shadow-sm'
+                          }`}
+                          style={
+                            active
+                              ? {
+                                  boxShadow: dark
+                                    ? '0 8px 24px rgba(171,107,240,0.25)'
+                                    : '0 8px 24px rgba(63,37,139,0.12)',
+                                }
+                              : dark
+                              ? undefined
+                              : {
+                                  boxShadow:
+                                    '0 1px 0 rgba(255,255,255,1) inset, 0 6px 16px rgba(15,23,42,0.06)',
+                                }
+                          }
+                        >
+                          <div
+                            className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center overflow-hidden border ${
+                              dark ? 'border-white/10 bg-slate-800' : 'border-slate-200 bg-slate-50'
+                            }`}
+                          >
+                            {p.image ? (
+                              <img src={p.image} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-lg">{catMeta[pickCategory]?.icon || '🧴'}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-sm font-bold leading-snug ${dark ? 'text-white' : 'text-slate-900'}`}>
+                              {p.name}
+                            </div>
+                            <div className={`text-[11px] font-semibold mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {p.size || pickCategory}
+                              {p.pricePc != null ? ` · GHS ${Number(p.pricePc).toFixed(2)}` : ''}
+                            </div>
+                          </div>
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                              active
+                                ? 'border-transparent text-white'
+                                : dark
+                                ? 'border-slate-600'
+                                : 'border-slate-300'
+                            }`}
+                            style={
+                              active
+                                ? { background: 'linear-gradient(145deg, #5b3aad, #3F258B)' }
+                                : undefined
+                            }
+                          >
+                            {active ? '✓' : ''}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
