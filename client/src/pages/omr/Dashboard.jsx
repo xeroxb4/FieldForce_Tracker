@@ -507,7 +507,18 @@ export default function Dashboard() {
   });
 
   const track = dark ? '#334155' : '#e2e8f0';
-  const card = dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100 shadow-sm';
+  const card = dark
+    ? 'bg-gradient-to-b from-slate-800 to-slate-900/95 border border-white/12'
+    : 'bg-gradient-to-b from-white to-slate-50 border border-slate-200/80';
+  const card3dStyle = dark
+    ? {
+        boxShadow:
+          '0 1.5px 0 0 rgba(255,255,255,0.12) inset, 0 -2px 4px 0 rgba(0,0,0,0.3) inset, 0 6px 12px -2px rgba(0,0,0,0.4), 0 20px 44px -10px rgba(0,0,0,0.65)',
+      }
+    : {
+        boxShadow:
+          '0 1.5px 0 0 rgba(255,255,255,1) inset, 0 -1.5px 3px 0 rgba(15,23,42,0.05) inset, 0 4px 8px -2px rgba(15,23,42,0.08), 0 16px 36px -8px rgba(15,23,42,0.14), 0 28px 56px -16px rgba(63,37,139,0.08)',
+      };
 
   if (loading) {
     return (
@@ -577,7 +588,7 @@ export default function Dashboard() {
 
 
       {/* Target */}
-      <div className={`rounded-2xl p-4 border ${card}`}>
+      <div className={`rounded-2xl p-4 border ${card}`} style={card3dStyle}>
         <div className="flex justify-between items-center mb-2">
           <span className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
             Monthly Target
@@ -605,7 +616,7 @@ export default function Dashboard() {
       </div>
 
       {/* Motivation */}
-      <div className={`rounded-2xl p-4 border ${card} border-l-4 border-l-amber-400`}>
+      <div className={`rounded-2xl p-4 border ${card} border-l-4 border-l-amber-400`} style={card3dStyle}>
         <div className={`text-[10px] font-bold uppercase tracking-wide ${dark ? 'text-amber-300' : 'text-amber-700'}`}>
           Today&apos;s push
         </div>
@@ -615,7 +626,7 @@ export default function Dashboard() {
       </div>
 
       {/* Monthly summary */}
-      <div className={`rounded-2xl p-4 border ${card}`}>
+      <div className={`rounded-2xl p-4 border ${card}`} style={card3dStyle}>
         <div className="flex justify-between items-center mb-3">
           <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
             Monthly summary
@@ -647,7 +658,7 @@ export default function Dashboard() {
       </div>
 
       {/* Visit Summary */}
-      <div className={`rounded-2xl p-4 border ${card}`}>
+      <div className={`rounded-2xl p-4 border ${card}`} style={card3dStyle}>
         <div className="flex justify-between items-center mb-3">
           <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
             Visit Summary
@@ -716,7 +727,7 @@ export default function Dashboard() {
       </div>
 
       {/* Incentive Breakdown */}
-      <div className={`rounded-2xl p-4 border ${card}`}>
+      <div className={`rounded-2xl p-4 border ${card}`} style={card3dStyle}>
         <div className="flex justify-between items-center mb-3">
           <h3 className={`text-sm font-semibold ${dark ? 'text-white' : 'text-slate-800'}`}>
             Incentive Breakdown
@@ -891,7 +902,7 @@ export default function Dashboard() {
           { label: 'Received', value: summary ? `₵${(summary.received || 0).toLocaleString()}` : '—', color: 'text-emerald-500' },
           { label: 'Owings', value: summary ? `₵${(summary.owings || 0).toLocaleString()}` : '—', color: 'text-amber-500' },
         ].map((s) => (
-          <div key={s.label} className={`rounded-2xl p-3 text-center border ${card}`}>
+          <div key={s.label} className={`rounded-2xl p-3 text-center border ${card}`} style={card3dStyle}>
             <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{s.label}</div>
             <div className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</div>
           </div>
@@ -908,7 +919,7 @@ export default function Dashboard() {
           <Link
             key={a.to}
             to={a.to}
-            className={`flex flex-col items-center py-3 rounded-2xl border text-center ${card}`}
+            className={`flex flex-col items-center py-3 rounded-2xl border text-center ${card}`} style={card3dStyle}
           >
             <span className="text-lg mb-1">{a.icon}</span>
             <span className={`text-[10px] font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>

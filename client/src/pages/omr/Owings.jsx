@@ -114,7 +114,7 @@ export default function Owings() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className={`rounded-[1.5rem] p-5 space-y-4 mb-5 ${p.glass}`}>
+        <form onSubmit={handleCreate} className={`p-5 space-y-4 mb-5 ${p.glass}`} style={p.glassStyle}>
           <div>
             <label className={p.label}>Customer name *</label>
             <input
@@ -176,12 +176,12 @@ export default function Owings() {
       )}
 
       {loading ? (
-        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+        <div className={`p-8 text-center ${p.glass}`} style={p.glassStyle}>
           <div className="w-8 h-8 mx-auto rounded-full border-2 border-[#3F258B] border-t-transparent animate-spin" />
           <p className={`text-sm mt-3 font-medium ${p.muted}`}>Loading owings…</p>
         </div>
       ) : credits.length === 0 ? (
-        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+        <div className={`p-8 text-center ${p.glass}`} style={p.glassStyle}>
           <p className="text-3xl mb-2">✓</p>
           <p className={`text-sm font-semibold ${p.title}`}>No pending owings</p>
           <p className={`text-xs mt-1 ${p.soft}`}>All clear — add one when a customer owes</p>
@@ -195,17 +195,18 @@ export default function Owings() {
             return (
               <div
                 key={c._id}
-                className={`rounded-[1.35rem] p-4 border ${
+                className={`p-4 mb-1 border ${
                   collected
                     ? dark
-                      ? 'bg-slate-900/40 border-white/5 opacity-70'
-                      : 'bg-slate-50 border-slate-100 opacity-80'
+                      ? 'bg-slate-900/40 border-white/5 opacity-70 rounded-[1.25rem]'
+                      : 'bg-slate-50 border-slate-100 opacity-80 rounded-[1.25rem]'
                     : overdue
                     ? dark
-                      ? 'bg-red-950/40 border-red-500/30'
-                      : 'bg-red-50/80 border-red-200'
-                    : p.glass
+                      ? 'bg-red-950/40 border-red-500/30 ' + p.card3d
+                      : 'bg-red-50/80 border-red-200 ' + p.card3d
+                    : p.card3d
                 }`}
+                style={!collected ? p.card3dStyle : undefined}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

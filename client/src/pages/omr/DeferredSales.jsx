@@ -158,14 +158,14 @@ export default function DeferredSales() {
       )}
 
       {loading && (
-        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+        <div className={`p-8 text-center ${p.glass}`} style={p.glassStyle}>
           <div className="w-8 h-8 mx-auto rounded-full border-2 border-[#3F258B] border-t-transparent animate-spin" />
           <p className={`text-sm mt-3 font-medium ${p.muted}`}>Loading deferred sales…</p>
         </div>
       )}
 
       {!loading && !list.length && (
-        <div className={`rounded-[1.5rem] p-8 text-center ${p.glass}`}>
+        <div className={`p-8 text-center ${p.glass}`} style={p.glassStyle}>
           <p className="text-3xl mb-2">📋</p>
           <p className={`text-sm font-semibold ${p.title}`}>No pending deferred sales</p>
           <p className={`text-xs mt-1 ${p.soft}`}>Coverage visits awaiting order capture will appear here</p>
@@ -174,7 +174,7 @@ export default function DeferredSales() {
 
       <div className="space-y-3">
         {list.map((row) => (
-          <div key={row._id} className={`rounded-[1.35rem] p-5 ${p.glass}`}>
+          <div key={row._id} className={`p-5 mb-1 ${p.card3d}`} style={p.card3dStyle}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className={`font-bold text-sm ${p.title}`}>{row.shopName}</p>

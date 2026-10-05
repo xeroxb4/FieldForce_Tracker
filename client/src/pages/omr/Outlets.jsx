@@ -272,7 +272,8 @@ export default function Outlets() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className={`rounded-[1.5rem] p-5 space-y-4 mb-5 ${p.glass}`}
+          className={`p-5 space-y-4 mb-5 ${p.glass}`}
+          style={p.glassStyle}
         >
           <input
             required
@@ -373,7 +374,8 @@ export default function Outlets() {
           {outlets.map((o) => (
             <div
               key={o._id}
-              className={`rounded-[1.25rem] p-4 ${p.glass}`}
+              className={`p-4 mb-1 ${p.card3d}`}
+              style={p.card3dStyle}
             >
               <div className="flex items-start justify-between">
                 <div>
