@@ -8,7 +8,7 @@ export const ACCENT_GLOW = 'rgba(63,37,139,0.45)';
 
 export function usePremium(dark) {
   const shell = dark
-    ? 'bg-gradient-to-b from-slate-950 via-[#070b14] to-slate-950'
+    ? 'bg-gradient-to-b from-[#030712] via-[#0a0f1e] to-[#030712]'
     : 'bg-gradient-to-b from-slate-300/70 via-slate-150 to-violet-100/40';
 
   /**
@@ -16,18 +16,13 @@ export function usePremium(dark) {
    * Feels suspended above the surface (expensive industrial UI)
    */
   const glass = dark
-    ? 'relative bg-gradient-to-br from-slate-800/95 via-slate-900/90 to-slate-950/95 border border-white/15 backdrop-blur-2xl rounded-[1.35rem]'
+    ? 'relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-3xl'
     : 'relative bg-gradient-to-br from-white via-white to-slate-50/95 border border-white/90 rounded-[1.35rem]';
 
   const glassStyle = dark
     ? {
-        boxShadow: `
-          0 1px 0 0 rgba(255,255,255,0.12) inset,
-          0 -1px 0 0 rgba(0,0,0,0.35) inset,
-          0 4px 6px -1px rgba(0,0,0,0.25),
-          0 18px 40px -8px rgba(0,0,0,0.65),
-          0 32px 64px -16px rgba(0,0,0,0.45)
-        `,
+        boxShadow:
+          '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
       }
     : {
         boxShadow: `
@@ -42,15 +37,12 @@ export function usePremium(dark) {
 
   /** Softer secondary surface */
   const glassSoft = dark
-    ? 'relative bg-slate-900/70 border border-white/10 backdrop-blur-xl rounded-[1.2rem]'
+    ? 'relative overflow-hidden rounded-[1.35rem] border border-white/[0.07] bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent backdrop-blur-2xl'
     : 'relative bg-white border border-slate-200/90 rounded-[1.2rem]';
 
   const glassSoftStyle = dark
     ? {
-        boxShadow: `
-          0 1px 0 0 rgba(255,255,255,0.08) inset,
-          0 10px 28px -6px rgba(0,0,0,0.5)
-        `,
+        boxShadow: '0 20px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
       }
     : {
         boxShadow: `
@@ -65,18 +57,13 @@ export function usePremium(dark) {
    * Stronger lift so each row feels like a physical tile
    */
   const card3d = dark
-    ? 'relative bg-gradient-to-b from-slate-800 to-slate-900/95 border border-white/12 rounded-[1.25rem] transition-transform duration-200 active:scale-[0.985]'
+    ? 'relative overflow-hidden rounded-[1.35rem] border border-white/[0.08] bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl transition-transform duration-200 active:scale-[0.985]'
     : 'relative bg-gradient-to-b from-white to-slate-50 border border-slate-200/80 rounded-[1.25rem] transition-transform duration-200 active:scale-[0.985]';
 
   const card3dStyle = dark
     ? {
-        boxShadow: `
-          0 1.5px 0 0 rgba(255,255,255,0.14) inset,
-          0 -2px 4px 0 rgba(0,0,0,0.3) inset,
-          0 6px 12px -2px rgba(0,0,0,0.4),
-          0 20px 44px -10px rgba(0,0,0,0.7),
-          0 2px 0 0 rgba(63,37,139,0.15)
-        `,
+        boxShadow:
+          '0 28px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 1px rgba(63,37,139,0.12)',
       }
     : {
         boxShadow: `
@@ -134,7 +121,7 @@ export function usePremium(dark) {
 
   const heroStyle = {
     background: dark
-      ? 'linear-gradient(135deg, #0a0618 0%, #1a0f3a 42%, #3F258B 100%)'
+      ? 'linear-gradient(145deg, #0f0a1e 0%, #1a0f3a 35%, #3F258B 70%, #5b3aad 100%)'
       : 'linear-gradient(135deg, #2a1860 0%, #3F258B 48%, #6d4fc4 100%)',
     boxShadow: `
       0 1px 0 0 rgba(255,255,255,0.15) inset,
@@ -171,7 +158,7 @@ export function usePremium(dark) {
 export function PremiumHero({ dark, eyebrow, title, subtitle, right, children }) {
   const style = {
     background: dark
-      ? 'linear-gradient(135deg, #0a0618 0%, #1a0f3a 42%, #3F258B 100%)'
+      ? 'linear-gradient(145deg, #0f0a1e 0%, #1a0f3a 35%, #3F258B 70%, #5b3aad 100%)'
       : 'linear-gradient(135deg, #2a1860 0%, #3F258B 48%, #6d4fc4 100%)',
     boxShadow: `
       0 1px 0 0 rgba(255,255,255,0.15) inset,

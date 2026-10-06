@@ -508,12 +508,12 @@ export default function Dashboard() {
 
   const track = dark ? '#334155' : '#e2e8f0';
   const card = dark
-    ? 'bg-gradient-to-b from-slate-800 to-slate-900/95 border border-white/12'
+    ? 'relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-3xl'
     : 'bg-gradient-to-b from-white to-slate-50 border border-slate-200/80';
   const card3dStyle = dark
     ? {
         boxShadow:
-          '0 1.5px 0 0 rgba(255,255,255,0.12) inset, 0 -2px 4px 0 rgba(0,0,0,0.3) inset, 0 6px 12px -2px rgba(0,0,0,0.4), 0 20px 44px -10px rgba(0,0,0,0.65)',
+          '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
       }
     : {
         boxShadow:
@@ -528,9 +528,9 @@ export default function Dashboard() {
     purp: '#AB6BF0',
   };
   const darkTile = {
-    background: 'rgb(15 23 42)', // slate-900
-    border: '1px solid rgb(51 65 85)', // slate-700
-    boxShadow: 'none',
+    background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 16px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
   };
   const tileBg = (accent) =>
     dark
@@ -573,12 +573,18 @@ export default function Dashboard() {
     <div className="space-y-4 pb-2">
       {/* Header */}
       <div
-        className={`rounded-3xl p-5 text-white relative overflow-hidden ${
-          dark
-            ? 'bg-gradient-to-br from-indigo-900 to-violet-900'
-            : 'bg-gradient-to-br from-indigo-600 to-violet-600'
-        }`}
+        className="rounded-[1.75rem] p-5 text-white relative overflow-hidden"
+        style={{
+          background: dark
+            ? 'linear-gradient(145deg, #0f0a1e 0%, #1a0f3a 35%, #3F258B 70%, #5b3aad 100%)'
+            : 'linear-gradient(145deg, #4f46e5 0%, #7c3aed 55%, #6d28d9 100%)',
+          boxShadow: dark
+            ? '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 20px 48px rgba(79,70,229,0.28)',
+        }}
       >
+        <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-cyan-300/15 blur-2xl" />
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="flex items-start justify-between relative">
           <div>
