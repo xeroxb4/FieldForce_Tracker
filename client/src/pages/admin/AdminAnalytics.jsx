@@ -118,12 +118,12 @@ async function downloadXlsx(pathWithQuery, filename) {
       throw new Error('Download is not a valid Excel file. Confirm Render deployed the new API.');
     }
   }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  const linkEl = document.createElement('a');
+  linkEl.href = URL.createObjectURL(blob);
+  linkEl.download = filename;
+  document.body.appendChild(linkEl);
+  linkEl.click();
+  linkEl.remove();
 }
 
 export default function AdminAnalytics() {
