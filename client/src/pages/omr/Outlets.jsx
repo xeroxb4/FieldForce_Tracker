@@ -4,13 +4,25 @@ import { useTheme } from '../../context/ThemeContext';
 import { usePremium, PremiumHero } from '../../lib/premium';
 
 const CAPACITY_BANDS = [
-  { id: 'under_2000', label: 'Under GHS 2,000', min: 0 },
-  { id: '2000_3999', label: 'GHS 2,000 – 3,999', min: 2000 },
-  { id: '4000_5999', label: 'GHS 4,000 – 5,999', min: 4000 },
+  { id: 'under_3999', label: 'Under GHS 3,999 (Open Market – Small)', min: 0 },
+  { id: '4000_5999', label: 'GHS 4,000 – 5,999 (Open Market – Medium)', min: 4000 },
   { id: '6000_9999', label: 'GHS 6,000 – 9,999', min: 6000 },
   { id: '10000_12499', label: 'GHS 10,000 – 12,499', min: 10000 },
   { id: '12500_plus', label: 'GHS 12,500+', min: 12500 },
 ];
+
+/** Labels for current + legacy band ids (old outlets still display correctly) */
+const CAPACITY_LABELS = {
+  under_3999: 'Under GHS 3,999 (Open Market – Small)',
+  under_2000: 'Under GHS 2,000',
+  '2000_3999': 'GHS 2,000 – 3,999',
+  '4000_5999': 'GHS 4,000 – 5,999 (Open Market – Medium)',
+  '6000_9999': 'GHS 6,000 – 9,999',
+  '10000_12499': 'GHS 10,000 – 12,499',
+  '12500_plus': 'GHS 12,500+',
+  under_10000: 'Under GHS 10,000',
+  from_10000: 'GHS 10,000+',
+};
 
 function classify(min) {
   const n = Number(min) || 0;
@@ -190,7 +202,7 @@ export default function Outlets() {
     return (days || []).map((d) => names[d]).join(', ') || '—';
   };
 
-  const bandLabel = (id) => CAPACITY_BANDS.find((b) => b.id === id)?.label || id || '';
+  const bandLabel = (id) => CAPACITY_LABELS[id] || CAPACITY_BANDS.find((b) => b.id === id)?.label || id || '';
 
   return (
     <div className={`-mx-4 -mt-2 px-4 pb-12 min-h-[70vh] ${p.shell}`}>

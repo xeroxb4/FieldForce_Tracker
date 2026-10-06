@@ -149,9 +149,10 @@ outletSchema.pre('save', function (next) {
   if (this.channelType) parts.push(this.channelType);
   if (this.monthlyCapacityBand) {
     const bandLabel = {
+      under_3999: 'Under 3,999 (Open Market – Small)',
       under_2000: 'Under 2,000',
       '2000_3999': '2,000–3,999',
-      '4000_5999': '4,000–5,999',
+      '4000_5999': '4,000–5,999 (Open Market – Medium)',
       '6000_9999': '6,000–9,999',
       '10000_12499': '10,000–12,499',
       '12500_plus': '12,500+',
