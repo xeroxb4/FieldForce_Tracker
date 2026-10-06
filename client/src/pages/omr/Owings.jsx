@@ -235,7 +235,7 @@ export default function Owings() {
                       className="shrink-0 rounded-xl px-3.5 py-2 text-[11px] font-black text-white disabled:opacity-50"
                       style={{
                         background: 'linear-gradient(135deg, #34d399, #059669)',
-                        boxShadow: '0 8px 20px rgba(5,150,105,0.3)',
+                        boxShadow: '0 3px 10px rgba(5,150,105,0.18)',
                       }}
                     >
                       {collecting === c._id ? '…' : 'Collect'}

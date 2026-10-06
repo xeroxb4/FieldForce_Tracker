@@ -373,7 +373,7 @@ export default function Beats() {
                       className="text-xs font-black shrink-0 px-3.5 py-2.5 rounded-xl text-white disabled:opacity-60"
                       style={{
                         background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
-                        boxShadow: '0 10px 24px rgba(5,150,105,0.4)',
+                        boxShadow: '0 4px 12px rgba(5,150,105,0.22)',
                       }}
                     >
                       {startingId === o._id ? 'Starting…' : 'Start visit →'}

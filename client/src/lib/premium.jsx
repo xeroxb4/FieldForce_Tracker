@@ -22,7 +22,7 @@ export function usePremium(dark) {
   const glassStyle = dark
     ? {
         boxShadow:
-          '0 32px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+          '0 20px 48px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.06)',
       }
     : {
         boxShadow: `
@@ -63,15 +63,12 @@ export function usePremium(dark) {
   const card3dStyle = dark
     ? {
         boxShadow:
-          '0 28px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 1px rgba(63,37,139,0.12)',
+          '0 16px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
       }
     : {
         boxShadow: `
-          0 1.5px 0 0 rgba(255,255,255,1) inset,
-          0 -1.5px 3px 0 rgba(15,23,42,0.05) inset,
-          0 4px 8px -2px rgba(15,23,42,0.08),
-          0 16px 36px -8px rgba(15,23,42,0.16),
-          0 28px 56px -16px rgba(63,37,139,0.1),
+          0 1px 0 0 rgba(255,255,255,1) inset,
+          0 4px 12px rgba(15,23,42,0.08),
           0 0 0 1px rgba(15,23,42,0.05)
         `,
       };
@@ -109,9 +106,8 @@ export function usePremium(dark) {
   const btnSuccessStyle = {
     background: 'linear-gradient(145deg, #34d399, #059669 55%, #047857)',
     boxShadow: `
-      0 1px 0 0 rgba(255,255,255,0.25) inset,
-      0 14px 36px rgba(5,150,105,0.45),
-      0 4px 8px rgba(5,150,105,0.25)
+      0 1px 0 0 rgba(255,255,255,0.2) inset,
+      0 4px 12px rgba(5,150,105,0.22)
     `,
   };
 
