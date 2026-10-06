@@ -505,7 +505,6 @@ export default function Outlets() {
               </p>
             </div>
           )}
-          )}
 
           {form.avcEnrolled && form.avcTier && (
             <div className="text-sm font-semibold text-amber-500">
