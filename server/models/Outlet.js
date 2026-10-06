@@ -62,10 +62,20 @@ const outletSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    /** Mini-wholesaler | Sub-wholesaler — derived from monthly capacity */
+    /** Open Market channel classification — derived from monthly capacity */
     channelType: {
       type: String,
-      enum: ['', 'Mini-wholesaler', 'Sub-wholesaler'],
+      enum: [
+        '',
+        'Open Market - Small Wholesaler',
+        'Open Market - Medium Wholesaler',
+        'Open Market - Medium-Large Wholesaler',
+        'Open Market - Large Wholesaler',
+        'Open Market - Sub Wholesaler',
+        // legacy
+        'Mini-wholesaler',
+        'Sub-wholesaler',
+      ],
       default: '',
     },
     /** e.g. under_10000, from_10000 */
@@ -132,8 +142,12 @@ outletSchema.index({ assignedTo: 1, status: 1 });
 // Auto-build displayName + channel from capacity when min provided
 outletSchema.pre('save', function (next) {
   if (this.monthlyCapacityMin != null && this.monthlyCapacityMin !== undefined) {
-    this.channelType =
-      Number(this.monthlyCapacityMin) >= 10000 ? 'Sub-wholesaler' : 'Mini-wholesaler';
+    const min = Number(this.monthlyCapacityMin) || 0;
+    if (min >= 12500) this.channelType = 'Open Market - Sub Wholesaler';
+    else if (min >= 10000) this.channelType = 'Open Market - Large Wholesaler';
+    else if (min >= 6000) this.channelType = 'Open Market - Medium-Large Wholesaler';
+    else if (min >= 4000) this.channelType = 'Open Market - Medium Wholesaler';
+    else this.channelType = 'Open Market - Small Wholesaler';
   }
   const parts = [this.name];
   if (this.avcEnrolled && this.avcTier) {
@@ -149,13 +163,13 @@ outletSchema.pre('save', function (next) {
   if (this.channelType) parts.push(this.channelType);
   if (this.monthlyCapacityBand) {
     const bandLabel = {
-      under_3999: 'Under 3,999 (Open Market – Small)',
+      under_3999: 'Under 3,999 (Small Wholesaler)',
       under_2000: 'Under 2,000',
       '2000_3999': '2,000–3,999',
-      '4000_5999': '4,000–5,999 (Open Market – Medium)',
-      '6000_9999': '6,000–9,999',
-      '10000_12499': '10,000–12,499',
-      '12500_plus': '12,500+',
+      '4000_5999': '4,000–5,999 (Medium Wholesaler)',
+      '6000_9999': '6,000–9,999 (Medium-Large Wholesaler)',
+      '10000_12499': '10,000–12,499 (Large Wholesaler)',
+      '12500_plus': '12,500+ (Sub Wholesaler)',
       under_10000: 'Under 10,000',
       from_10000: '10,000+',
     };

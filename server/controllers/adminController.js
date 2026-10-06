@@ -393,6 +393,9 @@ export const updateOutletFull = async (req, res) => {
       isActive,
       lat,
       lng,
+      monthlyCapacityBand,
+      monthlyCapacityMin,
+      channelType,
     } = req.body;
 
     if (name) outlet.name = name.trim();
@@ -427,6 +430,24 @@ export const updateOutletFull = async (req, res) => {
 
     if (lat !== undefined && lng !== undefined) {
       outlet.location = { lat: Number(lat), lng: Number(lng) };
+    }
+
+    // Capacity → Open Market classification
+    if (monthlyCapacityMin !== undefined || monthlyCapacityBand !== undefined) {
+      const capMin =
+        monthlyCapacityMin != null ? Number(monthlyCapacityMin) : Number(outlet.monthlyCapacityMin) || 0;
+      outlet.monthlyCapacityMin = capMin;
+      if (monthlyCapacityBand !== undefined) {
+        outlet.monthlyCapacityBand = monthlyCapacityBand || '';
+      }
+      // auto channel from capacity (pre-save also does this)
+      if (capMin >= 12500) outlet.channelType = 'Open Market - Sub Wholesaler';
+      else if (capMin >= 10000) outlet.channelType = 'Open Market - Large Wholesaler';
+      else if (capMin >= 6000) outlet.channelType = 'Open Market - Medium-Large Wholesaler';
+      else if (capMin >= 4000) outlet.channelType = 'Open Market - Medium Wholesaler';
+      else outlet.channelType = 'Open Market - Small Wholesaler';
+    } else if (channelType !== undefined && channelType !== '') {
+      outlet.channelType = channelType;
     }
 
     // Ensure approved if assigned

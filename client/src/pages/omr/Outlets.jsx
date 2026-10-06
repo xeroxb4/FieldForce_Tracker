@@ -4,29 +4,32 @@ import { useTheme } from '../../context/ThemeContext';
 import { usePremium, PremiumHero } from '../../lib/premium';
 
 const CAPACITY_BANDS = [
-  { id: 'under_3999', label: 'Under GHS 3,999 (Open Market – Small)', min: 0 },
-  { id: '4000_5999', label: 'GHS 4,000 – 5,999 (Open Market – Medium)', min: 4000 },
-  { id: '6000_9999', label: 'GHS 6,000 – 9,999', min: 6000 },
-  { id: '10000_12499', label: 'GHS 10,000 – 12,499', min: 10000 },
-  { id: '12500_plus', label: 'GHS 12,500+', min: 12500 },
+  { id: 'under_3999', label: 'Under GHS 3,999 → Open Market – Small Wholesaler', min: 0 },
+  { id: '4000_5999', label: 'GHS 4,000 – 5,999 → Open Market – Medium Wholesaler', min: 4000 },
+  { id: '6000_9999', label: 'GHS 6,000 – 9,999 → Open Market – Medium-Large Wholesaler', min: 6000 },
+  { id: '10000_12499', label: 'GHS 10,000 – 12,499 → Open Market – Large Wholesaler', min: 10000 },
+  { id: '12500_plus', label: 'GHS 12,500+ → Open Market – Sub Wholesaler', min: 12500 },
 ];
 
-/** Labels for current + legacy band ids (old outlets still display correctly) */
 const CAPACITY_LABELS = {
-  under_3999: 'Under GHS 3,999 (Open Market – Small)',
+  under_3999: 'Under GHS 3,999 → Small Wholesaler',
   under_2000: 'Under GHS 2,000',
   '2000_3999': 'GHS 2,000 – 3,999',
-  '4000_5999': 'GHS 4,000 – 5,999 (Open Market – Medium)',
-  '6000_9999': 'GHS 6,000 – 9,999',
-  '10000_12499': 'GHS 10,000 – 12,499',
-  '12500_plus': 'GHS 12,500+',
+  '4000_5999': 'GHS 4,000 – 5,999 → Medium Wholesaler',
+  '6000_9999': 'GHS 6,000 – 9,999 → Medium-Large Wholesaler',
+  '10000_12499': 'GHS 10,000 – 12,499 → Large Wholesaler',
+  '12500_plus': 'GHS 12,500+ → Sub Wholesaler',
   under_10000: 'Under GHS 10,000',
   from_10000: 'GHS 10,000+',
 };
 
 function classify(min) {
   const n = Number(min) || 0;
-  const channelType = n >= 10000 ? 'Sub-wholesaler' : 'Mini-wholesaler';
+  let channelType = 'Open Market - Small Wholesaler';
+  if (n >= 12500) channelType = 'Open Market - Sub Wholesaler';
+  else if (n >= 10000) channelType = 'Open Market - Large Wholesaler';
+  else if (n >= 6000) channelType = 'Open Market - Medium-Large Wholesaler';
+  else if (n >= 4000) channelType = 'Open Market - Medium Wholesaler';
   let suggestedAvcTier = '';
   if (n >= 12500) suggestedAvcTier = 'Gold';
   else if (n >= 10000) suggestedAvcTier = 'Silver';

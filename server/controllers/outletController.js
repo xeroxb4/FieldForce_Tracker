@@ -20,15 +20,31 @@ function applyAvc(body) {
   };
 }
 
-/** Single split: Mini-wholesaler < 10000, Sub-wholesaler >= 10000 */
 export function classifyFromCapacity(monthlyCapacityMin) {
   const min = Number(monthlyCapacityMin) || 0;
-  const channelType = min >= 10000 ? 'Sub-wholesaler' : 'Mini-wholesaler';
+  let channelType = 'Open Market - Small Wholesaler';
+  let bandId = 'under_3999';
+  if (min >= 12500) {
+    channelType = 'Open Market - Sub Wholesaler';
+    bandId = '12500_plus';
+  } else if (min >= 10000) {
+    channelType = 'Open Market - Large Wholesaler';
+    bandId = '10000_12499';
+  } else if (min >= 6000) {
+    channelType = 'Open Market - Medium-Large Wholesaler';
+    bandId = '6000_9999';
+  } else if (min >= 4000) {
+    channelType = 'Open Market - Medium Wholesaler';
+    bandId = '4000_5999';
+  } else {
+    channelType = 'Open Market - Small Wholesaler';
+    bandId = 'under_3999';
+  }
   let suggestedAvcTier = '';
   if (min >= 12500) suggestedAvcTier = 'Gold';
   else if (min >= 10000) suggestedAvcTier = 'Silver';
   else if (min >= 5000) suggestedAvcTier = 'Bronze';
-  return { channelType, suggestedAvcTier, monthlyCapacityMin: min };
+  return { channelType, suggestedAvcTier, monthlyCapacityMin: min, bandId };
 }
 
 

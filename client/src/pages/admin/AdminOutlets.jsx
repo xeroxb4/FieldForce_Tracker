@@ -2,6 +2,31 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+const CAPACITY_BANDS = [
+  { id: 'under_3999', label: 'Under GHS 3,999 → Open Market – Small Wholesaler', min: 0 },
+  { id: '4000_5999', label: 'GHS 4,000 – 5,999 → Open Market – Medium Wholesaler', min: 4000 },
+  { id: '6000_9999', label: 'GHS 6,000 – 9,999 → Open Market – Medium-Large Wholesaler', min: 6000 },
+  { id: '10000_12499', label: 'GHS 10,000 – 12,499 → Open Market – Large Wholesaler', min: 10000 },
+  { id: '12500_plus', label: 'GHS 12,500+ → Open Market – Sub Wholesaler', min: 12500 },
+];
+
+const CHANNEL_TYPES = [
+  'Open Market - Small Wholesaler',
+  'Open Market - Medium Wholesaler',
+  'Open Market - Medium-Large Wholesaler',
+  'Open Market - Large Wholesaler',
+  'Open Market - Sub Wholesaler',
+];
+
+function channelFromMin(min) {
+  const n = Number(min) || 0;
+  if (n >= 12500) return 'Open Market - Sub Wholesaler';
+  if (n >= 10000) return 'Open Market - Large Wholesaler';
+  if (n >= 6000) return 'Open Market - Medium-Large Wholesaler';
+  if (n >= 4000) return 'Open Market - Medium Wholesaler';
+  return 'Open Market - Small Wholesaler';
+}
+
 const DAY_OPTIONS = [
   { value: 1, label: 'Mon' },
   { value: 2, label: 'Tue' },
@@ -113,6 +138,9 @@ export default function AdminOutlets() {
       notes: o.notes || '',
       assignedTo: o.assignedTo?._id || o.assignedTo || '',
       assignedDays: o.assignedDays || [],
+      monthlyCapacityBand: o.monthlyCapacityBand || '',
+      monthlyCapacityMin: o.monthlyCapacityMin ?? 0,
+      channelType: o.channelType || '',
       avcEnrolled: !!o.avcEnrolled,
       avcTier: o.avcTier || 'Gold',
       isActive: o.isActive !== false,
@@ -142,6 +170,9 @@ export default function AdminOutlets() {
         notes: editing.notes,
         assignedTo: editing.assignedTo || undefined,
         assignedDays: editing.assignedDays,
+        monthlyCapacityBand: editing.monthlyCapacityBand || '',
+        monthlyCapacityMin: Number(editing.monthlyCapacityMin) || 0,
+        channelType: editing.channelType || channelFromMin(editing.monthlyCapacityMin),
         avcEnrolled: editing.avcEnrolled,
         avcTier: editing.avcEnrolled ? editing.avcTier : '',
         isActive: editing.isActive,
@@ -352,6 +383,48 @@ export default function AdminOutlets() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500">Monthly purchase capacity</label>
+              <select
+                className={inputCls}
+                value={editing.monthlyCapacityBand}
+                onChange={(e) => {
+                  const band = CAPACITY_BANDS.find((b) => b.id === e.target.value);
+                  const min = band ? band.min : 0;
+                  setEditing({
+                    ...editing,
+                    monthlyCapacityBand: e.target.value,
+                    monthlyCapacityMin: min,
+                    channelType: channelFromMin(min),
+                  });
+                }}
+              >
+                <option value="">Select capacity…</option>
+                {CAPACITY_BANDS.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-500">Classification (channel)</label>
+              <select
+                className={inputCls}
+                value={editing.channelType}
+                onChange={(e) => setEditing({ ...editing, channelType: e.target.value })}
+              >
+                <option value="">—</option>
+                {CHANNEL_TYPES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Auto-fills from capacity; you can override if needed.
+              </p>
             </div>
             <div className={`rounded-xl border-2 p-3 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
               <label className="flex items-center gap-2 text-sm font-semibold">
