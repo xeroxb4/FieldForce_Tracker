@@ -4,21 +4,21 @@ import { useTheme } from '../../context/ThemeContext';
 import { usePremium, PremiumHero } from '../../lib/premium';
 
 const CAPACITY_BANDS = [
-  { id: 'under_3999', label: 'Under GHS 3,999 → Open Market – Small Wholesaler', min: 0 },
-  { id: '4000_5999', label: 'GHS 4,000 – 5,999 → Open Market – Medium Wholesaler', min: 4000 },
-  { id: '6000_9999', label: 'GHS 6,000 – 9,999 → Open Market – Medium-Large Wholesaler', min: 6000 },
-  { id: '10000_12499', label: 'GHS 10,000 – 12,499 → Open Market – Large Wholesaler', min: 10000 },
-  { id: '12500_plus', label: 'GHS 12,500+ → Open Market – Sub Wholesaler', min: 12500 },
+  { id: 'under_3999', label: 'Under GHS 3,000', min: 0 },
+  { id: '4000_5999', label: 'GHS 4,000 – 5,999', min: 4000 },
+  { id: '6000_9999', label: 'GHS 6,000 – 9,999', min: 6000 },
+  { id: '10000_12499', label: 'GHS 10,000 – 12,499', min: 10000 },
+  { id: '12500_plus', label: 'GHS 12,500+', min: 12500 },
 ];
 
 const CAPACITY_LABELS = {
-  under_3999: 'Under GHS 3,999 → Small Wholesaler',
+  under_3999: 'Under GHS 3,000',
   under_2000: 'Under GHS 2,000',
   '2000_3999': 'GHS 2,000 – 3,999',
-  '4000_5999': 'GHS 4,000 – 5,999 → Medium Wholesaler',
-  '6000_9999': 'GHS 6,000 – 9,999 → Medium-Large Wholesaler',
-  '10000_12499': 'GHS 10,000 – 12,499 → Large Wholesaler',
-  '12500_plus': 'GHS 12,500+ → Sub Wholesaler',
+  '4000_5999': 'GHS 4,000 – 5,999',
+  '6000_9999': 'GHS 6,000 – 9,999',
+  '10000_12499': 'GHS 10,000 – 12,499',
+  '12500_plus': 'GHS 12,500+',
   under_10000: 'Under GHS 10,000',
   from_10000: 'GHS 10,000+',
 };
@@ -60,6 +60,7 @@ export default function Outlets() {
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
   const [avcPrompt, setAvcPrompt] = useState(null); // { tier, channelType }
+  const [capacitySheetOpen, setCapacitySheetOpen] = useState(false);
 
   const inputCls = p.input;
 
@@ -322,33 +323,188 @@ export default function Outlets() {
             <label className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
               Monthly purchase capacity *
             </label>
-            <select
-              required
-              value={form.monthlyCapacityBand}
-              onChange={(e) => onCapacityChange(e.target.value)}
-              className={`mt-1 ${inputCls}`}
+            <button
+              type="button"
+              onClick={() => setCapacitySheetOpen(true)}
+              className={`mt-1.5 w-full rounded-2xl px-4 py-3.5 text-left flex items-center justify-between gap-3 border transition active:scale-[0.99] ${
+                dark
+                  ? 'bg-slate-950/80 border-white/12 text-white'
+                  : 'bg-white border-slate-300 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.08)]'
+              }`}
             >
-              <option value="">Select capacity…</option>
-              {CAPACITY_BANDS.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.label}
-                </option>
-              ))}
-            </select>
+              <div className="min-w-0">
+                <div
+                  className={`text-[10px] font-black uppercase tracking-wider ${
+                    dark ? 'text-violet-300/80' : 'text-[#3F258B]'
+                  }`}
+                >
+                  Capacity band
+                </div>
+                <div
+                  className={`text-sm font-bold truncate mt-0.5 ${
+                    form.monthlyCapacityBand
+                      ? dark
+                        ? 'text-white'
+                        : 'text-slate-900'
+                      : dark
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {form.monthlyCapacityBand
+                    ? bandLabel(form.monthlyCapacityBand)
+                    : 'Tap to select capacity…'}
+                </div>
+              </div>
+              <span
+                className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black"
+                style={{
+                  background: 'linear-gradient(145deg, #5b3aad, #3F258B)',
+                  boxShadow: '0 8px 18px rgba(63,37,139,0.35)',
+                }}
+              >
+                ▾
+              </span>
+            </button>
+            {/* hidden required field for form validation */}
+            <input type="hidden" value={form.monthlyCapacityBand} required readOnly />
           </div>
+
+          {capacitySheetOpen && (
+            <div className="fixed inset-0 z-[80] flex items-end justify-center">
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+                aria-label="Close"
+                onClick={() => setCapacitySheetOpen(false)}
+              />
+              <div
+                className={`relative w-full max-w-lg max-h-[72vh] rounded-t-[1.75rem] flex flex-col overflow-hidden ${
+                  dark ? 'bg-slate-950 border-t border-white/10' : 'bg-white'
+                }`}
+                style={{
+                  boxShadow:
+                    '0 -12px 48px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.12) inset',
+                }}
+              >
+                <div className="flex justify-center pt-3 pb-1">
+                  <div className={`w-10 h-1 rounded-full ${dark ? 'bg-white/20' : 'bg-slate-300'}`} />
+                </div>
+                <div className="px-4 pb-3 pt-1 flex items-center justify-between gap-3">
+                  <div>
+                    <p
+                      className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                        dark ? 'text-violet-300/90' : 'text-[#3F258B]'
+                      }`}
+                    >
+                      Monthly purchase
+                    </p>
+                    <p className={`text-base font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
+                      Select capacity
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCapacitySheetOpen(false)}
+                    className={`text-xs font-bold px-3 py-2 rounded-xl ${
+                      dark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-3 pb-8 space-y-2">
+                  {CAPACITY_BANDS.map((b) => {
+                    const active = form.monthlyCapacityBand === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => {
+                          onCapacityChange(b.id);
+                          setCapacitySheetOpen(false);
+                        }}
+                        className={`w-full text-left rounded-2xl px-4 py-4 flex items-center justify-between gap-3 border transition ${
+                          active
+                            ? dark
+                              ? 'bg-violet-500/20 border-violet-400/40'
+                              : 'bg-violet-50 border-[#3F258B]/35'
+                            : dark
+                            ? 'bg-slate-900/70 border-white/8'
+                            : 'bg-white border-slate-200 shadow-sm'
+                        }`}
+                        style={
+                          active
+                            ? {
+                                boxShadow: dark
+                                  ? '0 8px 24px rgba(171,107,240,0.25)'
+                                  : '0 8px 24px rgba(63,37,139,0.12)',
+                              }
+                            : dark
+                            ? undefined
+                            : {
+                                boxShadow:
+                                  '0 1px 0 rgba(255,255,255,1) inset, 0 6px 16px rgba(15,23,42,0.06)',
+                              }
+                        }
+                      >
+                        <span className={`text-sm font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
+                          {b.label}
+                        </span>
+                        <span
+                          className={`w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center text-xs ${
+                            active
+                              ? 'border-transparent text-white'
+                              : dark
+                              ? 'border-slate-600'
+                              : 'border-slate-300'
+                          }`}
+                          style={
+                            active
+                              ? { background: 'linear-gradient(145deg, #5b3aad, #3F258B)' }
+                              : undefined
+                          }
+                        >
+                          {active ? '✓' : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {form.channelType && (
             <div
-              className={`text-sm rounded-xl px-3 py-2 border ${
-                dark ? 'border-slate-600 bg-slate-900' : 'border-[#117ea6]/30 bg-white'
+              className={`rounded-2xl p-4 border ${
+                dark
+                  ? 'border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent'
+                  : 'border-violet-200/80 bg-gradient-to-br from-violet-50 to-white'
               }`}
+              style={
+                dark
+                  ? { boxShadow: '0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }
+                  : { boxShadow: '0 8px 24px rgba(63,37,139,0.08)' }
+              }
             >
-              <span className={dark ? 'text-slate-400' : 'text-slate-500'}>Classified as: </span>
-              <strong className="text-[#3F258B]">{form.channelType}</strong>
-              <span className={`text-xs block mt-0.5 ${dark ? 'text-slate-500' : 'text-slate-400'}`}>
-                Mini-wholesaler = under GHS 10,000 · Sub-wholesaler = GHS 10,000+
-              </span>
+              <p
+                className={`text-[10px] font-black uppercase tracking-[0.18em] mb-1.5 ${
+                  dark ? 'text-violet-300/90' : 'text-[#3F258B]'
+                }`}
+              >
+                Classification
+              </p>
+              <p className={`text-base font-black ${dark ? 'text-white' : 'text-slate-900'}`}>
+                {form.channelType}
+              </p>
+              <p className={`text-xs mt-1.5 leading-relaxed ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Based on monthly purchase capacity{' '}
+                <span className="font-semibold">{bandLabel(form.monthlyCapacityBand)}</span>.
+                This is how the outlet is tagged for reporting and AVC eligibility.
+              </p>
             </div>
+          )}
           )}
 
           {form.avcEnrolled && form.avcTier && (

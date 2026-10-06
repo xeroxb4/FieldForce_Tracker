@@ -3,11 +3,11 @@ import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
 const CAPACITY_BANDS = [
-  { id: 'under_3999', label: 'Under GHS 3,999 → Open Market – Small Wholesaler', min: 0 },
-  { id: '4000_5999', label: 'GHS 4,000 – 5,999 → Open Market – Medium Wholesaler', min: 4000 },
-  { id: '6000_9999', label: 'GHS 6,000 – 9,999 → Open Market – Medium-Large Wholesaler', min: 6000 },
-  { id: '10000_12499', label: 'GHS 10,000 – 12,499 → Open Market – Large Wholesaler', min: 10000 },
-  { id: '12500_plus', label: 'GHS 12,500+ → Open Market – Sub Wholesaler', min: 12500 },
+  { id: 'under_3999', label: 'Under GHS 3,000', min: 0 },
+  { id: '4000_5999', label: 'GHS 4,000 – 5,999', min: 4000 },
+  { id: '6000_9999', label: 'GHS 6,000 – 9,999', min: 6000 },
+  { id: '10000_12499', label: 'GHS 10,000 – 12,499', min: 10000 },
+  { id: '12500_plus', label: 'GHS 12,500+', min: 12500 },
 ];
 
 const CHANNEL_TYPES = [
