@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function presetRange(type) {
   const today = new Date();
@@ -65,6 +66,7 @@ async function downloadXlsx(pathWithQuery, filename) {
 
 export default function AdminExport() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [startDate, setStartDate] = useState(presetRange('month').start);
   const [endDate, setEndDate] = useState(presetRange('month').end);
   const [loading, setLoading] = useState(null);
@@ -135,7 +137,7 @@ export default function AdminExport() {
               key={p}
               type="button"
               onClick={() => applyPreset(p)}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#2596be]/15 text-[#2596be]"
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#3F258B]/15 text-[#3F258B]"
             >
               {p}
             </button>
@@ -174,7 +176,7 @@ export default function AdminExport() {
           type="button"
           disabled={!!loading}
           onClick={() => run('productivity')}
-          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold text-sm disabled:opacity-60"
+          className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-60"
         >
           {loading === 'productivity' ? 'Preparing…' : 'Download productivity workbook (GH style)'}
         </button>
@@ -182,7 +184,7 @@ export default function AdminExport() {
           type="button"
           disabled={!!loading}
           onClick={() => run('omr')}
-          className="w-full py-3 rounded-xl border border-[#2596be] text-[#2596be] font-bold text-sm disabled:opacity-60"
+          className="w-full py-3 rounded-xl border border-[#3F258B] text-[#3F258B] font-bold text-sm disabled:opacity-60"
         >
           {loading === 'omr' ? 'Preparing…' : 'Download OMR KPI / summary export'}
         </button>
@@ -190,7 +192,7 @@ export default function AdminExport() {
           type="button"
           disabled={!!loading}
           onClick={() => run('outletHistory')}
-          className="w-full py-3 rounded-xl bg-[#117ea6] text-white font-bold text-sm disabled:opacity-60"
+          className="w-full py-3 rounded-xl bg-[#3F258B] text-white font-bold text-sm disabled:opacity-60"
         >
           {loading === 'outletHistory'
             ? 'Preparing…'

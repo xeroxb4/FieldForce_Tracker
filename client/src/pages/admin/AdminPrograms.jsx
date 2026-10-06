@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 export default function AdminPrograms() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [outlets, setOutlets] = useState([]);
   const [filterTier, setFilterTier] = useState('');
   const [notes, setNotes] = useState(() => localStorage.getItem('ff_program_notes') || '');
@@ -20,10 +22,8 @@ export default function AdminPrograms() {
     Silver: avc.filter((o) => o.avcTier === 'Silver').length,
     Bronze: avc.filter((o) => o.avcTier === 'Bronze').length,
   };
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
-  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border-2 font-medium ${
-    dark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-[#2596be]/40 text-slate-900'
-  }`;
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const inputCls = a.input;
 
   return (
     <div className="space-y-4">
@@ -59,7 +59,7 @@ export default function AdminPrograms() {
           <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
             AVC outlets {filterTier ? `· ${filterTier}` : ''}
           </h3>
-          <Link to="/admin/outlets" className="text-xs font-bold text-[#2596be]">
+          <Link to="/admin/outlets" className="text-xs font-bold text-[#3F258B]">
             Enrol / edit in Outlets →
           </Link>
         </div>

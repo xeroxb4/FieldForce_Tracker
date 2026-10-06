@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function timeAgo(iso) {
   if (!iso) return '';
@@ -41,6 +42,7 @@ function typeMeta(type) {
 
 export default function AdminNotifications() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);
@@ -98,7 +100,7 @@ export default function AdminNotifications() {
           <p className={`text-sm mt-1 ${muted}`}>
             {loading ? 'Loading…' : (
               <>
-                <span className="font-semibold text-[#2596be]">{unread}</span> unread
+                <span className="font-semibold text-[#3F258B]">{unread}</span> unread
                 {total > 0 && (
                   <>
                     <span className="mx-1.5 opacity-40">·</span>
@@ -113,7 +115,7 @@ export default function AdminNotifications() {
           <button
             type="button"
             onClick={markAll}
-            className="text-xs font-bold px-4 py-2.5 rounded-full bg-[#117ea6] text-white shadow-md shadow-[#117ea6]/25 hover:brightness-110 transition"
+            className="text-xs font-bold px-4 py-2.5 rounded-full bg-[#3F258B] text-white shadow-md shadow-[#117ea6]/25 hover:brightness-110 transition"
           >
             Mark all read
           </button>
@@ -169,7 +171,7 @@ export default function AdminNotifications() {
                         ? 'hover:bg-slate-800/40'
                         : 'hover:bg-slate-50'
                       : dark
-                      ? 'bg-[#117ea6]/10 hover:bg-[#117ea6]/15'
+                      ? 'bg-[#3F258B]/10 hover:bg-[#3F258B]/15'
                       : 'bg-sky-50/80 hover:bg-sky-50'
                   }`}
                 >
@@ -187,7 +189,7 @@ export default function AdminNotifications() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           {!n.read && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#2596be] shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#3F258B] shrink-0" />
                           )}
                           <span className={`font-bold text-sm leading-snug ${title}`}>
                             {n.title}
@@ -220,7 +222,7 @@ export default function AdminNotifications() {
                         <button
                           type="button"
                           onClick={() => mark(n._id)}
-                          className="text-[11px] font-bold text-[#117ea6] hover:underline"
+                          className="text-[11px] font-bold text-[#3F258B] hover:underline"
                         >
                           Mark read
                         </button>

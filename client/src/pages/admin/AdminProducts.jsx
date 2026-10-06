@@ -52,6 +52,7 @@ function compressImage(dataUrl, quality = 0.78, frame = 280) {
 
 export default function AdminProducts() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [list, setList] = useState([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -59,10 +60,8 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const fileRef = useRef(null);
 
-  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border-2 font-medium ${
-    dark ? "bg-slate-900 border-slate-600 text-white" : "bg-white border-[#2596be]/40 text-slate-900"
-  }`;
-  const card = dark ? "bg-slate-900 border-slate-700" : "bg-white border-[#2596be]/40 shadow-sm";
+  const inputCls = a.input;
+  const card = dark ? "bg-slate-900 border-slate-700" : "bg-white border-[#3F258B]/40 shadow-sm";
 
   const load = () => {
     setLoading(true);
@@ -204,7 +203,7 @@ export default function AdminProducts() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full py-2 rounded-xl bg-[#117ea6] text-white text-sm font-bold"
+              className="w-full py-2 rounded-xl bg-[#3F258B] text-white text-sm font-bold"
             >
               {form.image ? "Change product image" : "Upload product image"}
               <span className="block text-[10px] font-medium opacity-80 mt-0.5">Auto-resized to fit · white catalog frame</span>
@@ -298,7 +297,7 @@ export default function AdminProducts() {
           />
         </div>
         <div className="flex gap-2">
-          <button type="submit" className="flex-1 py-2.5 rounded-xl bg-[#117ea6] text-white font-bold text-sm">
+          <button type="submit" className="flex-1 py-2.5 rounded-xl bg-[#3F258B] text-white font-bold text-sm">
             {editing ? "Update product" : "Create product"}
           </button>
           {editing && (
@@ -354,7 +353,7 @@ export default function AdminProducts() {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => startEdit(p)} className="text-xs font-bold text-[#2596be]">
+                  <button type="button" onClick={() => startEdit(p)} className="text-xs font-bold text-[#3F258B]">
                     Edit
                   </button>
                   {p.isActive && (

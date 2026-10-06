@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea Ghana'];
 
 export default function AdminUsers() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -23,11 +25,7 @@ export default function AdminUsers() {
     distributor: '',
   });
 
-  const inputCls = `w-full rounded-xl px-4 py-3 text-sm border-2 font-medium ${
-    dark
-      ? 'bg-slate-900 border-slate-600 text-white'
-      : 'bg-white border-[#2596be]/40 text-slate-900'
-  }`;
+  const inputCls = a.input;
 
   const load = () => {
     setLoading(true);
@@ -147,7 +145,7 @@ export default function AdminUsers() {
               distributor: '',
             });
           }}
-          className="px-4 py-2.5 rounded-xl bg-[#2596be] text-white text-sm font-bold self-start"
+          className="px-4 py-2.5 rounded-xl text-white text-sm font-bold self-start"
         >
           {showForm ? 'Close' : '+ Add user'}
         </button>
@@ -216,7 +214,7 @@ export default function AdminUsers() {
         <form
           onSubmit={editing ? handleUpdate : handleCreate}
           className={`rounded-2xl border-2 p-4 mb-4 space-y-3 ${
-            dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40'
+            dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/40'
           }`}
         >
           <h3 className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -305,7 +303,7 @@ export default function AdminUsers() {
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-[#2596be] text-white text-sm font-bold"
+              className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold"
             >
               {editing ? 'Save changes' : 'Create user'}
             </button>
@@ -323,7 +321,7 @@ export default function AdminUsers() {
             <div
               key={u._id}
               className={`rounded-xl border-2 p-3 flex justify-between items-start gap-2 ${
-                dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#2596be]/30'
+                dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#3F258B]/30'
               }`}
             >
               <div className="min-w-0">
@@ -340,7 +338,7 @@ export default function AdminUsers() {
               <button
                 type="button"
                 onClick={() => startEdit(u)}
-                className="text-xs font-bold text-[#2596be] shrink-0"
+                className="text-xs font-bold text-[#3F258B] shrink-0"
               >
                 Edit
               </button>

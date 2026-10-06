@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const LINKS = [
   {
@@ -31,6 +32,7 @@ const LINKS = [
 
 export default function AdminSettings() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
@@ -40,7 +42,7 @@ export default function AdminSettings() {
 
       <div
         className={`rounded-2xl border-2 p-4 text-sm ${
-          dark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-[#e6f2f7] border-[#2596be]/40 text-slate-800'
+          dark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-[#e6f2f7] border-[#3F258B]/40 text-slate-800'
         }`}
       >
         <div className="font-bold mb-1">How to add a new OMR or Merchandiser</div>
@@ -60,8 +62,8 @@ export default function AdminSettings() {
             to={l.to}
             className={`block rounded-2xl border-2 p-4 transition ${
               dark
-                ? 'bg-slate-900 border-slate-700 hover:border-[#2596be]'
-                : 'bg-white border-[#2596be]/40 shadow-sm hover:border-[#2596be]'
+                ? 'bg-slate-900 border-slate-700 hover:border-[#3F258B]'
+                : 'bg-white border-[#3F258B]/40 shadow-sm hover:border-[#3F258B]'
             }`}
           >
             <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{l.title}</div>

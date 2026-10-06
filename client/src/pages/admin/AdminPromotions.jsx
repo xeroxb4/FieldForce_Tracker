@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const DEFAULT = {
   gt: {
@@ -32,6 +33,7 @@ function loadPromo() {
 
 export default function AdminPromotions() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [promo, setPromo] = useState(loadPromo);
   const [tab, setTab] = useState('gt');
   const [newName, setNewName] = useState('');
@@ -42,10 +44,8 @@ export default function AdminPromotions() {
   };
 
   const channel = promo[tab];
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
-  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border-2 font-medium ${
-    dark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-[#2596be]/40 text-slate-900'
-  }`;
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const inputCls = a.input;
 
   const toggleItem = (id) => {
     const items = channel.items.map((it) =>
@@ -89,10 +89,10 @@ export default function AdminPromotions() {
             onClick={() => setTab(t.id)}
             className={`flex-1 py-2.5 rounded-xl text-sm font-bold ${
               tab === t.id
-                ? 'bg-[#2596be] text-white'
+                ? 'text-white'
                 : dark
                 ? 'bg-slate-800 text-slate-300'
-                : 'bg-white border-2 border-[#2596be]/40 text-slate-700'
+                : 'bg-white border-2 border-[#3F258B]/40 text-slate-700'
             }`}
           >
             {t.label}
@@ -112,13 +112,13 @@ export default function AdminPromotions() {
             >
               <div>
                 <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{it.name}</div>
-                <div className="text-[10px] font-bold uppercase text-[#2596be]">{it.status}</div>
+                <div className="text-[10px] font-bold uppercase text-[#3F258B]">{it.status}</div>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => toggleItem(it.id)}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#2596be]/15 text-[#2596be]"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#3F258B]/15 text-[#3F258B]"
                 >
                   {it.status === 'active' ? 'Pause' : 'Activate'}
                 </button>
@@ -144,7 +144,7 @@ export default function AdminPromotions() {
           <button
             type="button"
             onClick={addItem}
-            className="px-4 py-2.5 rounded-xl bg-[#2596be] text-white text-sm font-bold shrink-0"
+            className="px-4 py-2.5 rounded-xl text-white text-sm font-bold shrink-0"
           >
             Add
           </button>

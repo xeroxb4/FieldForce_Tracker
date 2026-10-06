@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const STRUCTURE = [
   {
@@ -21,13 +22,14 @@ const STRUCTURE = [
 
 export default function AdminDistributors() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
 
   useEffect(() => {
     api.get('/admin/users?role=omr').then((r) => setOmrs(r.data || [])).catch(() => {});
   }, []);
 
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
 
   const under = (name) =>
     omrs.filter((u) => (u.distributor || '').toLowerCase().includes(name.toLowerCase()));
@@ -43,7 +45,7 @@ export default function AdminDistributors() {
 
       {STRUCTURE.map((region) => (
         <div key={region.region} className="space-y-3">
-          <h2 className={`text-sm font-extrabold uppercase tracking-wide text-[#2596be]`}>
+          <h2 className={`text-sm font-extrabold uppercase tracking-wide text-[#3F258B]`}>
             {region.region}
           </h2>
           <div className="grid md:grid-cols-2 gap-3">

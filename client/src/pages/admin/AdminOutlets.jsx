@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const CAPACITY_BANDS = [
   { id: 'under_3999', label: 'Under GHS 3,000', min: 0 },
@@ -52,6 +53,7 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 
 export default function AdminOutlets() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [outlets, setOutlets] = useState([]);
   const [reps, setReps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +65,7 @@ export default function AdminOutlets() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border-2 font-medium ${
-    dark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-[#2596be]/40 text-slate-900'
-  }`;
+  const inputCls = a.input;
 
   const load = async () => {
     setLoading(true);
@@ -200,12 +200,12 @@ export default function AdminOutlets() {
 
   return (
     <div>
-      <h2 className={`text-lg font-extrabold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
-        Outlets & Beats
-      </h2>
-      <p className={`text-sm mb-4 font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-        Search by name, or filter by role, rep, and distributor. Edit beat days & AVC.
-      </p>
+      <AdminPageHeader
+        dark={dark}
+        eyebrow="Network"
+        title="Outlets & Beats"
+        subtitle="Search, assign days, capacity, classification & AVC"
+      />
 
       {status && (
         <div
@@ -291,7 +291,7 @@ export default function AdminOutlets() {
                     : 'bg-emerald-50 border-emerald-400 shadow-sm'
                   : dark
                   ? 'bg-slate-900 border-slate-700'
-                  : 'bg-white border-[#2596be]/40 shadow-sm'
+                  : 'bg-white border-[#3F258B]/40 shadow-sm'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
@@ -319,7 +319,7 @@ export default function AdminOutlets() {
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => openEdit(o)} className="text-xs px-3 py-1.5 rounded-lg bg-[#2596be] text-white font-bold">
+                  <button type="button" onClick={() => openEdit(o)} className="text-xs px-3 py-1.5 rounded-lg text-white font-bold">
                     Edit
                   </button>
                   <button type="button" onClick={() => remove(o._id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-500/15 text-red-500 font-bold">
@@ -333,9 +333,9 @@ export default function AdminOutlets() {
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className={`w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-4 space-y-3 ${dark ? 'bg-slate-900' : 'bg-white'}`}>
-            <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Edit outlet</h3>
+        <div className={a.modalOverlay}>
+          <div className={a.modalPanel}>
+            <h3 className={`text-lg font-black ${a.title}`}>Edit outlet</h3>
             <div>
               <label className="text-xs font-bold text-slate-500">Name</label>
               <input className={inputCls} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
@@ -373,7 +373,7 @@ export default function AdminOutlets() {
                     onClick={() => toggleDay(d.value)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
                       editing.assignedDays.includes(d.value)
-                        ? 'bg-[#2596be] text-white'
+                        ? 'text-white'
                         : dark
                         ? 'bg-slate-800 text-slate-400'
                         : 'bg-slate-100 text-slate-600'
@@ -453,7 +453,7 @@ export default function AdminOutlets() {
               <button type="button" onClick={() => setEditing(null)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold ${dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
                 Cancel
               </button>
-              <button type="button" disabled={saving} onClick={saveEdit} className="flex-1 py-2.5 rounded-xl text-sm bg-[#2596be] text-white font-bold disabled:opacity-60">
+              <button type="button" disabled={saving} onClick={saveEdit} className="flex-1 py-2.5 rounded-xl text-sm text-white font-bold disabled:opacity-60">
                 {saving ? 'Saving…' : 'Save'}
               </button>
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function presetRange(type) {
   const today = new Date();
@@ -21,6 +22,7 @@ function presetRange(type) {
 
 export default function AdminReports() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const month = presetRange('month');
   const [startDate, setStartDate] = useState(month.start);
   const [endDate, setEndDate] = useState(month.end);
@@ -198,7 +200,7 @@ export default function AdminReports() {
                 setStartDate(r.start);
                 setEndDate(r.end);
               }}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#2596be]/20 text-[#2596be]"
+              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#3F258B]/20 text-[#3F258B]"
             >
               {p}
             </button>
@@ -272,7 +274,7 @@ export default function AdminReports() {
           type="button"
           onClick={loadReports}
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold text-sm disabled:opacity-60"
+          className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-60"
         >
           {loading ? 'Loading…' : 'Load sales data'}
         </button>
@@ -289,7 +291,7 @@ export default function AdminReports() {
               ['Sales GHS', totals.sales.toLocaleString()],
             ].map(([k, v]) => (
               <div key={k} className={card}>
-                <div className={`text-lg font-extrabold text-[#2596be]`}>{v}</div>
+                <div className={`text-lg font-extrabold text-[#3F258B]`}>{v}</div>
                 <div className={`text-xs font-semibold ${muted}`}>{k}</div>
               </div>
             ))}
@@ -304,7 +306,7 @@ export default function AdminReports() {
                     {data.visits.length} visits · {data.orders} orders
                   </div>
                 </div>
-                <div className="text-right font-extrabold text-[#2596be]">
+                <div className="text-right font-extrabold text-[#3F258B]">
                   GHS {data.sales.toLocaleString()}
                 </div>
               </div>
@@ -336,7 +338,7 @@ export default function AdminReports() {
                               {v.paymentType ? ` · ${v.paymentType}` : ''}
                             </div>
                           </div>
-                          <div className="text-sm font-bold text-[#2596be]">
+                          <div className="text-sm font-bold text-[#3F258B]">
                             GHS {Number(v.amount || 0).toLocaleString()}
                           </div>
                         </div>
@@ -407,7 +409,7 @@ export default function AdminReports() {
                                   onChange={(e) => setPickQty(e.target.value)}
                                   className={input}
                                 />
-                                <button type="button" onClick={addEditLine} className="rounded-lg bg-[#2596be]/20 text-[#2596be] font-bold">
+                                <button type="button" onClick={addEditLine} className="rounded-lg bg-[#3F258B]/20 text-[#3F258B] font-bold">
                                   Add
                                 </button>
                               </div>
@@ -459,7 +461,7 @@ export default function AdminReports() {
                                   type="button"
                                   disabled={editSaving}
                                   onClick={() => saveEdit(id)}
-                                  className="py-2 rounded-lg bg-[#2596be] text-white font-bold disabled:opacity-60"
+                                  className="py-2 rounded-lg text-white font-bold disabled:opacity-60"
                                 >
                                   {editSaving ? 'Saving…' : 'Save sale'}
                                 </button>

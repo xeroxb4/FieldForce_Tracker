@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 import { LineChart, DonutChart } from '../../components/Charts';
 
 function monthBounds() {
@@ -127,6 +128,7 @@ async function downloadXlsx(pathWithQuery, filename) {
 
 export default function AdminAnalytics() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [data, setData] = useState(null);
   const bounds = monthBounds();
   const [startDate, setStartDate] = useState(bounds.start);
@@ -155,7 +157,7 @@ export default function AdminAnalytics() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
 
   const lineLabels = perf?.dailyTrend?.labels || [];
   const lineSeries = useMemo(() => {
@@ -463,7 +465,7 @@ export default function AdminAnalytics() {
             type="button"
             onClick={loadPerf}
             disabled={perfLoading}
-            className="text-xs font-bold px-3 py-2 rounded-xl bg-[#117ea6] text-white disabled:opacity-60"
+            className="text-xs font-bold px-3 py-2 rounded-xl bg-[#3F258B] text-white disabled:opacity-60"
           >
             {perfLoading ? 'Loading…' : 'Refresh'}
           </button>
@@ -492,7 +494,7 @@ export default function AdminAnalytics() {
             className={`mt-4 rounded-xl border px-3 py-3 text-sm leading-relaxed ${
               dark
                 ? 'border-slate-600 bg-slate-800/80 text-slate-200'
-                : 'border-[#2596be]/30 bg-sky-50 text-slate-800'
+                : 'border-[#3F258B]/30 bg-sky-50 text-slate-800'
             }`}
           >
             <div className={`font-extrabold text-sm mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium } from '../../lib/adminPremium';
 import { ensureNotifyPermission, pollAdminNotifications } from '../../services/notify';
 import api from '../../services/api';
 import logo from '../../assets/logo.jpeg';
@@ -30,6 +31,7 @@ const NAV = [
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
+  const a = useAdminPremium(dark);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [unreadNotif, setUnreadNotif] = useState(0);
@@ -102,27 +104,19 @@ export default function AdminLayout() {
 
   const closeMenu = () => setOpen(false);
 
-  const glassPanel = dark
-    ? 'bg-slate-950/90 border-white/10 text-white backdrop-blur-xl'
-    : 'bg-white/95 border-slate-200/80 text-slate-900 backdrop-blur-xl shadow-xl';
-
   return (
-    <div className={`min-h-screen flex flex-col ${dark ? 'bg-slate-950' : 'bg-[#e8f1f6]'}`}>
+    <div className={`min-h-screen flex flex-col ${a.shell}`}>
       <header
-        className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 border-b ${
-          dark
-            ? 'bg-slate-950/90 border-slate-800 backdrop-blur-md'
-            : 'bg-white/90 border-slate-200 backdrop-blur-md'
-        }`}
+        className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b ${a.headerBar}`}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className={`shrink-0 relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold ${
+            className={`shrink-0 relative inline-flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-black ${
               dark
-                ? 'bg-white/10 text-white border border-white/10'
-                : 'bg-[#117ea6]/10 text-[#117ea6] border border-[#117ea6]/20'
+                ? 'bg-white/10 text-white border border-white/12'
+                : 'bg-violet-50 text-[#3F258B] border border-violet-200'
             }`}
             aria-label="Open menu"
           >
@@ -149,9 +143,7 @@ export default function AdminLayout() {
         <button
           type="button"
           onClick={toggle}
-          className={`text-xs font-semibold px-3 py-2 rounded-xl shrink-0 ${
-            dark ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-700'
-          }`}
+          className={`text-xs font-bold px-3.5 py-2.5 rounded-2xl shrink-0 ${a.btnGhost}`}
         >
           {dark ? '☀ Light' : '☾ Dark'}
         </button>
@@ -172,9 +164,10 @@ export default function AdminLayout() {
 
         {/* Narrow panel from left */}
         <aside
-          className={`absolute top-0 left-0 h-full w-[min(16.5rem,78vw)] max-w-[280px] flex flex-col border-r ${glassPanel} transition-transform duration-300 ease-out ${
+          className={`absolute top-0 left-0 h-full w-[min(17rem,80vw)] max-w-[300px] flex flex-col border-r ${a.sidePanel} transition-transform duration-300 ease-out ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
+          style={{ boxShadow: open ? '24px 0 64px rgba(0,0,0,0.35)' : undefined }}
         >
           <div className="p-3 flex items-center justify-between gap-2 border-b border-black/5 dark:border-white/10">
             <div className="flex items-center gap-2 min-w-0">
@@ -205,12 +198,8 @@ export default function AdminLayout() {
                 to={item.to}
                 onClick={closeMenu}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-semibold transition ${
-                    isActive
-                      ? 'bg-[#117ea6] text-white shadow-md shadow-[#117ea6]/25'
-                      : dark
-                      ? 'text-slate-200 hover:bg-white/10'
-                      : 'text-slate-700 hover:bg-slate-100'
+                  `flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold transition ${
+                    isActive ? a.navActive : a.navIdle
                   }`
                 }
               >
@@ -229,16 +218,14 @@ export default function AdminLayout() {
             <button
               type="button"
               onClick={toggle}
-              className={`w-full text-left text-xs font-semibold px-3 py-2 rounded-xl ${
-                dark ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-700'
-              }`}
+              className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-2xl ${a.btnGhost}`}
             >
               {dark ? '☀ Light mode' : '☾ Dark mode'}
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full text-left text-xs font-semibold px-3 py-2 rounded-xl bg-red-500/15 text-red-500"
+              className="w-full text-left text-xs font-bold px-3 py-2.5 rounded-2xl bg-red-500/15 text-red-400 border border-red-500/20"
             >
               Log out
             </button>
@@ -247,7 +234,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Full width content on laptop */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto p-3 sm:p-4 md:p-6 pb-10">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto p-4 sm:p-5 md:p-8 pb-12">
         <Outlet />
       </main>
     </div>

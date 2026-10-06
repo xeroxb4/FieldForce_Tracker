@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -9,6 +10,7 @@ function currentMonth() {
 
 export default function AdminTargets() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -56,7 +58,7 @@ export default function AdminTargets() {
           </h1>
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             Live sales vs monthly target (view only). To set targets, use{' '}
-            <Link to="/admin/settings" className="font-bold text-[#117ea6] underline">
+            <Link to="/admin/settings" className="font-bold text-[#3F258B] underline">
               Settings
             </Link>
             .
@@ -77,7 +79,7 @@ export default function AdminTargets() {
 
       <div
         className={`rounded-2xl border-2 p-4 ${
-          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/30 shadow-sm'
+          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30 shadow-sm'
         }`}
       >
         <div className="flex flex-wrap justify-between gap-3 text-sm">
@@ -95,7 +97,7 @@ export default function AdminTargets() {
           </div>
           <div>
             <div className="text-[10px] font-bold uppercase text-slate-500">Team %</div>
-            <div className="text-lg font-extrabold text-[#117ea6]">{teamPct}%</div>
+            <div className="text-lg font-extrabold text-[#3F258B]">{teamPct}%</div>
           </div>
         </div>
         <div className={`mt-3 h-2.5 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
@@ -119,7 +121,7 @@ export default function AdminTargets() {
               pct >= 100
                 ? 'bg-emerald-500'
                 : pct >= 70
-                ? 'bg-[#2596be]'
+                ? 'bg-[#3F258B]'
                 : pct >= 40
                 ? 'bg-amber-500'
                 : 'bg-rose-500';

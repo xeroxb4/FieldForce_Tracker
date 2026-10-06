@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const TIERS = ['Gold', 'Silver', 'Bronze', 'Unspecified'];
 
 export default function AdminAvcGallery() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -46,7 +48,7 @@ export default function AdminAvcGallery() {
     }
   };
 
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200';
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
 
   return (
     <div className="space-y-4">
@@ -92,7 +94,7 @@ export default function AdminAvcGallery() {
             <option value="2">2nd half (16–end)</option>
           </select>
         </label>
-        <span className="text-sm font-bold text-[#2596be] ml-auto">{total} photo(s)</span>
+        <span className="text-sm font-bold text-[#3F258B] ml-auto">{total} photo(s)</span>
       </div>
 
       {loading && <p className="text-sm text-slate-500">Loading…</p>}
@@ -105,7 +107,7 @@ export default function AdminAvcGallery() {
 
       {Object.entries(tree).map(([dist, tiers]) => (
         <div key={dist} className={`rounded-2xl border overflow-hidden ${card}`}>
-          <div className={`px-4 py-3 font-extrabold text-[#2596be] border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
+          <div className={`px-4 py-3 font-extrabold text-[#3F258B] border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             📁 {dist}
           </div>
           {TIERS.map((tier) => {
@@ -157,7 +159,7 @@ export default function AdminAvcGallery() {
                             <div className={`text-xs font-bold truncate ${dark ? 'text-white' : 'text-slate-900'}`}>
                               {p.shopName}
                             </div>
-                            <div className="text-[10px] font-semibold text-[#2596be]">
+                            <div className="text-[10px] font-semibold text-[#3F258B]">
                               {img.label || `Shelf ${ii + 1}`}
                               {p.photoCount > 1 ? ` · ${p.photoCount} total` : ''}
                             </div>
@@ -192,14 +194,14 @@ export default function AdminAvcGallery() {
           onClick={() => setPreview(null)}
         >
           <div
-            className={`max-w-lg w-full rounded-2xl overflow-hidden ${dark ? 'bg-slate-900' : 'bg-white'}`}
+            className={`max-w-lg w-full rounded-2xl overflow-hidden ${dark ? 'bg-slate-950 border border-white/10' : 'bg-white border border-slate-200 shadow-2xl'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <img src={preview.photo} alt="" className="w-full max-h-[70vh] object-contain bg-black" />
             <div className="p-4">
               <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{preview.shopName}</div>
               {preview.shelfLabel && (
-                <div className="text-xs font-semibold text-[#2596be]">{preview.shelfLabel}</div>
+                <div className="text-xs font-semibold text-[#3F258B]">{preview.shelfLabel}</div>
               )}
               <div className="text-xs opacity-70">
                 {preview.distributor} · AVC {preview.avcTier} · {preview.periodLabel}
@@ -215,7 +217,7 @@ export default function AdminAvcGallery() {
                 </button>
                 <button
                   type="button"
-                  className="py-2 rounded-xl bg-[#2596be] text-white font-bold text-sm"
+                  className="py-2 rounded-xl text-white font-bold text-sm"
                   onClick={() => setPreview(null)}
                 >
                   Close

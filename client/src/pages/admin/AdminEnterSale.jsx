@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 export default function AdminEnterSale() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
   const [products, setProducts] = useState([]);
   const [outlets, setOutlets] = useState([]);
@@ -185,7 +187,7 @@ export default function AdminEnterSale() {
               className={input}
               placeholder="Qty"
             />
-            <button type="button" onClick={addLine} className="rounded-xl bg-[#2596be]/20 text-[#2596be] font-bold text-sm">
+            <button type="button" onClick={addLine} className="rounded-xl bg-[#3F258B]/20 text-[#3F258B] font-bold text-sm">
               Add
             </button>
           </div>
@@ -256,7 +258,7 @@ export default function AdminEnterSale() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-3 rounded-xl bg-[#2596be] text-white font-bold disabled:opacity-60"
+          className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-60"
         >
           {saving ? 'Saving…' : 'Save sale for OMR'}
         </button>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -9,6 +10,7 @@ function currentMonth() {
 
 export default function AdminTargetSetup() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -108,7 +110,7 @@ export default function AdminTargetSetup() {
           </h1>
           <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
             Filter by sub-distributor, then set targets. View achievement under{' '}
-            <Link to="/admin/targets" className="font-bold text-[#117ea6] underline">
+            <Link to="/admin/targets" className="font-bold text-[#3F258B] underline">
               Targets
             </Link>
             .
@@ -128,7 +130,7 @@ export default function AdminTargetSetup() {
       {/* Sub-distributor filter — persists until cleared */}
       <div
         className={`rounded-2xl border-2 p-3 flex flex-wrap items-end gap-3 ${
-          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/30'
+          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30'
         }`}
       >
         <div className="flex-1 min-w-[200px]">
@@ -189,7 +191,7 @@ export default function AdminTargetSetup() {
               <div
                 key={u._id}
                 className={`rounded-2xl border-2 p-3 ${
-                  dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
+                  dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm'
                 }`}
               >
                 <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -224,7 +226,7 @@ export default function AdminTargetSetup() {
                     type="button"
                     disabled={saving === u._id}
                     onClick={() => saveTarget(u._id, u.fullName)}
-                    className="py-2.5 rounded-xl bg-[#2596be] text-white text-sm font-bold disabled:opacity-60"
+                    className="py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-60"
                   >
                     {saving === u._id ? 'Saving…' : 'Save'}
                   </button>

@@ -2,19 +2,33 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
-function StatCard({ title, value, sub, gradient }) {
+function StatCard({ title, value, sub, tone }) {
+  const tones = {
+    rose: 'linear-gradient(145deg, #f43f5e 0%, #e11d48 50%, #be123c 100%)',
+    sky: 'linear-gradient(145deg, #28B8F0 0%, #0ea5e9 50%, #0284c7 100%)',
+    emerald: 'linear-gradient(145deg, #34d399 0%, #059669 55%, #047857 100%)',
+  };
   return (
-    <div className={`rounded-2xl p-5 text-white shadow-lg ${gradient}`}>
-      <div className="text-sm font-semibold opacity-90">{title}</div>
-      <div className="text-2xl md:text-3xl font-extrabold mt-2 tracking-tight">{value}</div>
-      {sub && <div className="text-xs mt-2 opacity-85 font-medium">{sub}</div>}
+    <div
+      className="rounded-[1.35rem] p-5 text-white relative overflow-hidden"
+      style={{
+        background: tones[tone] || tones.sky,
+        boxShadow: '0 1px 0 rgba(255,255,255,0.2) inset, 0 16px 40px rgba(0,0,0,0.2)',
+      }}
+    >
+      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+      <div className="text-[11px] font-black uppercase tracking-[0.15em] opacity-90 relative">{title}</div>
+      <div className="text-2xl md:text-3xl font-black mt-2 tracking-tight relative">{value}</div>
+      {sub && <div className="text-xs mt-2 opacity-90 font-semibold relative">{sub}</div>}
     </div>
   );
 }
 
 export default function AdminDashboard() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [unvisited, setUnvisited] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,46 +49,45 @@ export default function AdminDashboard() {
     `GHS ${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   if (loading) {
-    return <p className={dark ? 'text-slate-400' : 'text-slate-600'}>Loading dashboard…</p>;
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="w-9 h-9 border-2 border-[#3F258B] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-            Dashboard
-          </h1>
-          <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-            FieldForce overview · sales, team & programs
-          </p>
-        </div>
-        <Link
-          to="/admin/analytics"
-          className="text-xs font-bold px-3 py-2 rounded-xl bg-[#2596be] text-white"
-        >
-          Full analysis →
-        </Link>
-      </div>
+      <AdminPageHeader
+        dark={dark}
+        eyebrow="Executive"
+        title="Dashboard"
+        subtitle="FieldForce overview · sales, team & programs"
+        right={
+          <Link to="/admin/analytics" className={a.btnPrimary} style={a.btnPrimaryStyle}>
+            Full analysis →
+          </Link>
+        }
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <StatCard
           title="Sales today"
           value={fmt(data?.sales?.today?.amount)}
           sub={`${data?.sales?.today?.orders || 0} orders`}
-          gradient="bg-gradient-to-br from-rose-400 to-pink-500"
+          tone="rose"
         />
         <StatCard
           title="This week"
           value={fmt(data?.sales?.week?.amount)}
           sub={`${data?.sales?.week?.orders || 0} orders`}
-          gradient="bg-gradient-to-br from-sky-400 to-blue-600"
+          tone="sky"
         />
         <StatCard
           title="This month"
           value={fmt(data?.sales?.month?.amount)}
           sub={`${data?.sales?.month?.orders || 0} orders`}
-          gradient="bg-gradient-to-br from-teal-400 to-emerald-600"
+          tone="emerald"
         />
       </div>
 
@@ -85,112 +98,49 @@ export default function AdminDashboard() {
           { label: 'Outlets', v: data?.counts?.outlets },
           { label: 'AVC outlets', v: data?.counts?.avc },
         ].map((x) => (
-          <div
-            key={x.label}
-            className={`rounded-2xl border-2 p-4 ${
-              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
-            }`}
-          >
-            <div className={`text-xs font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-              {x.label}
-            </div>
-            <div className={`text-2xl font-extrabold mt-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
-              {x.v ?? 0}
-            </div>
+          <div key={x.label} className={`${a.card} p-4`} style={a.cardStyle}>
+            <div className={`text-[10px] font-black uppercase tracking-wider ${a.muted}`}>{x.label}</div>
+            <div className={`text-2xl font-black mt-1.5 ${a.title}`}>{x.v ?? 0}</div>
           </div>
         ))}
       </div>
 
-      <div
-        className={`rounded-2xl border-2 p-4 ${
-          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
-        }`}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h2 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
-            Unvisited today (OMR beats)
-          </h2>
-          <Link to="/admin/outlet-sales" className="text-xs font-bold text-[#2596be]">
+      <div className={`${a.card} p-5`} style={a.cardStyle}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className={a.pageEyebrow}>Coverage</p>
+            <h2 className={`font-black text-lg ${a.title}`}>Unvisited today</h2>
+          </div>
+          <Link to="/admin/outlet-sales" className={`text-xs font-bold ${dark ? 'text-violet-300' : 'text-[#3F258B]'}`}>
             Outlet sales →
           </Link>
         </div>
-        {!unvisited && <p className="text-sm text-slate-500">Loading…</p>}
+        {!unvisited && <p className={`text-sm ${a.muted}`}>Loading…</p>}
         {unvisited?.reps?.length === 0 && (
-          <p className="text-sm text-slate-500">No OMR beat data.</p>
+          <p className={`text-sm ${a.muted}`}>No OMR beat data.</p>
         )}
-        <div className="space-y-2 max-h-80 overflow-y-auto">
+        <div className="space-y-2.5">
           {(unvisited?.reps || []).map((r) => (
             <div
-              key={r.omr._id}
-              className={`rounded-xl p-3 text-sm ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}
+              key={r.omrId || r.name}
+              className={`rounded-2xl px-3.5 py-3 flex items-center justify-between gap-3 border ${
+                dark ? 'border-white/8 bg-black/25' : 'border-slate-100 bg-slate-50'
+              }`}
             >
-              <div className="flex justify-between gap-2 font-semibold">
-                <span className={dark ? 'text-white' : 'text-slate-900'}>{r.omr.fullName}</span>
-                <span className={r.unvisitedCount ? 'text-amber-500' : 'text-emerald-500'}>
-                  {r.visitedCount}/{r.plannedCount} visited · {r.unvisitedCount} left
-                </span>
+              <div className="min-w-0">
+                <div className={`text-sm font-bold truncate ${a.title}`}>{r.name || r.fullName}</div>
+                <div className={`text-[11px] ${a.muted}`}>
+                  {r.unvisited ?? r.count ?? 0} outlets still open
+                </div>
               </div>
-              {r.unvisitedCount > 0 && (
-                <ul className={`mt-1 text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {r.unvisited.slice(0, 8).map((o) => (
-                    <li key={o._id}>• {o.name}</li>
-                  ))}
-                  {r.unvisited.length > 8 && <li>… +{r.unvisited.length - 8} more</li>}
-                </ul>
-              )}
+              <span
+                className="shrink-0 text-xs font-black px-2.5 py-1 rounded-xl text-white"
+                style={{ background: 'linear-gradient(135deg, #5b3aad, #3F258B)' }}
+              >
+                {r.unvisited ?? r.count ?? 0}
+              </span>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <div
-          className={`rounded-2xl border-2 p-4 ${
-            dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
-          }`}
-        >
-          <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
-            OMR sales today
-          </h3>
-          {!data?.omrSalesToday?.length ? (
-            <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>No orders today yet.</p>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {data.omrSalesToday.map((r, i) => (
-                <div key={i} className="flex justify-between text-sm gap-2">
-                  <div>
-                    <div className={`font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{r.omr}</div>
-                    <div className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {r.distributor || '—'} · {r.orders} order(s)
-                    </div>
-                  </div>
-                  <div className="font-bold text-[#2596be] shrink-0">{fmt(r.total)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div
-          className={`rounded-2xl border-2 p-4 ${
-            dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm'
-          }`}
-        >
-          <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
-            Month by distributor
-          </h3>
-          {!data?.distributorMonth?.length ? (
-            <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>No data yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {data.distributorMonth.map((d, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className={`font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{d.name}</span>
-                  <span className="font-bold text-[#2596be]">{fmt(d.total)}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const OMR_COLORS = [
   'from-[#117ea6] to-[#0d5f7d]',
@@ -25,6 +26,7 @@ function fmtMoney(n) {
 
 export default function AdminOutletSales() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -240,7 +242,7 @@ export default function AdminOutletSales() {
             setSelectedOmr(null);
             setSelectedOutlet(null);
           }}
-          className={step === 'omrs' ? 'text-[#117ea6]' : 'underline'}
+          className={step === 'omrs' ? 'text-[#3F258B]' : 'underline'}
         >
           OMRs
         </button>
@@ -253,7 +255,7 @@ export default function AdminOutletSales() {
                 setStep('customers');
                 setSelectedOutlet(null);
               }}
-              className={step === 'customers' ? 'text-[#117ea6]' : 'underline'}
+              className={step === 'customers' ? 'text-[#3F258B]' : 'underline'}
             >
               {selectedOmr.omrName}
             </button>
@@ -262,7 +264,7 @@ export default function AdminOutletSales() {
         {selectedOutlet && (
           <>
             <span>›</span>
-            <span className="text-[#117ea6]">{selectedOutlet.shopName}</span>
+            <span className="text-[#3F258B]">{selectedOutlet.shopName}</span>
           </>
         )}
       </div>
@@ -350,10 +352,10 @@ export default function AdminOutletSales() {
                   <div className={`text-xs mt-1 flex flex-wrap gap-3 ${muted}`}>
                     <span>{out.visits} visits</span>
                     <span>{out.orders} orders</span>
-                    <span className="font-bold text-[#117ea6]">{fmtMoney(out.totalSales)}</span>
+                    <span className="font-bold text-[#3F258B]">{fmtMoney(out.totalSales)}</span>
                     {out.lastVisit && <span>Last: {out.lastVisit}</span>}
                   </div>
-                  <div className="text-[11px] font-bold text-[#117ea6] mt-2">Open history →</div>
+                  <div className="text-[11px] font-bold text-[#3F258B] mt-2">Open history →</div>
                 </button>
               ))}
           </div>
@@ -364,7 +366,7 @@ export default function AdminOutletSales() {
         <>
           <div
             className={`rounded-2xl border p-4 ${
-              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+              dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm'
             }`}
           >
             <div className={`text-lg font-extrabold ${label}`}>{selectedOutlet.shopName}</div>
@@ -380,7 +382,7 @@ export default function AdminOutletSales() {
               </div>
               <div className={`rounded-xl p-2 text-center ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <div className={`text-[10px] uppercase font-bold ${muted}`}>Purchases</div>
-                <div className="text-sm font-extrabold text-[#117ea6]">{fmtMoney(selectedOutlet.totalSales)}</div>
+                <div className="text-sm font-extrabold text-[#3F258B]">{fmtMoney(selectedOutlet.totalSales)}</div>
               </div>
             </div>
           </div>
@@ -388,7 +390,7 @@ export default function AdminOutletSales() {
           {/* All SKUs purchased */}
           <div
             className={`rounded-2xl border p-4 ${
-              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+              dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm'
             }`}
           >
             <h3 className={`font-bold mb-2 ${label}`}>All SKUs purchased</h3>
@@ -415,7 +417,7 @@ export default function AdminOutletSales() {
           {/* Visit history */}
           <div
             className={`rounded-2xl border p-4 ${
-              dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+              dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm'
             }`}
           >
             <h3 className={`font-bold mb-2 ${label}`}>Visit history</h3>
@@ -437,13 +439,13 @@ export default function AdminOutletSales() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-extrabold text-[#117ea6]">{fmtMoney(h.amount)}</div>
+                      <div className="text-sm font-extrabold text-[#3F258B]">{fmtMoney(h.amount)}</div>
                       {h._id && (
                         <div className="flex gap-2 justify-end mt-1">
                           <button
                             type="button"
                             onClick={() => startEdit(h)}
-                            className="text-[10px] font-bold text-[#117ea6]"
+                            className="text-[10px] font-bold text-[#3F258B]"
                           >
                             Edit
                           </button>
@@ -480,7 +482,7 @@ export default function AdminOutletSales() {
 
       {/* Edit visit modal */}
       {editVisit && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm p-3">
           <div
             className={`w-full max-w-md rounded-2xl p-4 space-y-3 shadow-xl ${
               dark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
@@ -601,7 +603,7 @@ export default function AdminOutletSales() {
                   <button
                     type="button"
                     onClick={addEditSku}
-                    className="rounded-xl bg-[#117ea6]/20 text-[#117ea6] font-bold text-sm"
+                    className="rounded-xl bg-[#3F258B]/20 text-[#3F258B] font-bold text-sm"
                   >
                     Add
                   </button>
@@ -622,7 +624,7 @@ export default function AdminOutletSales() {
               )}
             </div>
             {editLines.length > 0 && (
-              <div className="text-sm font-extrabold text-[#117ea6]">
+              <div className="text-sm font-extrabold text-[#3F258B]">
                 Lines total: GHS{' '}
                 {editLines.reduce((s, l) => s + (Number(l.lineTotal) || 0), 0).toFixed(2)}
               </div>
@@ -641,7 +643,7 @@ export default function AdminOutletSales() {
                 type="button"
                 disabled={saving}
                 onClick={saveEdit}
-                className="py-2.5 rounded-xl font-bold text-sm bg-[#117ea6] text-white disabled:opacity-60"
+                className="py-2.5 rounded-xl font-bold text-sm bg-[#3F258B] text-white disabled:opacity-60"
               >
                 {saving ? 'Saving…' : 'Save changes'}
               </button>

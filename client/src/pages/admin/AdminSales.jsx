@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea Ghana'];
 
 export default function AdminSales() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [data, setData] = useState(null);
   const [filterDist, setFilterDist] = useState('');
 
@@ -14,10 +16,8 @@ export default function AdminSales() {
   }, []);
 
   const fmt = (n) => `GHS ${Number(n || 0).toLocaleString()}`;
-  const card = dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#2596be]/40 shadow-sm';
-  const inputCls = `w-full rounded-xl px-3 py-2.5 text-sm border-2 font-medium ${
-    dark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-[#2596be]/40 text-slate-900'
-  }`;
+  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const inputCls = a.input;
 
   const rows = useMemo(() => {
     const list = data?.omrSalesToday || [];
@@ -45,7 +45,7 @@ export default function AdminSales() {
             <div className={`text-xl font-extrabold mt-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
               {fmt(s?.amount)}
             </div>
-            <div className="text-xs font-semibold text-[#2596be] mt-1">{s?.orders || 0} orders</div>
+            <div className="text-xs font-semibold text-[#3F258B] mt-1">{s?.orders || 0} orders</div>
           </div>
         ))}
       </div>
@@ -76,7 +76,7 @@ export default function AdminSales() {
                   <td className={`py-2 font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{r.omr}</td>
                   <td className={dark ? 'text-slate-400' : 'text-slate-600'}>{r.distributor || '—'}</td>
                   <td className="text-right font-medium">{r.orders}</td>
-                  <td className="text-right font-bold text-[#2596be]">{fmt(r.total)}</td>
+                  <td className="text-right font-bold text-[#3F258B]">{fmt(r.total)}</td>
                 </tr>
               ))}
               {!rows.length && (

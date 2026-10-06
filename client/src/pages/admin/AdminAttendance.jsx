@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 function fmtTime(iso) {
   if (!iso) return '—';
@@ -14,6 +15,7 @@ function fmtTime(iso) {
 
 export default function AdminAttendance() {
   const { dark } = useTheme();
+  const a = useAdminPremium(dark);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [role, setRole] = useState('all');
   const [data, setData] = useState(null);
@@ -74,7 +76,7 @@ export default function AdminAttendance() {
         <button
           type="button"
           onClick={load}
-          className="px-4 py-2 rounded-xl bg-[#117ea6] text-white text-sm font-bold"
+          className="px-4 py-2 rounded-xl bg-[#3F258B] text-white text-sm font-bold"
         >
           Refresh
         </button>
@@ -127,13 +129,13 @@ export default function AdminAttendance() {
                         {r.checkedOutAt ? (
                           <div className={`text-xs ${muted}`}>Out {fmtTime(r.checkedOutAt)}</div>
                         ) : (
-                          <div className="text-xs font-semibold text-[#117ea6]">Still active</div>
+                          <div className="text-xs font-semibold text-[#3F258B]">Still active</div>
                         )}
                       </div>
                     </div>
                     {r.location?.lat != null && (
                       <a
-                        className="text-[11px] text-[#117ea6] font-medium mt-1 inline-block"
+                        className="text-[11px] text-[#3F258B] font-medium mt-1 inline-block"
                         href={`https://www.google.com/maps?q=${r.location.lat},${r.location.lng}`}
                         target="_blank"
                         rel="noreferrer"
