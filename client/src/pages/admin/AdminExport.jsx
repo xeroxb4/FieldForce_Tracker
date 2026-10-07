@@ -66,7 +66,7 @@ async function downloadXlsx(pathWithQuery, filename) {
 
 export default function AdminExport() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [startDate, setStartDate] = useState(presetRange('month').start);
   const [endDate, setEndDate] = useState(presetRange('month').end);
   const [loading, setLoading] = useState(null);
@@ -125,7 +125,7 @@ export default function AdminExport() {
         <h2 className={`text-lg font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
           Export Data
         </h2>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
           Download Excel (XLSX) reports by date range — same style as GH Productivity Report
         </p>
       </div>
@@ -222,7 +222,7 @@ export default function AdminExport() {
         <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
           Full outlet &amp; SKU history includes
         </div>
-        <ul className={`list-disc pl-4 space-y-1 mb-4 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <ul className={`list-disc pl-4 space-y-1 mb-4 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           <li><strong>Outlet Visits</strong> — every shop visit in the date range (OMR, outcome, amount)</li>
           <li><strong>Purchased SKUs</strong> — each product line (qty, unit, unit price, line total)</li>
           <li><strong>By Outlet</strong> — totals per shop for the period</li>
@@ -230,7 +230,7 @@ export default function AdminExport() {
         <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
           Productivity workbook includes
         </div>
-        <ul className={`list-disc pl-4 space-y-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <ul className={`list-disc pl-4 space-y-1 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           <li>
             <strong>Regional</strong> — coverage planned/visited, coverage %, hit rate, LPPC,
             outlet/day, target, actual sales, achievement % (Excel formulas)

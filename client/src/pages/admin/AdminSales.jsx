@@ -7,7 +7,7 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 
 export default function AdminSales() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [data, setData] = useState(null);
   const [filterDist, setFilterDist] = useState('');
 
@@ -17,7 +17,7 @@ export default function AdminSales() {
 
   const fmt = (n) => `GHS ${Number(n || 0).toLocaleString()}`;
   const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
-  const inputCls = a.input;
+  const inputCls = ap.input;
 
   const rows = useMemo(() => {
     const list = data?.omrSalesToday || [];
@@ -30,7 +30,7 @@ export default function AdminSales() {
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Sales</h1>
-      <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Today · this week · this month · per OMR (filter by distributor)
       </p>
 
@@ -41,7 +41,7 @@ export default function AdminSales() {
           ['This month', data?.sales?.month],
         ].map(([label, s]) => (
           <div key={label} className={`rounded-2xl border-2 p-4 ${card}`}>
-            <div className={`text-xs font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{label}</div>
+            <div className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{label}</div>
             <div className={`text-xl font-extrabold mt-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
               {fmt(s?.amount)}
             </div>
@@ -63,7 +63,7 @@ export default function AdminSales() {
         <div className="overflow-x-auto -mx-1 px-1">
           <table className="w-full text-sm min-w-[480px]">
             <thead>
-              <tr className={dark ? 'text-slate-400' : 'text-slate-600'}>
+              <tr className={dark ? 'text-slate-300' : 'text-slate-600'}>
                 <th className="text-left py-2 font-bold">OMR</th>
                 <th className="text-left py-2 font-bold">Distributor</th>
                 <th className="text-right py-2 font-bold">Orders</th>
@@ -74,7 +74,7 @@ export default function AdminSales() {
               {rows.map((r, i) => (
                 <tr key={i} className={`border-t ${dark ? 'border-slate-800' : 'border-slate-100'}`}>
                   <td className={`py-2 font-semibold ${dark ? 'text-white' : 'text-slate-900'}`}>{r.omr}</td>
-                  <td className={dark ? 'text-slate-400' : 'text-slate-600'}>{r.distributor || '—'}</td>
+                  <td className={dark ? 'text-slate-300' : 'text-slate-600'}>{r.distributor || '—'}</td>
                   <td className="text-right font-medium">{r.orders}</td>
                   <td className="text-right font-bold text-[#3F258B]">{fmt(r.total)}</td>
                 </tr>

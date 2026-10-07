@@ -5,7 +5,7 @@ import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 export default function AdminAvcPhotos() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [tree, setTree] = useState({});
   const [compliance, setCompliance] = useState(null);
   const [monthKey, setMonthKey] = useState(() => {
@@ -40,7 +40,7 @@ export default function AdminAvcPhotos() {
         <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
           AVC photo library
         </h1>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           Folder view: Distributor → AVC tier (Gold / Silver / Bronze) → Outlet → captures
         </p>
       </div>
@@ -58,7 +58,7 @@ export default function AdminAvcPhotos() {
               <summary className="cursor-pointer text-amber-500 font-bold">
                 {compliance.missing.length} missing
               </summary>
-              <ul className={`mt-1 space-y-1 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <ul className={`mt-1 space-y-1 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                 {compliance.missing.slice(0, 40).map((m) => (
                   <li key={m.outletId}>
                     {m.name} · {m.avcTier} · {m.distributor} · {m.omr}

@@ -6,7 +6,7 @@ import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 export default function AdminPrograms() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [outlets, setOutlets] = useState([]);
   const [filterTier, setFilterTier] = useState('');
   const [notes, setNotes] = useState(() => localStorage.getItem('ff_program_notes') || '');
@@ -23,12 +23,12 @@ export default function AdminPrograms() {
     Bronze: avc.filter((o) => o.avcTier === 'Bronze').length,
   };
   const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
-  const inputCls = a.input;
+  const inputCls = ap.input;
 
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Programs</h1>
-      <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Manage AVC membership — enrol/remove from Outlets edit
       </p>
 

@@ -10,7 +10,7 @@ function currentMonth() {
 
 export default function AdminTargetSetup() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -108,7 +108,7 @@ export default function AdminTargetSetup() {
           <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
             OMR monthly targets + planned outlets
           </h1>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             Filter by sub-distributor, then set targets. View achievement under{' '}
             <Link to="/admin/targets" className="font-bold text-[#3F258B] underline">
               Targets
@@ -161,7 +161,7 @@ export default function AdminTargetSetup() {
             Clear filter
           </button>
         )}
-        <div className={`text-xs font-semibold pb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <div className={`text-xs font-semibold pb-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           Showing {filteredOmrs.length} of {omrs.length} OMRs
           {distributor ? ` · ${distributor}` : ''}
         </div>
@@ -180,7 +180,7 @@ export default function AdminTargetSetup() {
       {loading ? (
         <p className="text-sm text-slate-500">Loading…</p>
       ) : filteredOmrs.length === 0 ? (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           No OMRs for this filter. Clear the filter or pick another sub-distributor.
         </p>
       ) : (
@@ -197,7 +197,7 @@ export default function AdminTargetSetup() {
                 <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                   {u.fullName}
                 </div>
-                <div className={`text-xs mb-2 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div className={`text-xs mb-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                   {u.distributor || 'No distributor'} · {u.territory || '—'}
                   {t && ` · Currently ${t.percentage || 0}% achieved`}
                 </div>

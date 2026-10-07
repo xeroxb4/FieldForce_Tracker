@@ -42,7 +42,7 @@ function typeMeta(type) {
 
 export default function AdminNotifications() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);
@@ -87,7 +87,7 @@ export default function AdminNotifications() {
   const shell = dark
     ? 'bg-slate-900/80 border-slate-700/80'
     : 'bg-white border-slate-200/90 shadow-sm';
-  const muted = dark ? 'text-slate-400' : 'text-slate-500';
+  const muted = dark ? 'text-slate-300' : 'text-slate-500';
   const title = dark ? 'text-white' : 'text-slate-900';
 
   return (
@@ -178,7 +178,7 @@ export default function AdminNotifications() {
                   {/* Icon */}
                   <div
                     className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-base ${meta.bg}`}
-                    style={{ color: meta.accent }}
+                    style={{ color: metap.accent }}
                   >
                     {meta.icon}
                   </div>
@@ -197,11 +197,11 @@ export default function AdminNotifications() {
                           <span
                             className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md"
                             style={{
-                              color: meta.accent,
+                              color: metap.accent,
                               background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                             }}
                           >
-                            {meta.label}
+                            {metap.label}
                           </span>
                         </div>
                         <p

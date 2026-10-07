@@ -10,7 +10,7 @@ function currentMonth() {
 
 export default function AdminTargets() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -56,7 +56,7 @@ export default function AdminTargets() {
           <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
             Target achievement
           </h1>
-          <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             Live sales vs monthly target (view only). To set targets, use{' '}
             <Link to="/admin/settings" className="font-bold text-[#3F258B] underline">
               Settings
@@ -65,7 +65,7 @@ export default function AdminTargets() {
           </p>
         </div>
         <div>
-          <label className={`text-[10px] font-bold block ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <label className={`text-[10px] font-bold block ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
             Month
           </label>
           <input
@@ -138,7 +138,7 @@ export default function AdminTargets() {
                     <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                       {u.fullName}
                     </div>
-                    <div className={`text-xs ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <div className={`text-xs ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                       {u.distributor || 'No distributor'} · {u.territory || '—'}
                     </div>
                   </div>

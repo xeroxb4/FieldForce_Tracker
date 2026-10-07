@@ -22,7 +22,7 @@ const STRUCTURE = [
 
 export default function AdminDistributors() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function AdminDistributors() {
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
         Distributors
       </h1>
-      <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Sub-distributors and the OMRs under them. Assign distributor on each OMR in Settings → Users.
       </p>
 
@@ -54,7 +54,7 @@ export default function AdminDistributors() {
               return (
                 <div key={sub.name} className={`rounded-2xl border-2 p-4 ${card}`}>
                   <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{sub.name}</div>
-                  <div className={`text-xs mb-3 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <div className={`text-xs mb-3 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                     {sub.notes} · {list.length} OMR(s)
                   </div>
                   {list.length === 0 ? (

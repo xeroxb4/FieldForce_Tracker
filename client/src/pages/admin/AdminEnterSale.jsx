@@ -5,7 +5,7 @@ import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
 
 export default function AdminEnterSale() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
   const [products, setProducts] = useState([]);
   const [outlets, setOutlets] = useState([]);
@@ -121,7 +121,7 @@ export default function AdminEnterSale() {
         <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
           Enter sale for OMR
         </h1>
-        <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           Admin only — post physical / old-app invoices into the correct outlet. OMRs cannot use this.
         </p>
       </div>

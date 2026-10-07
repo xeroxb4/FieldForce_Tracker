@@ -31,7 +31,7 @@ const NAV = [
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [unreadNotif, setUnreadNotif] = useState(0);
@@ -105,9 +105,9 @@ export default function AdminLayout() {
   const closeMenu = () => setOpen(false);
 
   return (
-    <div className={`min-h-screen flex flex-col ${a.shell}`}>
+    <div className={`min-h-screen flex flex-col ${ap.shell}`}>
       <header
-        className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b ${a.headerBar}`}
+        className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b ${ap.headerBar}`}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
@@ -143,7 +143,7 @@ export default function AdminLayout() {
         <button
           type="button"
           onClick={toggle}
-          className={`text-xs font-bold px-3.5 py-2.5 rounded-2xl shrink-0 ${a.btnGhost}`}
+          className={`text-xs font-bold px-3.5 py-2.5 rounded-2xl shrink-0 ${ap.btnGhost}`}
         >
           {dark ? '☀ Light' : '☾ Dark'}
         </button>
@@ -164,10 +164,10 @@ export default function AdminLayout() {
 
         {/* Narrow panel from left */}
         <aside
-          className={`absolute top-0 left-0 h-full w-[min(17rem,80vw)] max-w-[300px] flex flex-col border-r ${a.sidePanel} transition-transform duration-300 ease-out ${
+          className={`absolute top-0 left-0 h-full w-[min(17rem,80vw)] max-w-[300px] flex flex-col border-r ${ap.sidePanel} transition-transform duration-300 ease-out ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
-          style={{ boxShadow: open ? '24px 0 64px rgba(0,0,0,0.35)' : undefined }}
+          style={open ? ap.sidePanelStyle : undefined}
         >
           <div className="p-3 flex items-center justify-between gap-2 border-b border-black/5 dark:border-white/10">
             <div className="flex items-center gap-2 min-w-0">
@@ -199,7 +199,7 @@ export default function AdminLayout() {
                 onClick={closeMenu}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-[13px] font-bold transition ${
-                    isActive ? a.navActive : a.navIdle
+                    isActive ? ap.navActive : ap.navIdle
                   }`
                 }
               >
@@ -218,7 +218,7 @@ export default function AdminLayout() {
             <button
               type="button"
               onClick={toggle}
-              className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-2xl ${a.btnGhost}`}
+              className={`w-full text-left text-xs font-bold px-3 py-2.5 rounded-2xl ${ap.btnGhost}`}
             >
               {dark ? '☀ Light mode' : '☾ Dark mode'}
             </button>

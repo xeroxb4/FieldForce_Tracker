@@ -53,7 +53,7 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 
 export default function AdminOutlets() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [outlets, setOutlets] = useState([]);
   const [reps, setReps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export default function AdminOutlets() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const inputCls = a.input;
+  const inputCls = ap.input;
 
   const load = async () => {
     setLoading(true);
@@ -267,7 +267,7 @@ export default function AdminOutlets() {
         </div>
       </div>
 
-      <p className={`text-xs mb-2 font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-xs mb-2 font-semibold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Showing {filteredOutlets.length} outlet(s)
       </p>
 
@@ -307,7 +307,7 @@ export default function AdminOutlets() {
                       {o.status || 'unknown'}
                     </span>
                     {o.assignedDays?.length > 0 && (
-                      <span className={dark ? 'text-slate-400' : 'text-slate-500'}>
+                      <span className={dark ? 'text-slate-300' : 'text-slate-500'}>
                         · {o.assignedDays.map((d) => DAY_LABEL[d]).join(', ')}
                       </span>
                     )}
@@ -333,9 +333,9 @@ export default function AdminOutlets() {
       )}
 
       {editing && (
-        <div className={a.modalOverlay}>
-          <div className={a.modalPanel}>
-            <h3 className={`text-lg font-black ${a.title}`}>Edit outlet</h3>
+        <div className={ap.modalOverlay}>
+          <div className={ap.modalPanel}>
+            <h3 className={`text-lg font-black ${ap.title}`}>Edit outlet</h3>
             <div>
               <label className="text-xs font-bold text-slate-500">Name</label>
               <input className={inputCls} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
@@ -375,7 +375,7 @@ export default function AdminOutlets() {
                       editing.assignedDays.includes(d.value)
                         ? 'text-white'
                         : dark
-                        ? 'bg-slate-800 text-slate-400'
+                        ? 'bg-slate-800 text-slate-300'
                         : 'bg-slate-100 text-slate-600'
                     }`}
                   >

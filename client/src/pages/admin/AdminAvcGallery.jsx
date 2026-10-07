@@ -7,7 +7,7 @@ const TIERS = ['Gold', 'Silver', 'Bronze', 'Unspecified'];
 
 export default function AdminAvcGallery() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -56,7 +56,7 @@ export default function AdminAvcGallery() {
         <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
           AVC photo folder
         </h1>
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+        <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
           Shelf / planogram captures from OMRs — by distributor and AVC tier
         </p>
       </div>
@@ -100,7 +100,7 @@ export default function AdminAvcGallery() {
       {loading && <p className="text-sm text-slate-500">Loading…</p>}
 
       {Object.keys(tree).length === 0 && !loading && (
-        <p className={`text-sm ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p className={`text-sm ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
           No AVC photos for this period yet.
         </p>
       )}

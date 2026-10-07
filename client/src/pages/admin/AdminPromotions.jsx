@@ -33,7 +33,7 @@ function loadPromo() {
 
 export default function AdminPromotions() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [promo, setPromo] = useState(loadPromo);
   const [tab, setTab] = useState('gt');
   const [newName, setNewName] = useState('');
@@ -45,7 +45,7 @@ export default function AdminPromotions() {
 
   const channel = promo[tab];
   const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
-  const inputCls = a.input;
+  const inputCls = ap.input;
 
   const toggleItem = (id) => {
     const items = channel.items.map((it) =>
@@ -74,7 +74,7 @@ export default function AdminPromotions() {
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Promotions</h1>
-      <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Manage General Trade & Modern Trade promos
       </p>
 

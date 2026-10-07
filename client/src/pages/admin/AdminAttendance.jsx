@@ -15,7 +15,7 @@ function fmtTime(iso) {
 
 export default function AdminAttendance() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [role, setRole] = useState('all');
   const [data, setData] = useState(null);
@@ -46,7 +46,7 @@ export default function AdminAttendance() {
     ? 'rounded-2xl border border-slate-700 bg-slate-900 p-4'
     : 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm';
   const label = dark ? 'text-white' : 'text-slate-900';
-  const muted = dark ? 'text-slate-400' : 'text-slate-600';
+  const muted = dark ? 'text-slate-300' : 'text-slate-600';
   const input = dark
     ? 'rounded-xl border border-slate-600 bg-slate-800 text-white px-3 py-2 text-sm'
     : 'rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm';

@@ -165,7 +165,7 @@ export default function AdminProducts() {
         <h1 className={`text-lg font-extrabold ${dark ? "text-white" : "text-slate-900"}`}>
           Products
         </h1>
-        <p className={`text-sm ${dark ? "text-slate-400" : "text-slate-600"}`}>
+        <p className={`text-sm ${dark ? "text-slate-300" : "text-slate-600"}`}>
           Add or edit Nivea SKUs, prices, and product images for Log Shop.
         </p>
       </div>
@@ -344,7 +344,7 @@ export default function AdminProducts() {
                     <div className={`font-bold text-sm truncate ${dark ? "text-white" : "text-slate-900"}`}>
                       {p.name}
                     </div>
-                    <div className={`text-xs ${dark ? "text-slate-400" : "text-slate-600"}`}>
+                    <div className={`text-xs ${dark ? "text-slate-300" : "text-slate-600"}`}>
                       {p.skuCode} · {p.category} {p.size ? `· ${p.size}` : ""} · PC {p.pricePc} / Pack{" "}
                       {p.pricePack} / Ctn {p.priceCarton}
                     </div>

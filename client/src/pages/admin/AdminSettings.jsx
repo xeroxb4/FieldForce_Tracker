@@ -32,11 +32,11 @@ const LINKS = [
 
 export default function AdminSettings() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
-      <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Accounts, targets, outlets and system tools
       </p>
 
@@ -67,7 +67,7 @@ export default function AdminSettings() {
             }`}
           >
             <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{l.title}</div>
-            <div className={`text-xs mt-0.5 ${dark ? 'text-slate-400' : 'text-slate-600'}`}>{l.desc}</div>
+            <div className={`text-xs mt-0.5 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{l.desc}</div>
           </Link>
         ))}
       </div>

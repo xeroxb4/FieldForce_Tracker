@@ -22,7 +22,7 @@ function presetRange(type) {
 
 export default function AdminReports() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const month = presetRange('month');
   const [startDate, setStartDate] = useState(month.start);
   const [endDate, setEndDate] = useState(month.end);
@@ -170,7 +170,7 @@ export default function AdminReports() {
   }, [visits]);
 
   const label = dark ? 'text-slate-200' : 'text-slate-800';
-  const muted = dark ? 'text-slate-400' : 'text-slate-600';
+  const muted = dark ? 'text-slate-300' : 'text-slate-600';
   const input = dark
     ? 'w-full rounded-xl border border-slate-600 bg-slate-900 text-white px-3 py-2.5 text-sm'
     : 'w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2.5 text-sm';

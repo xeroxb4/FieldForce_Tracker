@@ -14,7 +14,7 @@ function monthBounds() {
 function StatLine({ label, value, dark }) {
   return (
     <div className="flex justify-between gap-2 text-xs">
-      <span className={dark ? 'text-slate-400' : 'text-slate-500'}>{label}</span>
+      <span className={dark ? 'text-slate-300' : 'text-slate-500'}>{label}</span>
       <span className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{value}</span>
     </div>
   );
@@ -46,7 +46,7 @@ function RankCard({ row, variant, dark }) {
           <div className={`font-extrabold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
             {row.name}
           </div>
-          <div className={`text-[11px] ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <div className={`text-[11px] ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             {row.distributor || '—'} · {row.territory || '—'}
           </div>
         </div>
@@ -128,7 +128,7 @@ async function downloadXlsx(pathWithQuery, filename) {
 
 export default function AdminAnalytics() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [data, setData] = useState(null);
   const bounds = monthBounds();
   const [startDate, setStartDate] = useState(bounds.start);
@@ -422,7 +422,7 @@ export default function AdminAnalytics() {
           <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
             Data Analysis
           </h1>
-          <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             Daily trends, top/lowest OMRs & exportable analysis
           </p>
         </div>
@@ -440,7 +440,7 @@ export default function AdminAnalytics() {
       <div className={`rounded-2xl border-2 p-3 ${card}`}>
         <div className="flex flex-wrap items-end gap-2">
           <div>
-            <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <label className={`text-[10px] font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
               From
             </label>
             <input
@@ -451,7 +451,7 @@ export default function AdminAnalytics() {
             />
           </div>
           <div>
-            <label className={`text-[10px] font-bold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <label className={`text-[10px] font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
               To
             </label>
             <input
@@ -500,7 +500,7 @@ export default function AdminAnalytics() {
             <div className={`font-extrabold text-sm mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
               {chartNarrative.title}
               {chartNarrative.period ? (
-                <span className={`font-medium text-[11px] ml-2 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className={`font-medium text-[11px] ml-2 ${dark ? 'text-slate-300' : 'text-slate-500'}`}>
                   {chartNarrative.period}
                 </span>
               ) : null}

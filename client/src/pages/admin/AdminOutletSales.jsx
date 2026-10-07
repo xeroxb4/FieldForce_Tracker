@@ -26,7 +26,7 @@ function fmtMoney(n) {
 
 export default function AdminOutletSales() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [omrs, setOmrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -185,7 +185,7 @@ export default function AdminOutletSales() {
   );
 
   const label = dark ? 'text-white' : 'text-slate-900';
-  const muted = dark ? 'text-slate-400' : 'text-slate-600';
+  const muted = dark ? 'text-slate-300' : 'text-slate-600';
   const pageBg = '';
 
   const openOmr = (o) => {

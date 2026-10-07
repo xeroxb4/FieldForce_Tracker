@@ -7,7 +7,7 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 
 export default function AdminUsers() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -25,7 +25,7 @@ export default function AdminUsers() {
     distributor: '',
   });
 
-  const inputCls = a.input;
+  const inputCls = ap.input;
 
   const load = () => {
     setLoading(true);
@@ -127,7 +127,7 @@ export default function AdminUsers() {
           <h2 className={`text-lg font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
             Users
           </h2>
-          <p className={`text-sm font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             Create & edit OMR / Merchandiser accounts
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <p className={`text-xs mb-2 font-semibold ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+      <p className={`text-xs mb-2 font-semibold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         Showing {filtered.length} of {users.length} user(s)
       </p>
 
@@ -328,7 +328,7 @@ export default function AdminUsers() {
                 <div className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
                   {u.fullName}
                 </div>
-                <div className={`text-xs font-medium ${dark ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div className={`text-xs font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                   @{u.username} · {u.role}
                 </div>
                 <div className={`text-xs ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
