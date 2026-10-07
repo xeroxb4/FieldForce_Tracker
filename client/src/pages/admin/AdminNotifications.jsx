@@ -178,7 +178,7 @@ export default function AdminNotifications() {
                   {/* Icon */}
                   <div
                     className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-base ${meta.bg}`}
-                    style={{ color: metap.accent }}
+                    style={{ color: meta.accent }}
                   >
                     {meta.icon}
                   </div>
@@ -197,11 +197,11 @@ export default function AdminNotifications() {
                           <span
                             className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md"
                             style={{
-                              color: metap.accent,
+                              color: meta.accent,
                               background: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
                             }}
                           >
-                            {metap.label}
+                            {meta.label}
                           </span>
                         </div>
                         <p
