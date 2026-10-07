@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
+import PremiumPicker from '../../components/PremiumPicker';
 
-const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea Ghana'];
+const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero'];
 
 export default function AdminUsers() {
   const { dark } = useTheme();
@@ -16,6 +17,7 @@ export default function AdminUsers() {
   const [editing, setEditing] = useState(null);
   const [status, setStatus] = useState(null);
   const [filterRole, setFilterRole] = useState('all'); // all | omr | merchandiser | admin
+  const [distOpen, setDistOpen] = useState(false);
   const [filterDist, setFilterDist] = useState('');
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({
@@ -182,18 +184,10 @@ export default function AdminUsers() {
           <label className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
             Distributor
           </label>
-          <select
-            className={inputCls}
-            value={filterDist}
-            onChange={(e) => setFilterDist(e.target.value)}
-          >
-            <option value="">All distributors</option>
-            {DISTRIBUTORS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
+          <button type="button" onClick={() => setDistOpen(true)} className={inputCls + ' text-left flex justify-between'}>
+            <span>{filterDist || 'All distributors'}</span>
+            <span className="opacity-60">▾</span>
+          </button>
         </div>
         <div>
           <label className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -349,5 +343,15 @@ export default function AdminUsers() {
         </div>
       )}
     </div>
+
+      <PremiumPicker
+        open={distOpen}
+        onClose={() => setDistOpen(false)}
+        title="Distributor"
+        options={[{ value: '', label: 'All distributors' }, ...DISTRIBUTORS.map((d) => ({ value: d, label: d }))]}
+        value={filterDist}
+        onChange={(v) => setFilterDist(v)}
+        searchable={false}
+      />
   );
 }

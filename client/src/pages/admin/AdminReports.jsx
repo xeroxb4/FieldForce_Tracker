@@ -112,7 +112,7 @@ export default function AdminReports() {
   };
 
   const distributors = useMemo(() => {
-    const s = new Set(omrs.map((u) => u.distributor).filter(Boolean));
+    const s = new Set(omrs.map((u) => u.distributor).filter((d) => d && !/^nivea\s*ghana$/i.test(String(d).trim())));
     return [...s].sort();
   }, [omrs]);
 

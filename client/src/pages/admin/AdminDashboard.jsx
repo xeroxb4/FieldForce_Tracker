@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
-import { useAdminPremium, AdminPageHeader } from "../../lib/adminPremium";
 
 function asText(v, fallback = "—") {
   if (v == null || v === "") return fallback;
@@ -23,7 +22,6 @@ function asNum(v) {
 
 export default function AdminDashboard() {
   const { dark } = useTheme();
-  const ap = useAdminPremium(dark);
   const [data, setData] = useState(null);
   const [reps, setReps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +67,23 @@ export default function AdminDashboard() {
 
   const fmt = (n) => "GHS " + asNum(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
+  // Soft suspending cards (Softphone-like)
+  const cardClass = dark
+    ? "relative overflow-visible rounded-[1.35rem] border border-white/[0.09] bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl"
+    : "relative overflow-visible rounded-[1.35rem] border border-white/90 bg-gradient-to-b from-white via-white to-slate-50/90";
+
+  const cardStyle = dark
+    ? undefined
+    : { boxShadow: "0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 22px -6px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.04)" };
+
+  const rowStyle = dark
+    ? { boxShadow: "0 1px 0 rgba(255,255,255,0.06) inset, 0 6px 16px -4px rgba(0,0,0,0.3)" }
+    : { boxShadow: "0 1px 0 rgba(255,255,255,1) inset, 0 4px 12px -2px rgba(15,23,42,0.07)" };
+
+  const titleCls = dark ? "text-white" : "text-slate-900";
+  const mutedCls = dark ? "text-slate-300" : "text-slate-600";
+  const eyebrowCls = dark ? "text-violet-200" : "text-[#3F258B]";
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -97,20 +112,23 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5">
-      <AdminPageHeader
-        dark={dark}
-        eyebrow="Executive"
-        title="Dashboard"
-        subtitle="FieldForce overview · sales, team & programs"
-        right={
-          <Link to="/admin/analytics" className={ap.btnPrimary} style={ap.btnPrimaryStyle}>
-            Full analysis →
-          </Link>
-        }
-      />
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <p className={"text-[10px] font-black uppercase tracking-[0.22em] " + eyebrowCls}>Executive</p>
+          <h1 className={"text-2xl font-black tracking-tight mt-0.5 " + titleCls}>Dashboard</h1>
+          <p className={"text-sm font-medium mt-1 " + mutedCls}>FieldForce overview · sales, team & programs</p>
+        </div>
+        <Link
+          to="/admin/analytics"
+          className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-black text-white"
+          style={{ background: "linear-gradient(145deg, #6d4ad1, #3F258B 50%, #2a1860)", boxShadow: "0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 20px rgba(63,37,139,0.32)" }}
+        >
+          Full analysis →
+        </Link>
+      </div>
 
       {error ? (
-        <div className={ap.cardSoft + " px-4 py-3 text-sm font-semibold text-red-400"} style={ap.cardSoftStyle}>
+        <div className="rounded-2xl px-4 py-3 text-sm font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
           {asText(error, "Error")}
         </div>
       ) : null}
@@ -131,32 +149,39 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {metricTiles.map((x) => (
-          <div key={x.label} className={ap.cardSoft + " p-4"} style={ap.cardSoftStyle}>
-            <div className={`text-[10px] font-black uppercase tracking-wider ${ap.muted}`}>{x.label}</div>
-            <div className={`text-2xl font-black mt-1.5 ${ap.title}`}>{x.v}</div>
+          <div key={x.label} className={cardClass + " p-4"} style={cardStyle}>
+            <div className={"text-[10px] font-black uppercase tracking-wider " + mutedCls}>{x.label}</div>
+            <div className={"text-2xl font-black mt-1.5 " + titleCls}>{x.v}</div>
           </div>
         ))}
       </div>
 
-      <div className={ap.card + " p-5"} style={ap.cardStyle}>
+      <div className={cardClass + " p-5"} style={cardStyle}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className={ap.pageEyebrow}>Coverage</p>
-            <h2 className={`font-black text-lg ${ap.title}`}>Unvisited today</h2>
+            <p className={"text-[10px] font-black uppercase tracking-[0.18em] " + eyebrowCls}>Coverage</p>
+            <h2 className={"font-black text-lg " + titleCls}>Unvisited today</h2>
           </div>
-          <Link to="/admin/outlet-sales" className={`text-xs font-bold ${dark ? "text-violet-200" : "text-[#3F258B]"}`}>
+          <Link to="/admin/outlet-sales" className={"text-xs font-bold " + (dark ? "text-violet-200" : "text-[#3F258B]")}>
             Outlet sales →
           </Link>
         </div>
         {reps.length === 0 ? (
-          <p className={`text-sm ${ap.muted}`}>No unvisited beat data for today.</p>
+          <p className={"text-sm " + mutedCls}>No unvisited beat data for today.</p>
         ) : (
           <div className="space-y-2.5">
             {reps.map((row) => (
-              <div key={row.key} className={ap.cardSoft + " px-3.5 py-3 flex items-center justify-between gap-3"} style={ap.cardSoftStyle}>
+              <div
+                key={row.key}
+                className={
+                  "rounded-[1.2rem] px-3.5 py-3 flex items-center justify-between gap-3 border " +
+                  (dark ? "admin-float-soft border-0" : "border-slate-200/80 bg-white")
+                }
+                style={rowStyle}
+              >
                 <div className="min-w-0">
-                  <div className={`text-sm font-bold truncate ${ap.title}`}>{row.label}</div>
-                  <div className={`text-[11px] ${ap.muted}`}>{row.count} outlets still open</div>
+                  <div className={"text-sm font-bold truncate " + titleCls}>{row.label}</div>
+                  <div className={"text-[11px] " + mutedCls}>{row.count} outlets still open</div>
                 </div>
                 <span
                   className="shrink-0 text-xs font-black px-2.5 py-1 rounded-xl text-white"

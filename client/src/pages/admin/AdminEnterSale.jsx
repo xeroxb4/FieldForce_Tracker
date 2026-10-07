@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAdminPremium, AdminPageHeader } from '../../lib/adminPremium';
+import PremiumPicker from '../../components/PremiumPicker';
 
 export default function AdminEnterSale() {
   const { dark } = useTheme();
@@ -23,6 +24,10 @@ export default function AdminEnterSale() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [omrOpen, setOmrOpen] = useState(false);
+  const [outletOpen, setOutletOpen] = useState(false);
+  const [productOpen, setProductOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
 
   useEffect(() => {
     api.get('/admin/users?role=omr').then((r) => setOmrs(r.data || [])).catch(() => {});
@@ -126,33 +131,31 @@ export default function AdminEnterSale() {
       <form onSubmit={submit} className={`${card} p-5 space-y-4`} style={cardStyle}>
         <div>
           <label className={ap.label}>OMR *</label>
-          <select value={omrId} onChange={(e) => setOmrId(e.target.value)} className={input} required>
-            <option value="">Select OMR…</option>
-            {omrs.map((u) => (
-              <option key={u._id} value={u._id}>
-                {u.fullName} {u.distributor ? `· ${u.distributor}` : ''}
-              </option>
-            ))}
-          </select>
+          <button type="button" onClick={() => setOmrOpen(true)} className={input + ' text-left flex justify-between items-center'}>
+            <span className={!omrId ? (dark ? 'text-slate-400' : 'text-slate-400') : ''}>
+              {omrs.find((u) => String(u._id) === String(omrId))
+                ? `${omrs.find((u) => String(u._id) === String(omrId)).fullName}${omrs.find((u) => String(u._id) === String(omrId)).distributor ? ' · ' + omrs.find((u) => String(u._id) === String(omrId)).distributor : ''}`
+                : 'Select OMR…'}
+            </span>
+            <span className="opacity-60">▾</span>
+          </button>
         </div>
 
         <div>
           <label className={ap.label}>Outlet *</label>
-          <select
-            value={outletId}
-            onChange={(e) => setOutletId(e.target.value)}
-            className={input}
-            required
+          <button
+            type="button"
             disabled={!omrId}
+            onClick={() => omrId && setOutletOpen(true)}
+            className={input + ' text-left flex justify-between items-center disabled:opacity-50'}
           >
-            <option value="">Select outlet…</option>
-            {outlets.map((o) => (
-              <option key={o._id} value={o._id}>
-                {o.displayName || o.name}
-                {o.avcTier ? ` · AVC ${o.avcTier}` : ''}
-              </option>
-            ))}
-          </select>
+            <span>
+              {outlets.find((o) => String(o._id) === String(outletId))
+                ? `${outlets.find((o) => String(o._id) === String(outletId)).displayName || outlets.find((o) => String(o._id) === String(outletId)).name}`
+                : 'Select outlet…'}
+            </span>
+            <span className="opacity-60">▾</span>
+          </button>
         </div>
 
         <div>
@@ -234,10 +237,10 @@ export default function AdminEnterSale() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={ap.label}>Payment</label>
-            <select value={paymentType} onChange={(e) => setPaymentType(e.target.value)} className={input}>
-              <option value="cash">Cash</option>
-              <option value="credit">Credit</option>
-            </select>
+            <button type="button" onClick={() => setPayOpen(true)} className={input + ' text-left flex justify-between'}>
+              <span>{paymentType === 'credit' ? 'Credit' : 'Cash'}</span>
+              <span className="opacity-60">▾</span>
+            </button>
           </div>
           {paymentType === 'credit' && (
             <div>
@@ -290,5 +293,46 @@ export default function AdminEnterSale() {
         </button>
       </form>
     </div>
+
+      <PremiumPicker
+        open={omrOpen}
+        onClose={() => setOmrOpen(false)}
+        title="Select OMR"
+        options={omrs.map((u) => ({
+          value: u._id,
+          label: u.fullName,
+          sub: u.distributor && !/^nivea\s*ghana$/i.test(String(u.distributor).trim()) ? u.distributor : '',
+        }))}
+        value={omrId}
+        onChange={(v) => {
+          setOmrId(v);
+          setOutletId('');
+        }}
+      />
+      <PremiumPicker
+        open={outletOpen}
+        onClose={() => setOutletOpen(false)}
+        title="Select outlet"
+        options={outlets.map((o) => ({
+          value: o._id,
+          label: o.displayName || o.name,
+          sub: [o.channelType || o.classification, o.avcTier ? `AVC ${o.avcTier}` : ''].filter(Boolean).join(' · '),
+        }))}
+        value={outletId}
+        onChange={(v) => setOutletId(v)}
+      />
+      <PremiumPicker
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        title="Payment"
+        options={[
+          { value: 'cash', label: 'Cash' },
+          { value: 'credit', label: 'Credit' },
+        ]}
+        value={paymentType}
+        onChange={(v) => setPaymentType(v)}
+        searchable={false}
+      />
+
   );
 }
