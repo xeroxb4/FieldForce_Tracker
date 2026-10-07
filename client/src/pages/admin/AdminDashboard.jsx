@@ -3,7 +3,24 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
 
-/** Safe admin dashboard — no external design imports (avoids blank screen) */
+/** Never render raw objects as React children */
+function asText(v, fallback = "—") {
+  if (v == null || v === "") return fallback;
+  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+  if (typeof v === "object") {
+    if (v.name != null && (typeof v.name === "string" || typeof v.name === "number")) return String(v.name);
+    if (v.fullName != null) return String(v.fullName);
+    if (v.label != null) return String(v.label);
+    return fallback;
+  }
+  return fallback;
+}
+
+function asNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export default function AdminDashboard() {
   const { dark } = useTheme();
   const [data, setData] = useState(null);
@@ -21,19 +38,43 @@ export default function AdminDashboard() {
         ]);
         if (cancelled) return;
         if (dashRes.status === "fulfilled") {
-          setData(dashRes.value && dashRes.value.data ? dashRes.value.data : null);
+          setData(dashRes.value?.data ?? null);
         } else {
           setError("Could not load dashboard stats");
         }
         if (uvRes.status === "fulfilled") {
-          const raw = uvRes.value && uvRes.value.data ? uvRes.value.data : null;
+          const raw = uvRes.value?.data;
           let list = [];
-          if (raw && Array.isArray(raw.reps)) list = raw.reps;
+          if (Array.isArray(raw?.reps)) list = raw.reps;
+          else if (Array.isArray(raw?.omrs)) list = raw.omrs;
           else if (Array.isArray(raw)) list = raw;
+          // Normalize each row so we never put objects in JSX text
+          list = list.map((row, idx) => {
+            if (!row || typeof row !== "object") {
+              return { key: String(idx), label: "OMR", count: 0 };
+            }
+            // Row might be an outlet {_id, name, address}
+            const label = asText(
+              row.omrName || row.fullName || row.name || row.omr || row.user,
+              "OMR"
+            );
+            const count = asNum(
+              row.unvisited ??
+                row.count ??
+                row.unvisitedCount ??
+                (Array.isArray(row.outlets) ? row.outlets.length : 0) ??
+                (Array.isArray(row.unvisitedOutlets) ? row.unvisitedOutlets.length : 0)
+            );
+            return {
+              key: String(row.omrId || row._id || row.id || label || idx),
+              label,
+              count,
+            };
+          });
           setReps(list);
         }
       } catch (e) {
-        if (!cancelled) setError((e && e.message) || "Load failed");
+        if (!cancelled) setError(e?.message || "Load failed");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -44,11 +85,7 @@ export default function AdminDashboard() {
   }, []);
 
   const fmt = (n) =>
-    "GHS " + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
-
-  const shell = dark
-    ? undefined
-    : undefined;
+    "GHS " + asNum(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   const cardClass = dark
     ? "relative overflow-hidden rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-xl"
@@ -70,41 +107,41 @@ export default function AdminDashboard() {
     );
   }
 
-  const salesToday = data && data.sales && data.sales.today ? data.sales.today : {};
-  const salesWeek = data && data.sales && data.sales.week ? data.sales.week : {};
-  const salesMonth = data && data.sales && data.sales.month ? data.sales.month : {};
-  const counts = data && data.counts ? data.counts : {};
+  const salesToday = data?.sales?.today || {};
+  const salesWeek = data?.sales?.week || {};
+  const salesMonth = data?.sales?.month || {};
+  const counts = data?.counts || {};
 
   const statTiles = [
     {
       title: "Sales today",
       value: fmt(salesToday.amount),
-      sub: (salesToday.orders || 0) + " orders",
+      sub: asNum(salesToday.orders) + " orders",
       bg: "linear-gradient(145deg, #f43f5e 0%, #e11d48 55%, #be123c 100%)",
     },
     {
       title: "This week",
       value: fmt(salesWeek.amount),
-      sub: (salesWeek.orders || 0) + " orders",
+      sub: asNum(salesWeek.orders) + " orders",
       bg: "linear-gradient(145deg, #28B8F0 0%, #0ea5e9 55%, #0284c7 100%)",
     },
     {
       title: "This month",
       value: fmt(salesMonth.amount),
-      sub: (salesMonth.orders || 0) + " orders",
+      sub: asNum(salesMonth.orders) + " orders",
       bg: "linear-gradient(145deg, #34d399 0%, #059669 55%, #047857 100%)",
     },
   ];
 
   const metricTiles = [
-    { label: "Active OMRs", v: counts.omrs },
-    { label: "Merchandisers", v: counts.merchandisers },
-    { label: "Outlets", v: counts.outlets },
-    { label: "AVC outlets", v: counts.avc },
+    { label: "Active OMRs", v: asNum(counts.omrs) },
+    { label: "Merchandisers", v: asNum(counts.merchandisers) },
+    { label: "Outlets", v: asNum(counts.outlets) },
+    { label: "AVC outlets", v: asNum(counts.avc) },
   ];
 
   return (
-    <div className="space-y-6" style={shell}>
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <p className={"text-[10px] font-black uppercase tracking-[0.22em] " + eyebrowCls}>
@@ -129,7 +166,7 @@ export default function AdminDashboard() {
 
       {error ? (
         <div className="rounded-2xl px-4 py-3 text-sm font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
-          {error}
+          {asText(error, "Error")}
         </div>
       ) : null}
 
@@ -157,7 +194,7 @@ export default function AdminDashboard() {
         {metricTiles.map((x) => (
           <div key={x.label} className={cardClass + " p-4"} style={cardStyle}>
             <div className={"text-[10px] font-black uppercase tracking-wider " + mutedCls}>{x.label}</div>
-            <div className={"text-2xl font-black mt-1.5 " + titleCls}>{x.v ?? 0}</div>
+            <div className={"text-2xl font-black mt-1.5 " + titleCls}>{x.v}</div>
           </div>
         ))}
       </div>
@@ -179,35 +216,31 @@ export default function AdminDashboard() {
           <p className={"text-sm " + mutedCls}>No unvisited beat data for today.</p>
         ) : (
           <div className="space-y-2.5">
-            {reps.map((r, i) => {
-              const name = (r && (r.name || r.fullName)) || "OMR";
-              const n = (r && (r.unvisited ?? r.count)) ?? 0;
-              return (
-                <div
-                  key={String((r && r.omrId) || name || i)}
-                  className={
-                    "rounded-2xl px-3.5 py-3 flex items-center justify-between gap-3 border " +
-                    (dark ? "border-white/10 bg-black/30" : "border-slate-100 bg-slate-50")
-                  }
-                  style={
-                    dark
-                      ? { boxShadow: "0 12px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)" }
-                      : { boxShadow: "0 4px 12px rgba(15,23,42,0.05)" }
-                  }
-                >
-                  <div className="min-w-0">
-                    <div className={"text-sm font-bold truncate " + titleCls}>{name}</div>
-                    <div className={"text-[11px] " + mutedCls}>{n} outlets still open</div>
-                  </div>
-                  <span
-                    className="shrink-0 text-xs font-black px-2.5 py-1 rounded-xl text-white"
-                    style={{ background: "linear-gradient(135deg, #5b3aad, #3F258B)" }}
-                  >
-                    {n}
-                  </span>
+            {reps.map((row) => (
+              <div
+                key={row.key}
+                className={
+                  "rounded-2xl px-3.5 py-3 flex items-center justify-between gap-3 border " +
+                  (dark ? "border-white/10 bg-black/30" : "border-slate-100 bg-slate-50")
+                }
+                style={
+                  dark
+                    ? { boxShadow: "0 12px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)" }
+                    : { boxShadow: "0 4px 12px rgba(15,23,42,0.05)" }
+                }
+              >
+                <div className="min-w-0">
+                  <div className={"text-sm font-bold truncate " + titleCls}>{row.label}</div>
+                  <div className={"text-[11px] " + mutedCls}>{row.count} outlets still open</div>
                 </div>
-              );
-            })}
+                <span
+                  className="shrink-0 text-xs font-black px-2.5 py-1 rounded-xl text-white"
+                  style={{ background: "linear-gradient(135deg, #5b3aad, #3F258B)" }}
+                >
+                  {row.count}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </div>
