@@ -27,6 +27,8 @@ function fmtMoney(n) {
 export default function AdminOutletSales() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [omrs, setOmrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');

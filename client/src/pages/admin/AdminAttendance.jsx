@@ -42,9 +42,8 @@ export default function AdminAttendance() {
     load();
   }, [date, role]);
 
-  const card = dark
-    ? 'rounded-2xl border border-slate-700 bg-slate-900 p-4'
-    : 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const label = dark ? 'text-white' : 'text-slate-900';
   const muted = dark ? 'text-slate-300' : 'text-slate-600';
   const input = dark
@@ -60,7 +59,7 @@ export default function AdminAttendance() {
         </p>
       </div>
 
-      <div className={`flex flex-wrap gap-3 items-end ${card}`}>
+      <div className={`flex flex-wrap gap-3 items-end ${card}`} style={cardStyle} style={cardStyle}>
         <div>
           <label className={`text-xs font-bold ${muted}`}>Date</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`block mt-1 ${input}`} />

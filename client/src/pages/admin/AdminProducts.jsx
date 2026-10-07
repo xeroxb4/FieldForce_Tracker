@@ -62,7 +62,8 @@ export default function AdminProducts() {
   const fileRef = useRef(null);
 
   const inputCls = ap.input;
-  const card = dark ? "bg-slate-900 border-slate-700" : "bg-white border-[#3F258B]/40 shadow-sm";
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
 
   const load = () => {
     setLoading(true);
@@ -182,7 +183,7 @@ export default function AdminProducts() {
         </div>
       )}
 
-      <form onSubmit={save} className={`rounded-2xl border-2 p-4 space-y-3 ${card}`}>
+      <form onSubmit={save} className={`rounded-[1.5rem] p-4 space-y-3 ${card}`} style={cardStyle} style={cardStyle}>
         <div className={`text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>
           {editing ? "Edit product" : "New product"}
         </div>
@@ -325,7 +326,7 @@ export default function AdminProducts() {
           {list.map((p) => (
             <div
               key={p._id}
-              className={`rounded-2xl border-2 p-3 ${card} ${!p.isActive ? "opacity-50" : ""}`}
+              className={`rounded-[1.5rem] p-3 ${card} ${!p.isActive ? "opacity-50" : ""}`} style={cardStyle} style={cardStyle}
             >
               <div className="flex justify-between gap-3">
                 <div className="flex gap-3 min-w-0">

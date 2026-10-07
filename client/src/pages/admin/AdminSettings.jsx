@@ -33,6 +33,8 @@ const LINKS = [
 export default function AdminSettings() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   return (
     <div className="space-y-4">
       <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
@@ -41,7 +43,7 @@ export default function AdminSettings() {
       </p>
 
       <div
-        className={`rounded-2xl border-2 p-4 text-sm ${
+        className={`rounded-[1.5rem] p-4 text-sm ${
           dark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-[#e6f2f7] border-[#3F258B]/40 text-slate-800'
         }`}
       >
@@ -60,7 +62,7 @@ export default function AdminSettings() {
           <Link
             key={l.to}
             to={l.to}
-            className={`block rounded-2xl border-2 p-4 transition ${
+            className={`block rounded-[1.5rem] p-4 transition ${
               dark
                 ? 'bg-slate-900 border-slate-700 hover:border-[#3F258B]'
                 : 'bg-white border-[#3F258B]/40 shadow-sm hover:border-[#3F258B]'

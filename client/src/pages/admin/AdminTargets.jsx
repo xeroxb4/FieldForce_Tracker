@@ -11,6 +11,8 @@ function currentMonth() {
 export default function AdminTargets() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -78,7 +80,7 @@ export default function AdminTargets() {
       </div>
 
       <div
-        className={`rounded-2xl border-2 p-4 ${
+        className={`rounded-[1.5rem] p-4 ${
           dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30 shadow-sm'
         }`}
       >
@@ -129,7 +131,7 @@ export default function AdminTargets() {
             return (
               <div
                 key={u._id}
-                className={`rounded-2xl border-2 p-4 ${
+                className={`rounded-[1.5rem] p-4 ${
                   dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
                 }`}
               >

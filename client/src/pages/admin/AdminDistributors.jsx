@@ -29,7 +29,8 @@ export default function AdminDistributors() {
     api.get('/admin/users?role=omr').then((r) => setOmrs(r.data || [])).catch(() => {});
   }, []);
 
-  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
 
   const under = (name) =>
     omrs.filter((u) => (u.distributor || '').toLowerCase().includes(name.toLowerCase()));
@@ -52,7 +53,7 @@ export default function AdminDistributors() {
             {region.subs.map((sub) => {
               const list = under(sub.name);
               return (
-                <div key={sub.name} className={`rounded-2xl border-2 p-4 ${card}`}>
+                <div key={sub.name} className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
                   <div className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>{sub.name}</div>
                   <div className={`text-xs mb-3 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
                     {sub.notes} · {list.length} OMR(s)

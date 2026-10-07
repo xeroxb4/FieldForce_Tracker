@@ -43,6 +43,8 @@ function typeMeta(type) {
 export default function AdminNotifications() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);

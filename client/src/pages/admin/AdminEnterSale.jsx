@@ -111,9 +111,8 @@ export default function AdminEnterSale() {
   const input = dark
     ? 'w-full rounded-xl border border-slate-600 bg-slate-900 text-white px-3 py-2.5 text-sm'
     : 'w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2.5 text-sm';
-  const card = dark
-    ? 'rounded-2xl border border-slate-700 bg-slate-900 p-4'
-    : 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
 
   return (
     <div className="space-y-4 max-w-2xl">
@@ -126,7 +125,7 @@ export default function AdminEnterSale() {
         </p>
       </div>
 
-      <form onSubmit={submit} className={`space-y-3 ${card}`}>
+      <form onSubmit={submit} className={`space-y-3 ${card}`} style={cardStyle} style={cardStyle}>
         <div>
           <label className={`text-xs font-bold ${label}`}>OMR *</label>
           <select value={omrId} onChange={(e) => setOmrId(e.target.value)} className={input} required>

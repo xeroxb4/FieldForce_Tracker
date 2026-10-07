@@ -16,7 +16,8 @@ export default function AdminSales() {
   }, []);
 
   const fmt = (n) => `GHS ${Number(n || 0).toLocaleString()}`;
-  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const inputCls = ap.input;
 
   const rows = useMemo(() => {
@@ -40,7 +41,7 @@ export default function AdminSales() {
           ['This week', data?.sales?.week],
           ['This month', data?.sales?.month],
         ].map(([label, s]) => (
-          <div key={label} className={`rounded-2xl border-2 p-4 ${card}`}>
+          <div key={label} className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
             <div className={`text-xs font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{label}</div>
             <div className={`text-xl font-extrabold mt-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
               {fmt(s?.amount)}
@@ -50,7 +51,7 @@ export default function AdminSales() {
         ))}
       </div>
 
-      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>Daily sales by OMR</h3>
           <select className={`${inputCls} sm:max-w-xs`} value={filterDist} onChange={(e) => setFilterDist(e.target.value)}>

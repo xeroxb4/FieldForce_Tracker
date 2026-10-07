@@ -48,7 +48,8 @@ export default function AdminAvcGallery() {
     }
   };
 
-  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
 
   return (
     <div className="space-y-4">
@@ -61,7 +62,7 @@ export default function AdminAvcGallery() {
         </p>
       </div>
 
-      <div className={`rounded-2xl border p-3 flex flex-wrap gap-2 items-end ${card}`}>
+      <div className={`rounded-2xl border p-3 flex flex-wrap gap-2 items-end ${card}`} style={cardStyle} style={cardStyle}>
         <label className="text-xs">
           Month
           <input
@@ -106,7 +107,7 @@ export default function AdminAvcGallery() {
       )}
 
       {Object.entries(tree).map(([dist, tiers]) => (
-        <div key={dist} className={`rounded-2xl border overflow-hidden ${card}`}>
+        <div key={dist} className={`rounded-2xl border overflow-hidden ${card}`} style={cardStyle} style={cardStyle}>
           <div className={`px-4 py-3 font-extrabold text-[#3F258B] border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             📁 {dist}
           </div>

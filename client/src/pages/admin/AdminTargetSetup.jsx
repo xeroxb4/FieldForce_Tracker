@@ -11,6 +11,8 @@ function currentMonth() {
 export default function AdminTargetSetup() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [month, setMonth] = useState(currentMonth());
   const [omrs, setOmrs] = useState([]);
   const [targets, setTargets] = useState([]);
@@ -129,7 +131,7 @@ export default function AdminTargetSetup() {
 
       {/* Sub-distributor filter — persists until cleared */}
       <div
-        className={`rounded-2xl border-2 p-3 flex flex-wrap items-end gap-3 ${
+        className={`rounded-[1.5rem] p-3 flex flex-wrap items-end gap-3 ${
           dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30'
         }`}
       >
@@ -190,7 +192,7 @@ export default function AdminTargetSetup() {
             return (
               <div
                 key={u._id}
-                className={`rounded-2xl border-2 p-3 ${
+                className={`rounded-[1.5rem] p-3 ${
                   dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm'
                 }`}
               >

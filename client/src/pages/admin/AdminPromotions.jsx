@@ -44,7 +44,8 @@ export default function AdminPromotions() {
   };
 
   const channel = promo[tab];
-  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const inputCls = ap.input;
 
   const toggleItem = (id) => {
@@ -100,7 +101,7 @@ export default function AdminPromotions() {
         ))}
       </div>
 
-      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
         <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>{channel.title}</h3>
         <div className="space-y-2">
           {channel.items.map((it) => (

@@ -22,7 +22,8 @@ export default function AdminPrograms() {
     Silver: avc.filter((o) => o.avcTier === 'Silver').length,
     Bronze: avc.filter((o) => o.avcTier === 'Bronze').length,
   };
-  const card = dark ? 'bg-gradient-to-br from-white/[0.07] to-transparent border-white/10' : 'bg-white border-slate-200/90 shadow-sm';
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const inputCls = ap.input;
 
   return (
@@ -54,7 +55,7 @@ export default function AdminPrograms() {
         ))}
       </div>
 
-      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
             AVC outlets {filterTier ? `· ${filterTier}` : ''}
@@ -81,7 +82,7 @@ export default function AdminPrograms() {
         )}
       </div>
 
-      <div className={`rounded-2xl border-2 p-4 ${card}`}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
         <h3 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>Program notes</h3>
         <textarea
           className={inputCls}

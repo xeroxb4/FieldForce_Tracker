@@ -54,6 +54,8 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 export default function AdminOutlets() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [outlets, setOutlets] = useState([]);
   const [reps, setReps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -280,7 +282,7 @@ export default function AdminOutlets() {
           {filteredOutlets.map((o) => (
             <div
               key={o._id}
-              className={`rounded-2xl border-2 p-3 ${
+              className={`rounded-[1.5rem] p-3 ${
                 (o.status || '').toLowerCase() === 'pending'
                   ? dark
                     ? 'bg-amber-950/40 border-amber-400'

@@ -8,6 +8,8 @@ const DISTRIBUTORS = ['Amata', 'Daddy Ash', 'Daniel Adjei', 'Ernievero', 'Nivea 
 export default function AdminUsers() {
   const { dark } = useTheme();
   const ap = useAdminPremium(dark);
+  const card = ap.card;
+  const cardStyle = ap.cardStyle;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -213,7 +215,7 @@ export default function AdminUsers() {
       {(showForm || editing) && (
         <form
           onSubmit={editing ? handleUpdate : handleCreate}
-          className={`rounded-2xl border-2 p-4 mb-4 space-y-3 ${
+          className={`rounded-[1.5rem] p-4 mb-4 space-y-3 ${
             dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/40'
           }`}
         >
