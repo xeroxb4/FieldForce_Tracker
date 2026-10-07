@@ -101,7 +101,7 @@ export default function AdminPromotions() {
         ))}
       </div>
 
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>{channel.title}</h3>
         <div className="space-y-2">
           {channel.items.map((it) => (

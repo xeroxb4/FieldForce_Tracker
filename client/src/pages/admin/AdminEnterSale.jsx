@@ -120,6 +120,7 @@ export default function AdminEnterSale() {
   const softStyle = ap.cardSoftStyle;
 
   return (
+    <>
     <div className="space-y-5 max-w-2xl">
       <AdminPageHeader
         dark={dark}
@@ -333,6 +334,7 @@ export default function AdminEnterSale() {
         onChange={(v) => setPaymentType(v)}
         searchable={false}
       />
-
+    </>
   );
 }
+

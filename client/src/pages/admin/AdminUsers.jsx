@@ -125,6 +125,7 @@ export default function AdminUsers() {
   };
 
   return (
+    <>
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
         <div>
@@ -353,5 +354,7 @@ export default function AdminUsers() {
         onChange={(v) => setFilterDist(v)}
         searchable={false}
       />
+    </>
   );
 }
+

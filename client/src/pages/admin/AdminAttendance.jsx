@@ -59,7 +59,7 @@ export default function AdminAttendance() {
         </p>
       </div>
 
-      <div className={`flex flex-wrap gap-3 items-end ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`flex flex-wrap gap-3 items-end ${card}`} style={cardStyle}>
         <div>
           <label className={`text-xs font-bold ${muted}`}>Date</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`block mt-1 ${input}`} />
