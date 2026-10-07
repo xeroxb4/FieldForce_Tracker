@@ -105,7 +105,7 @@ export default function AdminLayout() {
   const closeMenu = () => setOpen(false);
 
   return (
-    <div className={`min-h-screen flex flex-col ${ap.shell}`}>
+    <div className={`min-h-screen flex flex-col admin-premium-font ${ap.shell}`}>
       <header
         className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-3 sm:px-4 py-3 border-b ${ap.headerBar}`}
       >
