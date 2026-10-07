@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
+import { useAdminPremium } from "../../lib/adminPremium";
 
 const CATEGORIES = ["Roll-on", "Spray", "Lotion", "Shower Gel", "Body Care", "Other"];
 
@@ -52,7 +53,7 @@ function compressImage(dataUrl, quality = 0.78, frame = 280) {
 
 export default function AdminProducts() {
   const { dark } = useTheme();
-  const a = useAdminPremium(dark);
+  const ap = useAdminPremium(dark);
   const [list, setList] = useState([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -60,14 +61,14 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const fileRef = useRef(null);
 
-  const inputCls = a.input;
+  const inputCls = ap.input;
   const card = dark ? "bg-slate-900 border-slate-700" : "bg-white border-[#3F258B]/40 shadow-sm";
 
   const load = () => {
     setLoading(true);
     api
       .get("/admin/products")
-      .then((r) => setList(r.data || []))
+      .then((r) => setList(Array.isArray(r.data) ? r.data : (r.data?.products || [])))
       .catch(() => setStatus({ type: "error", msg: "Failed to load products" }))
       .finally(() => setLoading(false));
   };
