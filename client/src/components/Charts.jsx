@@ -11,11 +11,13 @@ export function LineChart({
   // Wide viewBox so the plot uses the full card width (not a small centered strip)
   const w = 640;
   const h = height;
-  const padL = 48;
-  const padR = 28;
-  const padT = 16;
-  const padB = 36;
-  const colors = ['#3F258B', '#28B8F0', '#10b981', '#f43f5e', '#AB6BF0'];
+  const padL = 52;
+  const padR = 32;
+  const padT = 24;
+  const padB = 40;
+  const colors = dark
+    ? ['#A78BFA', '#38BDF8', '#34D399', '#FB7185', '#FBBF24']
+    : ['#3F258B', '#28B8F0', '#10b981', '#f43f5e', '#AB6BF0'];
 
   const prepared = series.map((s) => {
     const vals = (s.values || []).map((v) => Number(v) || 0);
@@ -45,7 +47,17 @@ export function LineChart({
   };
 
   return (
-    <div className="w-full">
+    <div
+      className="w-full rounded-2xl p-2"
+      style={
+        dark
+          ? {
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(15,23,42,0.4) 100%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+            }
+          : undefined
+      }
+    >
       {/*
         width 100% + no max-height: avoids letterboxing that left huge empty side margins
       */}
@@ -65,7 +77,7 @@ export function LineChart({
                 x2={w - padR}
                 y1={y}
                 y2={y}
-                stroke={dark ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.35)'}
+                stroke={dark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)'}
                 strokeWidth="1"
               />
               <text
@@ -73,7 +85,7 @@ export function LineChart({
                 y={y + 3}
                 textAnchor="end"
                 fontSize="11"
-                fill={dark ? '#94a3b8' : '#64748b'}
+                fill={dark ? '#e2e8f0' : '#64748b'}
                 fontWeight="600"
               >
                 {formatY(t)}
@@ -99,7 +111,7 @@ export function LineChart({
             <polyline
               fill="none"
               stroke={colors[si % colors.length]}
-              strokeWidth="2.5"
+              strokeWidth="3"
               strokeLinejoin="round"
               strokeLinecap="round"
               points={points(s.drawn)}
@@ -133,7 +145,7 @@ export function LineChart({
               y={h - 12}
               textAnchor="middle"
               fontSize="10"
-              fill={dark ? '#94a3b8' : '#64748b'}
+              fill={dark ? '#e2e8f0' : '#64748b'}
               fontWeight="600"
             >
               {short}

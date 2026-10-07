@@ -33,7 +33,11 @@ export default function AdminDistributors() {
   const cardStyle = ap.cardStyle;
 
   const under = (name) =>
-    omrs.filter((u) => (u.distributor || '').toLowerCase().includes(name.toLowerCase()));
+    omrs.filter((u) => {
+      const d = (u.distributor || '').trim();
+      if (/^nivea\s*ghana$/i.test(d)) return false;
+      return d.toLowerCase().includes(name.toLowerCase());
+    });
 
   return (
     <div className="space-y-4">

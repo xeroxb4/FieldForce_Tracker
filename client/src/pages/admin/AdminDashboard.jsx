@@ -69,11 +69,11 @@ export default function AdminDashboard() {
 
   // Soft suspending cards (Softphone-like)
   const cardClass = dark
-    ? "relative overflow-hidden rounded-[1.5rem] border border-white/[0.09] bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl"
-    : "relative overflow-hidden rounded-[1.5rem] border border-white/90 bg-gradient-to-b from-white via-white to-slate-50/90";
+    ? "relative overflow-visible rounded-[1.35rem] border border-white/[0.09] bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl"
+    : "relative overflow-visible rounded-[1.35rem] border border-white/90 bg-gradient-to-b from-white via-white to-slate-50/90";
 
   const cardStyle = dark
-    ? { boxShadow: "0 1px 0 0 rgba(255,255,255,0.08) inset, 0 10px 28px -6px rgba(0,0,0,0.38), 0 2px 6px rgba(0,0,0,0.18)" }
+    ? { boxShadow: "0 1.5px 0 0 rgba(255,255,255,0.16) inset, 0 4px 8px rgba(0,0,0,0.25), 0 18px 40px -8px rgba(0,0,0,0.65), 0 0 0 1px rgba(63,37,139,0.25)" }
     : { boxShadow: "0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 22px -6px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.04)" };
 
   const rowStyle = dark
