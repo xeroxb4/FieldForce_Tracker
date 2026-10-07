@@ -347,7 +347,7 @@ export default function AdminOutletSales() {
                   type="button"
                   onClick={() => openOutlet(out)}
                   className={`w-full text-left rounded-2xl border p-4 ${
-                    dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+                    dark ? 'admin-float border-0' : 'bg-white border-slate-200 shadow-sm'
                   }`}
                 >
                   <div className={`font-bold ${label}`}>{out.shopName}</div>
@@ -374,15 +374,15 @@ export default function AdminOutletSales() {
             <div className={`text-lg font-extrabold ${label}`}>{selectedOutlet.shopName}</div>
             <div className={`text-sm ${muted}`}>{selectedOmr?.omrName}</div>
             <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className={`rounded-xl p-2 text-center ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <div className={`rounded-xl p-2 text-center ${dark ? 'admin-float-soft' : 'bg-slate-50'}`}>
                 <div className={`text-[10px] uppercase font-bold ${muted}`}>Orders</div>
                 <div className={`text-xl font-extrabold ${label}`}>{selectedOutlet.orders}</div>
               </div>
-              <div className={`rounded-xl p-2 text-center ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <div className={`rounded-xl p-2 text-center ${dark ? 'admin-float-soft' : 'bg-slate-50'}`}>
                 <div className={`text-[10px] uppercase font-bold ${muted}`}>Visits</div>
                 <div className={`text-xl font-extrabold ${label}`}>{selectedOutlet.visits}</div>
               </div>
-              <div className={`rounded-xl p-2 text-center ${dark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <div className={`rounded-xl p-2 text-center ${dark ? 'admin-float-soft' : 'bg-slate-50'}`}>
                 <div className={`text-[10px] uppercase font-bold ${muted}`}>Purchases</div>
                 <div className="text-sm font-extrabold text-[#3F258B]">{fmtMoney(selectedOutlet.totalSales)}</div>
               </div>
@@ -548,7 +548,7 @@ export default function AdminOutletSales() {
                     <li
                       key={idx}
                       className={`flex justify-between gap-2 text-xs rounded-lg px-2 py-1.5 ${
-                        dark ? 'bg-slate-800' : 'bg-slate-50'
+                        dark ? 'admin-float-soft' : 'bg-slate-50'
                       }`}
                     >
                       <span className="min-w-0">

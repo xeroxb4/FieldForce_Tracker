@@ -73,7 +73,7 @@ export default function AdminDashboard() {
     : "relative overflow-visible rounded-[1.35rem] border border-white/90 bg-gradient-to-b from-white via-white to-slate-50/90";
 
   const cardStyle = dark
-    ? { boxShadow: "0 1.5px 0 0 rgba(255,255,255,0.16) inset, 0 4px 8px rgba(0,0,0,0.25), 0 18px 40px -8px rgba(0,0,0,0.65), 0 0 0 1px rgba(63,37,139,0.25)" }
+    ? undefined
     : { boxShadow: "0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 22px -6px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.04)" };
 
   const rowStyle = dark
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
                 key={row.key}
                 className={
                   "rounded-[1.2rem] px-3.5 py-3 flex items-center justify-between gap-3 border " +
-                  (dark ? "border-white/[0.08] bg-white/[0.04]" : "border-slate-200/80 bg-white")
+                  (dark ? "admin-float-soft border-0" : "border-slate-200/80 bg-white")
                 }
                 style={rowStyle}
               >

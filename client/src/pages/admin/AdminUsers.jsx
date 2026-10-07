@@ -216,7 +216,7 @@ export default function AdminUsers() {
         <form
           onSubmit={editing ? handleUpdate : handleCreate}
           className={`rounded-[1.5rem] p-4 mb-4 space-y-3 ${
-            dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/40'
+            dark ? 'admin-float border-0' : 'bg-white border-[#3F258B]/40'
           }`}
         >
           <h3 className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -298,7 +298,7 @@ export default function AdminUsers() {
                 setEditing(null);
               }}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold ${
-                dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
+                dark ? 'admin-float-soft text-slate-100' : 'bg-slate-100 text-slate-700'
               }`}
             >
               Cancel
@@ -323,7 +323,7 @@ export default function AdminUsers() {
             <div
               key={u._id}
               className={`rounded-xl border-2 p-3 flex justify-between items-start gap-2 ${
-                dark ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#3F258B]/30'
+                dark ? 'admin-float-soft border-0' : 'bg-white border-[#3F258B]/30'
               }`}
             >
               <div className="min-w-0">

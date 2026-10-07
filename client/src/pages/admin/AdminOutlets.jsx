@@ -452,7 +452,7 @@ export default function AdminOutlets() {
               )}
             </div>
             <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => setEditing(null)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold ${dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+              <button type="button" onClick={() => setEditing(null)} className={`flex-1 py-2.5 rounded-xl text-sm font-bold ${dark ? 'admin-float-soft text-slate-100' : 'bg-slate-100 text-slate-700'}`}>
                 Cancel
               </button>
               <button type="button" disabled={saving} onClick={saveEdit} className="flex-1 py-2.5 rounded-xl text-sm text-white font-bold disabled:opacity-60">

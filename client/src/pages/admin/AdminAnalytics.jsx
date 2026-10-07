@@ -36,12 +36,12 @@ function RankCard({ row, variant, dark }) {
       };
   return (
     <div
-      className={`relative overflow-hidden rounded-[1.35rem] border p-4 ${
+      className={`relative overflow-visible p-4 ${
         dark
-          ? 'bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl'
-          : 'bg-gradient-to-b from-white via-white to-slate-50/90'
+          ? 'admin-float'
+          : 'rounded-[1.35rem] border bg-gradient-to-b from-white via-white to-slate-50/90'
       }`}
-      style={suspend}
+      style={dark ? { borderColor: suspend.borderColor } : suspend}
     >
       <div
         className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 rounded-l-[1.35rem]"
@@ -460,7 +460,7 @@ export default function AdminAnalytics() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
+              className={`block mt-0.5 rounded-xl border px-2.5 py-2 text-xs font-semibold ${dark ? "bg-[#020617] border-white/25 text-white" : "bg-white border-slate-200 text-slate-900"}`}
             />
           </div>
           <div>
@@ -471,7 +471,7 @@ export default function AdminAnalytics() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="block mt-0.5 rounded-lg border px-2 py-1.5 text-xs text-slate-900"
+              className={`block mt-0.5 rounded-xl border px-2.5 py-2 text-xs font-semibold ${dark ? "bg-[#020617] border-white/25 text-white" : "bg-white border-slate-200 text-slate-900"}`}
             />
           </div>
           <button
@@ -546,7 +546,7 @@ export default function AdminAnalytics() {
         {perf?.teamAvg && (
           <div
             className={`rounded-xl px-3 py-2 mb-3 text-xs ${
-              dark ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-700'
+              dark ? 'admin-float-soft text-slate-100' : 'bg-slate-50 text-slate-700'
             }`}
           >
             <span className="font-bold">Team average:</span> GHS{' '}

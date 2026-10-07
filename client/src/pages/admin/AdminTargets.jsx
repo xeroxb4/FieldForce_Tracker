@@ -81,7 +81,7 @@ export default function AdminTargets() {
 
       <div
         className={`rounded-[1.5rem] p-4 ${
-          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30 shadow-sm'
+          dark ? 'admin-float border-0' : 'bg-white border-[#3F258B]/30 shadow-sm'
         }`}
       >
         <div className="flex flex-wrap justify-between gap-3 text-sm">
@@ -102,7 +102,7 @@ export default function AdminTargets() {
             <div className="text-lg font-extrabold text-[#3F258B]">{teamPct}%</div>
           </div>
         </div>
-        <div className={`mt-3 h-2.5 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+        <div className={`mt-3 h-2.5 rounded-full overflow-hidden ${dark ? 'admin-float-soft' : 'bg-slate-100'}`}>
           <div
             className="h-full rounded-full bg-gradient-to-r from-[#117ea6] to-[#2596be]"
             style={{ width: `${Math.min(100, teamPct)}%` }}
@@ -132,7 +132,7 @@ export default function AdminTargets() {
               <div
                 key={u._id}
                 className={`rounded-[1.5rem] p-4 ${
-                  dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+                  dark ? 'admin-float border-0' : 'bg-white border-slate-200 shadow-sm'
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -156,7 +156,7 @@ export default function AdminTargets() {
                   </div>
                 </div>
                 {t && (
-                  <div className={`mt-3 h-2 rounded-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                  <div className={`mt-3 h-2 rounded-full overflow-hidden ${dark ? 'admin-float-soft' : 'bg-slate-100'}`}>
                     <div
                       className={`h-full rounded-full ${barColor}`}
                       style={{ width: `${Math.min(100, pct)}%` }}

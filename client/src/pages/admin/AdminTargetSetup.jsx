@@ -132,7 +132,7 @@ export default function AdminTargetSetup() {
       {/* Sub-distributor filter — persists until cleared */}
       <div
         className={`rounded-[1.5rem] p-3 flex flex-wrap items-end gap-3 ${
-          dark ? 'bg-slate-900 border-slate-700' : 'bg-white border-[#3F258B]/30'
+          dark ? 'admin-float border-0' : 'bg-white border-[#3F258B]/30'
         }`}
       >
         <div className="flex-1 min-w-[200px]">

@@ -16,7 +16,7 @@ export function LineChart({
   const padT = 24;
   const padB = 40;
   const colors = dark
-    ? ['#A78BFA', '#38BDF8', '#34D399', '#FB7185', '#FBBF24']
+    ? ['#C4B5FD', '#7DD3FC', '#6EE7B7', '#FDA4AF', '#FCD34D']
     : ['#3F258B', '#28B8F0', '#10b981', '#f43f5e', '#AB6BF0'];
 
   const prepared = series.map((s) => {
@@ -111,7 +111,7 @@ export function LineChart({
             <polyline
               fill="none"
               stroke={colors[si % colors.length]}
-              strokeWidth="3"
+              strokeWidth="3.5"
               strokeLinejoin="round"
               strokeLinecap="round"
               points={points(s.drawn)}

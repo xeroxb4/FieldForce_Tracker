@@ -379,7 +379,7 @@ export default function AdminReports() {
                             </button>
                           ) : (
                             <div
-                              className={`rounded-xl p-2 space-y-2 ${dark ? 'bg-slate-900' : 'bg-white border'}`}
+                              className={`rounded-xl p-2 space-y-2 ${dark ? 'admin-float' : 'bg-white border'}`}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <div className={`text-xs font-bold ${label}`}>Complete this visit from invoice</div>
