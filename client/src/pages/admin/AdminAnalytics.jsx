@@ -22,44 +22,56 @@ function StatLine({ label, value, dark }) {
 
 function RankCard({ row, variant, dark }) {
   const isTop = variant === 'top';
+  const accent = isTop ? '#059669' : '#d97706';
+  const suspend = dark
+    ? {
+        boxShadow:
+          '0 1px 0 0 rgba(255,255,255,0.08) inset, 0 10px 28px -6px rgba(0,0,0,0.38), 0 2px 6px rgba(0,0,0,0.18)',
+        borderColor: isTop ? 'rgba(52,211,153,0.35)' : 'rgba(251,191,36,0.35)',
+      }
+    : {
+        boxShadow:
+          '0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 22px -6px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.04)',
+        borderColor: isTop ? 'rgba(16,185,129,0.35)' : 'rgba(245,158,11,0.4)',
+      };
   return (
     <div
-      className={`rounded-xl border-2 p-3 ${
-        isTop
-          ? dark
-            ? 'border-emerald-500/50 bg-emerald-950/30'
-            : 'border-emerald-300 bg-emerald-50'
-          : dark
-          ? 'border-amber-500/40 bg-amber-950/20'
-          : 'border-amber-300 bg-amber-50'
+      className={`relative overflow-hidden rounded-[1.35rem] border p-4 ${
+        dark
+          ? 'bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-transparent backdrop-blur-2xl'
+          : 'bg-gradient-to-b from-white via-white to-slate-50/90'
       }`}
+      style={suspend}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div
+        className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 rounded-l-[1.35rem]"
+        style={{ background: accent }}
+      />
+      <div className="flex items-start justify-between gap-2 mb-2 pl-1">
         <div>
           <div
-            className={`text-[10px] font-bold uppercase tracking-wide ${
-              isTop ? 'text-emerald-600' : 'text-amber-700'
-            }`}
+            className="text-[10px] font-black uppercase tracking-[0.14em]"
+            style={{ color: accent }}
           >
             #{row.rank} {isTop ? 'Top performer' : 'Needs attention'}
           </div>
-          <div className={`font-extrabold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
+          <div className={`font-black text-sm mt-0.5 ${dark ? 'text-white' : 'text-slate-900'}`}>
             {row.name}
           </div>
-          <div className={`text-[11px] ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+          <div className={`text-[11px] font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
             {row.distributor || '—'} · {row.territory || '—'}
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-lg font-black ${isTop ? 'text-emerald-600' : 'text-amber-700'}`}>
+          <div className="text-lg font-black" style={{ color: accent }}>
             GHS {(row.sales || 0).toLocaleString()}
           </div>
-          <div className={`text-[10px] ${dark ? 'text-slate-500' : 'text-slate-500'}`}>
+          <div className={`text-[10px] ${dark ? 'text-slate-400' : 'text-slate-500'}`}>
             period sales
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-2">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-2 pl-1">
         <StatLine dark={dark} label="Orders" value={row.orders} />
         <StatLine dark={dark} label="Visits" value={row.visits} />
         <StatLine dark={dark} label="Hit rate" value={`${row.hitRatePct}%`} />
@@ -72,10 +84,10 @@ function RankCard({ row, variant, dark }) {
         <StatLine dark={dark} label="Shops served" value={row.shopsServed} />
         <StatLine dark={dark} label="Outlets assigned" value={row.outletsAssigned} />
       </div>
-      <div className={`text-xs font-bold mb-1 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+      <div className={`text-xs font-black mb-1 pl-1 ${dark ? 'text-slate-200' : 'text-slate-700'}`}>
         Statistical notes
       </div>
-      <ul className={`text-xs space-y-1 list-disc pl-4 ${dark ? 'text-slate-300' : 'text-slate-700'}`}>
+      <ul className={`text-xs space-y-1 list-disc pl-5 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
         {(row.analysis || []).map((a, i) => (
           <li key={i}>{a}</li>
         ))}
@@ -438,7 +450,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Date + refresh shared */}
-      <div className={`rounded-[1.5rem] p-3 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-3 ${card}`} style={cardStyle}>
         <div className="flex flex-wrap items-end gap-2">
           <div>
             <label className={`text-[10px] font-bold ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
@@ -475,7 +487,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Daily 4-line trend */}
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
           Sales trend (daily)
         </h3>
@@ -492,11 +504,16 @@ export default function AdminAnalytics() {
 
         {chartNarrative && (
           <div
-            className={`mt-4 rounded-xl border px-3 py-3 text-sm leading-relaxed ${
+            className={`mt-4 rounded-[1.25rem] border px-3.5 py-3.5 text-sm leading-relaxed ${
               dark
-                ? 'border-slate-600 bg-slate-800/80 text-slate-200'
-                : 'border-[#3F258B]/30 bg-sky-50 text-slate-800'
+                ? 'border-white/10 bg-white/[0.04] text-slate-200'
+                : 'border-slate-200/80 bg-white text-slate-700'
             }`}
+            style={
+              dark
+                ? { boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 20px rgba(0,0,0,0.3)' }
+                : { boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 6px 16px rgba(15,23,42,0.07)' }
+            }
           >
             <div className={`font-extrabold text-sm mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>
               {chartNarrative.title}
@@ -518,7 +535,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Top / Bottom 3 */}
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
           OMR performance — Top 3 & Lowest 3
         </h3>
@@ -569,7 +586,7 @@ export default function AdminAnalytics() {
         )}
       </div>
 
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-3 ${dark ? 'text-white' : 'text-slate-900'}`}>
           Month mix by distributor
         </h3>
@@ -580,7 +597,7 @@ export default function AdminAnalytics() {
         )}
       </div>
 
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-1 ${dark ? 'text-white' : 'text-slate-900'}`}>
           Insights & actions (month-to-date / selected period)
         </h3>
@@ -594,18 +611,46 @@ export default function AdminAnalytics() {
           ).map((ins, i) => (
             <div
               key={i}
-              className={`rounded-xl p-3 border text-sm ${
-                ins.type === 'gap'
-                  ? 'border-amber-300 bg-amber-50 text-amber-900'
-                  : ins.type === 'win'
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  : dark
-                  ? 'border-slate-700 bg-slate-800 text-slate-200'
-                  : 'border-slate-200 bg-slate-50 text-slate-800'
+              className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 text-sm ${
+                dark
+                  ? 'bg-gradient-to-br from-white/[0.07] via-white/[0.02] to-transparent border-white/10 text-slate-100'
+                  : 'bg-gradient-to-b from-white to-slate-50/90 border-white/90 text-slate-800'
               }`}
+              style={
+                dark
+                  ? {
+                      boxShadow:
+                        '0 1px 0 rgba(255,255,255,0.07) inset, 0 8px 20px -4px rgba(0,0,0,0.35)',
+                      borderColor:
+                        ins.type === 'gap'
+                          ? 'rgba(251,191,36,0.4)'
+                          : ins.type === 'win'
+                          ? 'rgba(52,211,153,0.35)'
+                          : 'rgba(255,255,255,0.1)',
+                    }
+                  : {
+                      boxShadow:
+                        '0 1px 0 rgba(255,255,255,1) inset, 0 6px 16px -4px rgba(15,23,42,0.08)',
+                      borderColor:
+                        ins.type === 'gap'
+                          ? 'rgba(245,158,11,0.45)'
+                          : ins.type === 'win'
+                          ? 'rgba(16,185,129,0.4)'
+                          : 'rgba(226,232,240,0.9)',
+                    }
+              }
             >
-              <div className="font-bold">{ins.text}</div>
-              <div className="text-xs mt-1 font-medium">Action: {ins.action}</div>
+              <div
+                className="pointer-events-none absolute left-0 top-0 bottom-0 w-1"
+                style={{
+                  background:
+                    ins.type === 'gap' ? '#d97706' : ins.type === 'win' ? '#059669' : '#3F258B',
+                }}
+              />
+              <div className={`font-bold pl-2 ${dark ? 'text-white' : 'text-slate-900'}`}>{ins.text}</div>
+              <div className={`text-xs mt-1.5 font-medium pl-2 ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Action: {ins.action}
+              </div>
             </div>
           ))}
         </div>

@@ -107,27 +107,25 @@ export default function AdminEnterSale() {
     }
   };
 
-  const label = dark ? 'text-slate-200' : 'text-slate-800';
-  const input = dark
-    ? 'w-full rounded-xl border border-slate-600 bg-slate-900 text-white px-3 py-2.5 text-sm'
-    : 'w-full rounded-xl border border-slate-300 bg-white text-slate-900 px-3 py-2.5 text-sm';
+
+  const input = ap.input;
   const card = ap.card;
   const cardStyle = ap.cardStyle;
+  const soft = ap.cardSoft;
+  const softStyle = ap.cardSoftStyle;
 
   return (
-    <div className="space-y-4 max-w-2xl">
-      <div>
-        <h1 className={`text-xl font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Enter sale for OMR
-        </h1>
-        <p className={`text-sm font-medium ${dark ? 'text-slate-300' : 'text-slate-600'}`}>
-          Admin only — post physical / old-app invoices into the correct outlet. OMRs cannot use this.
-        </p>
-      </div>
+    <div className="space-y-5 max-w-2xl">
+      <AdminPageHeader
+        dark={dark}
+        eyebrow="Sales desk"
+        title="Enter sale for OMR"
+        subtitle="Admin only — post physical / old-app invoices into the correct outlet"
+      />
 
-      <form onSubmit={submit} className={`space-y-3 ${card}`} style={cardStyle} style={cardStyle}>
+      <form onSubmit={submit} className={`${card} p-5 space-y-4`} style={cardStyle}>
         <div>
-          <label className={`text-xs font-bold ${label}`}>OMR *</label>
+          <label className={ap.label}>OMR *</label>
           <select value={omrId} onChange={(e) => setOmrId(e.target.value)} className={input} required>
             <option value="">Select OMR…</option>
             {omrs.map((u) => (
@@ -139,7 +137,7 @@ export default function AdminEnterSale() {
         </div>
 
         <div>
-          <label className={`text-xs font-bold ${label}`}>Outlet *</label>
+          <label className={ap.label}>Outlet *</label>
           <select
             value={outletId}
             onChange={(e) => setOutletId(e.target.value)}
@@ -158,12 +156,12 @@ export default function AdminEnterSale() {
         </div>
 
         <div>
-          <label className={`text-xs font-bold ${label}`}>Sale date *</label>
+          <label className={ap.label}>Sale date *</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={input} required />
         </div>
 
-        <div className={`rounded-xl border p-3 space-y-2 ${dark ? 'border-slate-700' : 'border-slate-200'}`}>
-          <div className={`text-xs font-bold ${label}`}>Add product lines (optional)</div>
+        <div className={`${soft} p-4 space-y-3`} style={softStyle}>
+          <p className={ap.label}>Add product lines (optional)</p>
           <select value={productId} onChange={(e) => setProductId(e.target.value)} className={input}>
             <option value="">Product…</option>
             {products.map((p) => (
@@ -186,20 +184,30 @@ export default function AdminEnterSale() {
               className={input}
               placeholder="Qty"
             />
-            <button type="button" onClick={addLine} className="rounded-xl bg-[#3F258B]/20 text-[#3F258B] font-bold text-sm">
+            <button
+              type="button"
+              onClick={addLine}
+              className="rounded-2xl text-sm font-black text-white"
+              style={ap.btnPrimaryStyle}
+            >
               Add
             </button>
           </div>
           {lines.map((l, i) => (
-            <div key={i} className={`flex justify-between text-xs ${label}`}>
-              <span>
+            <div
+              key={i}
+              className={`flex justify-between items-center text-sm rounded-xl px-3 py-2 ${
+                dark ? 'bg-black/30 text-white' : 'bg-slate-50 text-slate-900'
+              }`}
+            >
+              <span className="font-semibold">
                 {l.productName} × {l.quantity} {l.unit}
               </span>
-              <span className="font-bold">
+              <span className="font-black flex items-center gap-2">
                 GHS {l.lineTotal}
                 <button
                   type="button"
-                  className="ml-2 text-red-400"
+                  className="text-red-400 text-xs font-bold"
                   onClick={() => setLines((prev) => prev.filter((_, j) => j !== i))}
                 >
                   ✕
@@ -211,7 +219,7 @@ export default function AdminEnterSale() {
 
         {!lines.length && (
           <div>
-            <label className={`text-xs font-bold ${label}`}>Total amount (GHS) if no product lines</label>
+            <label className={ap.label}>Total amount (GHS) if no product lines</label>
             <input
               type="number"
               step="0.01"
@@ -223,9 +231,9 @@ export default function AdminEnterSale() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={`text-xs font-bold ${label}`}>Payment</label>
+            <label className={ap.label}>Payment</label>
             <select value={paymentType} onChange={(e) => setPaymentType(e.target.value)} className={input}>
               <option value="cash">Cash</option>
               <option value="credit">Credit</option>
@@ -233,7 +241,7 @@ export default function AdminEnterSale() {
           </div>
           {paymentType === 'credit' && (
             <div>
-              <label className={`text-xs font-bold ${label}`}>Credit weeks</label>
+              <label className={ap.label}>Credit weeks</label>
               <select value={creditWeeks} onChange={(e) => setCreditWeeks(e.target.value)} className={input}>
                 <option value={1}>1 week</option>
                 <option value={2}>2 weeks</option>
@@ -243,23 +251,42 @@ export default function AdminEnterSale() {
         </div>
 
         <div>
-          <label className={`text-xs font-bold ${label}`}>Notes (invoice # etc.)</label>
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} className={input} placeholder="Physical invoice…" />
+          <label className={ap.label}>Notes (invoice # etc.)</label>
+          <input
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={input}
+            placeholder="Physical invoice…"
+          />
         </div>
 
-        <div className={`text-sm font-extrabold ${dark ? 'text-white' : 'text-slate-900'}`}>
-          Total: GHS {Number(total).toLocaleString()}
+        <div
+          className={`flex items-center justify-between rounded-2xl px-4 py-3 ${
+            dark ? 'bg-black/30' : 'bg-violet-50'
+          }`}
+        >
+          <span className={`text-xs font-black uppercase tracking-wider ${ap.muted}`}>Total</span>
+          <span className={`text-xl font-black ${ap.title}`}>GHS {Number(total || 0).toLocaleString()}</span>
         </div>
 
-        {err && <p className="text-sm text-red-500 font-medium">{err}</p>}
-        {msg && <p className="text-sm text-emerald-500 font-medium">{msg}</p>}
+        {err && (
+          <div className="rounded-2xl px-3 py-2 text-sm font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
+            {err}
+          </div>
+        )}
+        {msg && (
+          <div className="rounded-2xl px-3 py-2 text-sm font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/20">
+            {msg}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-3 rounded-xl text-white font-bold disabled:opacity-60"
+          className={`w-full ${ap.btnPrimary} disabled:opacity-60`}
+          style={ap.btnPrimaryStyle}
         >
-          {saving ? 'Saving…' : 'Save sale for OMR'}
+          {saving ? 'Saving…' : 'Post sale'}
         </button>
       </form>
     </div>

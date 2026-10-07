@@ -15,7 +15,7 @@ export function LineChart({
   const padR = 28;
   const padT = 16;
   const padB = 36;
-  const colors = ['#2596be', '#f43f5e', '#10b981', '#f59e0b', '#a78bfa'];
+  const colors = ['#3F258B', '#28B8F0', '#10b981', '#f43f5e', '#AB6BF0'];
 
   const prepared = series.map((s) => {
     const vals = (s.values || []).map((v) => Number(v) || 0);
@@ -65,7 +65,7 @@ export function LineChart({
                 x2={w - padR}
                 y1={y}
                 y2={y}
-                stroke={dark ? '#334155' : '#e2e8f0'}
+                stroke={dark ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.35)'}
                 strokeWidth="1"
               />
               <text
