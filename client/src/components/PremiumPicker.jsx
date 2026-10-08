@@ -42,7 +42,7 @@ export default function PremiumPicker({
         className={`relative w-full max-w-lg max-h-[78vh] flex flex-col rounded-t-[1.75rem] overflow-hidden border-t ${
           dark
             ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-[#020617] border-white/20'
-            : 'bg-white border-slate-200'
+            : 'admin-clay border-0'
         }`}
         style={{
           boxShadow: dark
@@ -120,7 +120,7 @@ export default function PremiumPicker({
                     ? { boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset' }
                     : {
                         boxShadow:
-                          '0 1px 0 rgba(255,255,255,1) inset, 0 4px 12px rgba(15,23,42,0.05)',
+                          '4px 4px 12px rgba(148,163,184,0.28), -3px -3px 10px rgba(255,255,255,0.9), inset 1px 1px 1px rgba(255,255,255,1)',
                       }
                 }
               >

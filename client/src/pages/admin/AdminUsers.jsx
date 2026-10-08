@@ -211,7 +211,7 @@ export default function AdminUsers() {
         <form
           onSubmit={editing ? handleUpdate : handleCreate}
           className={`rounded-[1.5rem] p-4 mb-4 space-y-3 ${
-            dark ? 'admin-float border-0' : 'bg-white border-[#3F258B]/40'
+            dark ? 'admin-float border-0' : 'admin-clay border-0'
           }`}
         >
           <h3 className={`font-bold text-sm ${dark ? 'text-white' : 'text-slate-900'}`}>
@@ -318,7 +318,7 @@ export default function AdminUsers() {
             <div
               key={u._id}
               className={`rounded-xl border-2 p-3 flex justify-between items-start gap-2 ${
-                dark ? 'admin-float-soft border-0' : 'bg-white border-[#3F258B]/30'
+                dark ? 'admin-float-soft border-0' : 'admin-clay-soft border-0'
               }`}
             >
               <div className="min-w-0">

@@ -18,8 +18,6 @@ export default function AdminSales() {
   }, []);
 
   const fmt = (n) => `GHS ${Number(n || 0).toLocaleString()}`;
-  const card = ap.card;
-  const cardStyle = ap.cardStyle;
 
   const rows = useMemo(() => {
     const list = data?.omrSalesToday || [];
@@ -38,17 +36,26 @@ export default function AdminSales() {
     {
       label: 'Today',
       s: data?.sales?.today,
-      bg: 'linear-gradient(145deg, #f43f5e 0%, #e11d48 55%, #be123c 100%)',
+      cls: dark ? null : ap.clayRose,
+      style: dark
+        ? { background: 'linear-gradient(145deg, #f43f5e, #be123c)', color: '#fff' }
+        : ap.clayRoseStyle,
     },
     {
       label: 'This week',
       s: data?.sales?.week,
-      bg: 'linear-gradient(145deg, #28B8F0 0%, #0ea5e9 55%, #0284c7 100%)',
+      cls: dark ? null : ap.clayBlue,
+      style: dark
+        ? { background: 'linear-gradient(145deg, #28B8F0, #0284c7)', color: '#fff' }
+        : ap.clayBlueStyle,
     },
     {
       label: 'This month',
       s: data?.sales?.month,
-      bg: 'linear-gradient(145deg, #34d399 0%, #059669 55%, #047857 100%)',
+      cls: dark ? null : ap.clayGreen,
+      style: dark
+        ? { background: 'linear-gradient(145deg, #34d399, #047857)', color: '#fff' }
+        : ap.clayGreenStyle,
     },
   ];
 
@@ -65,24 +72,17 @@ export default function AdminSales() {
         {tiles.map((t) => (
           <div
             key={t.label}
-            className="rounded-[1.35rem] p-4 text-white relative overflow-visible"
-            style={{
-              background: t.bg,
-              boxShadow: '0 1px 0 rgba(255,255,255,0.2) inset, 0 12px 28px -6px rgba(0,0,0,0.35)',
-            }}
+            className={(t.cls || 'rounded-[1.35rem] text-white') + ' p-4 relative'}
+            style={t.style}
           >
-            <div className="text-[11px] font-black uppercase tracking-[0.15em] text-white/95">
-              {t.label}
-            </div>
-            <div className="text-xl font-black mt-1.5 text-white tracking-tight">
-              {fmt(t.s?.amount)}
-            </div>
-            <div className="text-xs font-bold mt-1 text-white/90">{t.s?.orders || 0} orders</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.15em] opacity-95">{t.label}</div>
+            <div className="text-xl font-black mt-1.5 tracking-tight">{fmt(t.s?.amount)}</div>
+            <div className="text-xs font-bold mt-1 opacity-90">{t.s?.orders || 0} orders</div>
           </div>
         ))}
       </div>
 
-      <div className={`${card} p-4`} style={cardStyle}>
+      <div className={`${ap.card} p-4`} style={ap.cardStyle}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className={`font-black ${ap.title}`}>Daily sales by OMR</h3>
           <button
@@ -106,11 +106,13 @@ export default function AdminSales() {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={i} className={`border-t ${dark ? 'border-white/10' : 'border-slate-100'}`}>
+                <tr key={i} className={`border-t ${dark ? 'border-white/10' : 'border-slate-200/60'}`}>
                   <td className={`py-2 font-semibold ${ap.title}`}>{r.omr}</td>
                   <td className={ap.muted}>{r.distributor || '—'}</td>
                   <td className={`text-right font-medium ${ap.title}`}>{r.orders}</td>
-                  <td className="text-right font-bold text-[#3F258B]">{fmt(r.total)}</td>
+                  <td className={`text-right font-bold ${dark ? 'text-[#F0C38E]' : 'text-[#3F258B]'}`}>
+                    {fmt(r.total)}
+                  </td>
                 </tr>
               ))}
               {!rows.length && (

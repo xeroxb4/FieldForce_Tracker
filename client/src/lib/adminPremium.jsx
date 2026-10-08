@@ -1,4 +1,7 @@
-/** Executive admin — light keeps purple; dark uses #F0C38E (clear, high-contrast) */
+/** Executive admin design system
+ *  Light: claymorphism (soft extruded clay cards — reference weather UI)
+ *  Dark:  #F0C38E gold accent + high-contrast float
+ */
 
 export const ADMIN_ACCENT = '#3F258B';
 export const ADMIN_ACCENT_DARK = '#F0C38E';
@@ -9,32 +12,25 @@ export function useAdminPremium(dark) {
 
   const shell = dark
     ? 'bg-gradient-to-b from-[#0c0f14] via-[#12151c] to-[#0c0f14]'
-    : 'bg-gradient-to-b from-slate-100 via-slate-50 to-violet-50/40';
+    : 'bg-gradient-to-b from-[#dfe8f2] via-[#e8eef6] to-[#d4e0ee]';
 
-  /** Soft floating cards — reference-style soft shadow, clear edges */
+  /** Primary card — clay in light, float in dark */
   const card = dark
     ? 'admin-float relative overflow-visible'
-    : 'relative overflow-hidden rounded-[1.5rem] border border-white/90 bg-gradient-to-b from-white via-white to-slate-50/90';
+    : 'admin-clay relative overflow-visible';
 
-  const cardStyle = dark
-    ? undefined
-    : {
-        boxShadow:
-          '0 1px 0 0 rgba(255,255,255,1) inset, 0 8px 22px -6px rgba(15,23,42,0.1), 0 2px 6px rgba(15,23,42,0.04)',
-      };
+  const cardStyle = undefined; // owned by CSS classes
 
   const cardSoft = dark
     ? 'admin-float-soft relative overflow-visible'
-    : 'relative overflow-hidden rounded-[1.2rem] border border-slate-200/80 bg-white';
+    : 'admin-clay-soft relative overflow-visible';
 
-  const cardSoftStyle = dark ? undefined : {
-    boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 4px 12px -2px rgba(15,23,42,0.07)',
-  };
+  const cardSoftStyle = undefined;
 
   const input = `w-full rounded-2xl px-4 py-3.5 text-sm font-semibold outline-none transition border focus:ring-2 ${
     dark
       ? 'bg-[#1a1d24] border-white/20 text-white placeholder:text-slate-400 focus:border-[#F0C38E]/70 focus:ring-[#F0C38E]/25'
-      : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-400/50 focus:ring-[#3F258B]/45'
+      : 'bg-[#f0f4fa] border-[#c5d0e0] text-slate-900 placeholder:text-slate-400 focus:border-[#3F258B]/50 focus:ring-[#3F258B]/25 shadow-[inset_2px_2px_6px_rgba(15,23,42,0.06),inset_-1px_-1px_4px_rgba(255,255,255,0.9)]'
   }`;
 
   const select = input;
@@ -43,7 +39,6 @@ export function useAdminPremium(dark) {
     dark ? 'text-[#F0C38E]' : 'text-[#3F258B]'
   }`;
 
-  // High-contrast type (reference: everything readable)
   const title = dark ? 'text-white' : 'text-slate-900';
   const muted = dark ? 'text-slate-200' : 'text-slate-600';
   const soft = dark ? 'text-slate-300' : 'text-slate-500';
@@ -57,28 +52,27 @@ export function useAdminPremium(dark) {
         boxShadow: '0 1px 0 rgba(255,255,255,0.35) inset, 0 12px 28px rgba(240,195,142,0.35)',
       }
     : {
-        background: 'linear-gradient(145deg, #7c5cde, #3F258B 48%, #2a1860)',
+        background: 'linear-gradient(145deg, #6d4ad1, #3F258B 48%, #2a1860)',
         color: '#fff',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 20px rgba(63,37,139,0.32)',
+        boxShadow:
+          '0 2px 0 rgba(255,255,255,0.2) inset, 0 8px 20px rgba(63,37,139,0.28), 0 2px 4px rgba(63,37,139,0.12)',
       };
 
   const btnGhost = dark
     ? 'rounded-2xl px-4 py-2.5 text-sm font-bold border border-white/20 text-white bg-white/10'
-    : 'rounded-2xl px-4 py-2.5 text-sm font-bold border border-slate-200 text-slate-800 bg-white';
+    : 'rounded-2xl px-4 py-2.5 text-sm font-bold border border-[#c5d0e0] text-slate-800 bg-[#eef2f8] shadow-[2px_2px_6px_rgba(15,23,42,0.06),-2px_-2px_6px_rgba(255,255,255,0.9)]';
 
   const btnDanger = dark
     ? 'rounded-2xl px-4 py-2.5 text-sm font-bold border border-red-400/40 text-red-200 bg-red-500/20'
     : 'rounded-2xl px-4 py-2.5 text-sm font-bold border border-red-200 text-red-600 bg-red-50';
 
   const modalOverlay =
-    'fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-3 sm:p-4';
+    'fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm p-3 sm:p-4';
   const modalPanel = dark
     ? 'admin-float w-full max-w-md max-h-[92vh] overflow-y-auto p-5 space-y-3'
-    : 'w-full max-w-md max-h-[92vh] overflow-y-auto rounded-[1.5rem] border border-slate-200/90 bg-white p-5 space-y-3';
+    : 'admin-clay w-full max-w-md max-h-[92vh] overflow-y-auto p-5 space-y-3';
 
-  const modalPanelStyle = dark
-    ? undefined
-    : { boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 20px 48px rgba(15,23,42,0.14)' };
+  const modalPanelStyle = undefined;
 
   const pageEyebrow = `text-[10px] font-black uppercase tracking-[0.22em] ${
     dark ? 'text-[#F0C38E]' : 'text-[#3F258B]'
@@ -86,31 +80,56 @@ export function useAdminPremium(dark) {
 
   const searchWrap = dark
     ? 'rounded-2xl border border-white/20 bg-[#1a1d24] px-3 py-2.5 flex items-center gap-2'
-    : 'rounded-2xl border border-slate-200 bg-white px-3 py-2.5 flex items-center gap-2';
+    : 'rounded-2xl border border-[#c5d0e0] bg-[#f0f4fa] px-3 py-2.5 flex items-center gap-2 shadow-[inset_2px_2px_6px_rgba(15,23,42,0.05),inset_-1px_-1px_4px_rgba(255,255,255,0.9)]';
 
-  const searchWrapStyle = dark
-    ? { boxShadow: '0 1px 0 rgba(255,255,255,0.08) inset, 0 8px 20px rgba(0,0,0,0.35)' }
-    : { boxShadow: '0 4px 12px rgba(15,23,42,0.05)' };
+  const searchWrapStyle = undefined;
 
   const navActive = dark
     ? 'bg-gradient-to-r from-[#F0C38E] to-[#D4A574] text-[#1a1208] shadow-[0_10px_28px_rgba(240,195,142,0.35)]'
-    : 'bg-gradient-to-r from-[#3F258B] to-[#5b3aad] text-white shadow-md shadow-violet-200/50';
+    : 'bg-gradient-to-r from-[#3F258B] to-[#5b3aad] text-white shadow-[4px_4px_12px_rgba(63,37,139,0.25),-2px_-2px_8px_rgba(255,255,255,0.8)]';
 
   const navIdle = dark
     ? 'text-slate-100 hover:bg-white/10 hover:text-white'
-    : 'text-slate-700 hover:bg-violet-50';
+    : 'text-slate-700 hover:bg-white/70';
 
   const headerBar = dark
     ? 'bg-[#0c0f14]/95 border-white/12 backdrop-blur-2xl'
-    : 'bg-white/95 border-slate-200/80 backdrop-blur-2xl';
+    : 'bg-[#e8eef6]/92 border-[#c5d0e0]/80 backdrop-blur-2xl';
 
   const sidePanel = dark
     ? 'admin-float border-r border-white/12 text-white backdrop-blur-2xl'
-    : 'bg-gradient-to-b from-white via-white to-slate-50 border-slate-200/90 text-slate-900 backdrop-blur-2xl';
+    : 'admin-clay border-r border-[#c5d0e0] text-slate-900';
 
   const sidePanelStyle = dark
     ? { borderRadius: 0, boxShadow: '16px 0 48px rgba(0,0,0,0.55)' }
-    : { boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 12px 0 32px rgba(15,23,42,0.08)' };
+    : { borderRadius: 0 };
+
+  /** Coloured clay KPI tiles (light reference) */
+  const clayBlue =
+    'admin-clay-color relative overflow-visible text-white';
+  const clayBlueStyle = {
+    background: 'linear-gradient(145deg, #5BA3E8 0%, #3B82F6 55%, #2563EB 100%)',
+  };
+  const clayCyan = 'admin-clay-color relative overflow-visible text-white';
+  const clayCyanStyle = {
+    background: 'linear-gradient(145deg, #2DD4BF 0%, #14B8A6 55%, #0D9488 100%)',
+  };
+  const clayCream = 'admin-clay-color relative overflow-visible text-slate-800';
+  const clayCreamStyle = {
+    background: 'linear-gradient(145deg, #F8F6F1 0%, #F1EDE4 55%, #E8E2D6 100%)',
+  };
+  const clayPurple = 'admin-clay-color relative overflow-visible text-white';
+  const clayPurpleStyle = {
+    background: 'linear-gradient(145deg, #8B6BC9 0%, #3F258B 55%, #2a1860 100%)',
+  };
+  const clayRose = 'admin-clay-color relative overflow-visible text-white';
+  const clayRoseStyle = {
+    background: 'linear-gradient(145deg, #FB7185 0%, #E11D48 55%, #BE123C 100%)',
+  };
+  const clayGreen = 'admin-clay-color relative overflow-visible text-white';
+  const clayGreenStyle = {
+    background: 'linear-gradient(145deg, #34D399 0%, #10B981 55%, #059669 100%)',
+  };
 
   return {
     shell,
@@ -141,6 +160,18 @@ export function useAdminPremium(dark) {
     sidePanelStyle,
     accent,
     accentDark: '#F0C38E',
+    clayBlue,
+    clayBlueStyle,
+    clayCyan,
+    clayCyanStyle,
+    clayCream,
+    clayCreamStyle,
+    clayPurple,
+    clayPurpleStyle,
+    clayRose,
+    clayRoseStyle,
+    clayGreen,
+    clayGreenStyle,
   };
 }
 

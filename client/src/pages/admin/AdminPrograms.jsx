@@ -41,10 +41,10 @@ export default function AdminPrograms() {
             onClick={() => setFilterTier(filterTier === t ? '' : t)}
             className={`rounded-xl p-3 text-center border-2 transition ${
               filterTier === t
-                ? 'border-amber-500 bg-amber-50'
+                ? 'border-amber-400 admin-clay-soft ring-2 ring-amber-400/40'
                 : dark
                 ? 'border-slate-700 bg-slate-900'
-                : 'border-slate-200 bg-white'
+                : 'admin-clay-soft border-0'
             }`}
           >
             <div className="text-xs font-bold text-amber-600">{t}</div>

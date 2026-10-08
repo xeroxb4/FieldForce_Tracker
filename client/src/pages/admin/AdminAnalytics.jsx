@@ -39,7 +39,7 @@ function RankCard({ row, variant, dark }) {
       className={`relative overflow-visible p-4 ${
         dark
           ? 'admin-float'
-          : 'rounded-[1.35rem] border bg-gradient-to-b from-white via-white to-slate-50/90'
+          : 'admin-clay border-0'
       }`}
       style={dark ? { borderColor: suspend.borderColor } : suspend}
     >
@@ -614,7 +614,7 @@ export default function AdminAnalytics() {
               className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 text-sm ${
                 dark
                   ? 'bg-gradient-to-br from-white/[0.07] via-white/[0.02] to-transparent border-white/10 text-slate-100'
-                  : 'bg-gradient-to-b from-white to-slate-50/90 border-white/90 text-slate-800'
+                  : 'admin-clay-soft border-0 text-slate-800'
               }`}
               style={
                 dark
