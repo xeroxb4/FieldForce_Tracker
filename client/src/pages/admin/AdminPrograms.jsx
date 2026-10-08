@@ -60,7 +60,7 @@ export default function AdminPrograms() {
           <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
             AVC outlets {filterTier ? `· ${filterTier}` : ''}
           </h3>
-          <Link to="/admin/outlets" className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"}">
+          <Link to="/admin/outlets" className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"}`}>
             Enrol / edit in Outlets →
           </Link>
         </div>

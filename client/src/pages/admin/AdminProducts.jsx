@@ -355,7 +355,7 @@ export default function AdminProducts() {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => startEdit(p)} className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"}">
+                  <button type="button" onClick={() => startEdit(p)} className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"}`}>
                     Edit
                   </button>
                   {p.isActive && (
