@@ -57,7 +57,7 @@ export default function PremiumPicker({
           <div>
             <p
               className={`text-[10px] font-black uppercase tracking-[0.2em] ${
-                dark ? 'text-violet-200' : 'text-[#3F258B]'
+                dark ? 'text-[#F0C38E]' : 'text-[#3F258B]'
               }`}
             >
               Choose
@@ -103,7 +103,7 @@ export default function PremiumPicker({
                 className={`w-full text-left rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 border transition ${
                   active
                     ? dark
-                      ? 'bg-violet-500/25 border-violet-400/40'
+                      ? 'bg-[#F0C38E]/20 border-[#F0C38E]/45'
                       : 'bg-violet-50 border-[#3F258B]/35'
                     : dark
                     ? 'bg-white/[0.04] border-white/10'
@@ -113,7 +113,7 @@ export default function PremiumPicker({
                   active
                     ? {
                         boxShadow: dark
-                          ? '0 8px 24px rgba(171,107,240,0.25)'
+                          ? '0 8px 24px rgba(240,195,142,0.3)'
                           : '0 8px 24px rgba(63,37,139,0.12)',
                       }
                     : dark
@@ -144,7 +144,7 @@ export default function PremiumPicker({
                   }`}
                   style={
                     active
-                      ? { background: 'linear-gradient(145deg, #6d4ad1, #3F258B)' }
+                      ? { background: dark ? 'linear-gradient(145deg, #F5D4A8, #F0C38E)' : 'linear-gradient(145deg, #6d4ad1, #3F258B)' }
                       : undefined
                   }
                 >

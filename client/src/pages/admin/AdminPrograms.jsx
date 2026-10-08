@@ -55,12 +55,12 @@ export default function AdminPrograms() {
         ))}
       </div>
 
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className={`font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
             AVC outlets {filterTier ? `· ${filterTier}` : ''}
           </h3>
-          <Link to="/admin/outlets" className="text-xs font-bold text-[#3F258B]">
+          <Link to="/admin/outlets" className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"}">
             Enrol / edit in Outlets →
           </Link>
         </div>
@@ -82,7 +82,7 @@ export default function AdminPrograms() {
         )}
       </div>
 
-      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-[1.5rem] p-4 ${card}`} style={cardStyle}>
         <h3 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-slate-900'}`}>Program notes</h3>
         <textarea
           className={inputCls}

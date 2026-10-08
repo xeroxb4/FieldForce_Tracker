@@ -335,7 +335,7 @@ export default function AdminUsers() {
               <button
                 type="button"
                 onClick={() => startEdit(u)}
-                className="text-xs font-bold text-[#3F258B] shrink-0"
+                className={`text-xs font-bold ${dark ? "text-[#F0C38E]" : "text-[#3F258B]"} shrink-0"
               >
                 Edit
               </button>

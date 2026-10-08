@@ -82,7 +82,7 @@ export default function AdminDashboard() {
 
   const titleCls = dark ? "text-white" : "text-slate-900";
   const mutedCls = dark ? "text-slate-300" : "text-slate-600";
-  const eyebrowCls = dark ? "text-violet-200" : "text-[#3F258B]";
+  const eyebrowCls = dark ? "text-[#F0C38E]" : "text-[#3F258B]";
 
   if (loading) {
     return (
@@ -120,8 +120,8 @@ export default function AdminDashboard() {
         </div>
         <Link
           to="/admin/analytics"
-          className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-black text-white"
-          style={{ background: "linear-gradient(145deg, #6d4ad1, #3F258B 50%, #2a1860)", boxShadow: "0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 20px rgba(63,37,139,0.32)" }}
+          className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-black"
+          style={{ background: dark ? "linear-gradient(145deg, #F5D4A8, #F0C38E 50%, #D4A574)" : "linear-gradient(145deg, #6d4ad1, #3F258B 50%, #2a1860)", color: dark ? "#1a1208" : "#fff", boxShadow: "0 1px 0 rgba(255,255,255,0.18) inset, 0 8px 20px rgba(63,37,139,0.32)" }}
         >
           Full analysis →
         </Link>
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
             <p className={"text-[10px] font-black uppercase tracking-[0.18em] " + eyebrowCls}>Coverage</p>
             <h2 className={"font-black text-lg " + titleCls}>Unvisited today</h2>
           </div>
-          <Link to="/admin/outlet-sales" className={"text-xs font-bold " + (dark ? "text-violet-200" : "text-[#3F258B]")}>
+          <Link to="/admin/outlet-sales" className={"text-xs font-bold " + (dark ? "text-[#F0C38E]" : "text-[#3F258B]")}>
             Outlet sales →
           </Link>
         </div>

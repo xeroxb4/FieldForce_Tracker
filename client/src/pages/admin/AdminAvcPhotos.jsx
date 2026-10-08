@@ -47,7 +47,7 @@ export default function AdminAvcPhotos() {
       </div>
 
       {compliance && (
-        <div className={`rounded-2xl border p-4 ${card}`} style={cardStyle} style={cardStyle}>
+        <div className={`rounded-2xl border p-4 ${card}`} style={cardStyle}>
           <div className={`text-sm font-bold ${dark ? 'text-white' : 'text-slate-900'}`}>
             This period compliance ({compliance.monthKey} · period {compliance.period})
           </div>
@@ -102,7 +102,7 @@ export default function AdminAvcPhotos() {
 
       <div className="space-y-2">
         {dists.map((dist) => (
-          <div key={dist} className={`rounded-2xl border ${card}`} style={cardStyle} style={cardStyle}>
+          <div key={dist} className={`rounded-2xl border ${card}`} style={cardStyle}>
             <button
               type="button"
               className={`w-full text-left px-4 py-3 font-bold ${dark ? 'text-white' : 'text-slate-900'}`}

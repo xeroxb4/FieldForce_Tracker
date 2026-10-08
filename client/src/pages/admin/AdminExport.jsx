@@ -129,7 +129,7 @@ export default function AdminExport() {
         </p>
       </div>
 
-      <div className={`rounded-2xl border p-4 space-y-4 ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-2xl border p-4 space-y-4 ${card}`} style={cardStyle}>
         <div className="flex flex-wrap gap-2">
           {['today', 'week', 'month'].map((p) => (
             <button
@@ -217,7 +217,7 @@ export default function AdminExport() {
         </button>
       </div>
 
-      <div className={`rounded-2xl border p-4 text-sm ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-2xl border p-4 text-sm ${card}`} style={cardStyle}>
         <div className={`font-semibold mb-2 ${dark ? 'text-white' : 'text-slate-800'}`}>
           Full outlet &amp; SKU history includes
         </div>

@@ -16,7 +16,7 @@ export function LineChart({
   const padT = 24;
   const padB = 40;
   const colors = dark
-    ? ['#C4B5FD', '#7DD3FC', '#6EE7B7', '#FDA4AF', '#FCD34D']
+    ? ['#F0C38E', '#7DD3FC', '#6EE7B7', '#FDA4AF', '#FCD34D']
     : ['#3F258B', '#28B8F0', '#10b981', '#f43f5e', '#AB6BF0'];
 
   const prepared = series.map((s) => {

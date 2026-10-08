@@ -62,7 +62,7 @@ export default function AdminAvcGallery() {
         </p>
       </div>
 
-      <div className={`rounded-2xl border p-3 flex flex-wrap gap-2 items-end ${card}`} style={cardStyle} style={cardStyle}>
+      <div className={`rounded-2xl border p-3 flex flex-wrap gap-2 items-end ${card}`} style={cardStyle}>
         <label className="text-xs">
           Month
           <input
@@ -107,7 +107,7 @@ export default function AdminAvcGallery() {
       )}
 
       {Object.entries(tree).map(([dist, tiers]) => (
-        <div key={dist} className={`rounded-2xl border overflow-hidden ${card}`} style={cardStyle} style={cardStyle}>
+        <div key={dist} className={`rounded-2xl border overflow-hidden ${card}`} style={cardStyle}>
           <div className={`px-4 py-3 font-extrabold text-[#3F258B] border-b ${dark ? 'border-slate-700' : 'border-slate-100'}`}>
             📁 {dist}
           </div>
